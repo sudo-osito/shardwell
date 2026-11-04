@@ -10,6 +10,8 @@ const ORIGINS = ["https://sudo-osito.github.io", "http://127.0.0.1:4815", "http:
 const KINDS = ["heart", "dread", "tears", "chills", "awe"];
 const AVATARS = ["", "chrona", "vast", "axion", "nyther", "anastasis", "pozo", "endro", "tithes", "echoforms", "black-veil", "leviathan", "sea-before-time", "mar-ahogado", "borde"];
 const RANK = { free: 0, reader: 1, diver: 2, abyssal: 3 };
+// profile banners (painted art), the plan they need
+const BANNERS = { "": "free", pozo: "free", borde: "free", corazon: "free", catedral: "free", mar: "free", chrona: "diver", vast: "diver", axion: "diver", nyther: "diver", anastasis: "diver", leviathan: "diver", echoforms: "diver", "first-drowning": "diver", rig: "diver", "mar-ahogado": "abyssal", "black-veil": "abyssal", "sea-before-time": "abyssal", endro: "abyssal", tithes: "abyssal" };
 const PLAN_NAME = { free: "Free reader", reader: "Reader", diver: "Diver", abyssal: "Abyssal" };
 // avatar frames, the plan they need
 const FRAMES = { "": "free", iron: "reader", ash: "reader", silver: "diver", endro: "diver", godblood: "diver", abyssal: "abyssal", crown: "abyssal", bone: "diver" };
@@ -81,7 +83,7 @@ async function session(env, req) {
 async function newSession(env, userId) {
   const t = token(); await env.DB.prepare("INSERT INTO sessions (token, user, created, expires) VALUES (?, ?, ?, ?)").bind(t, userId, now(), now() + 1000 * 60 * 60 * 24 * 90).run(); return t;
 }
-const userPub = (u) => ({ id: u.id, name: u.name, avatar: u.avatar, frame: u.frame || "", flair: u.flair || "", plan: u.plan || "free", role: u.role || "" });
+const userPub = (u) => ({ id: u.id, name: u.name, avatar: u.avatar, frame: u.frame || "", flair: u.flair || "", plan: u.plan || "free", role: u.role || "", bio: u.bio || "", banner: u.banner || "", link: u.link || "" });
 
 // ---------- streaks, stats, badges ----------
 function streaks(days, tz) {
@@ -156,7 +158,7 @@ async function mark(env, u, kind, tz) { await env.DB.prepare("INSERT OR IGNORE I
 async function meOut(env, u, tz) {
   const s = await stats(env, u, tz);
   const reads = (await env.DB.prepare("SELECT chapter FROM user_reads WHERE user = ?").bind(u.id).all()).results.map((r) => r.chapter);
-  return { id: u.id, email: u.email, name: u.name, avatar: u.avatar, frame: u.frame || "", flair: u.flair || "", plan: u.plan || "free", role: u.role || "", member: rank(u) >= 1, portal: u.portal || "", created: u.created, reads, stats: s };
+  return { id: u.id, email: u.email, name: u.name, avatar: u.avatar, frame: u.frame || "", flair: u.flair || "", bio: u.bio || "", banner: u.banner || "", link: u.link || "", plan: u.plan || "free", role: u.role || "", member: rank(u) >= 1, portal: u.portal || "", created: u.created, reads, stats: s };
 }
 
 // ---------- Lemon Squeezy ----------
@@ -222,13 +224,14 @@ export default {
 
       // ---- public reads ----
       if (req.method === "GET") {
-        if (p[0] === "plans") return json(req, { checkout: parseJSON(env.LS_CHECKOUT, {}), allowance: ALLOWANCE, frames: FRAMES, tithes: TITHES, boards: BOARDS });
-        if (p[0] === "credits") return json(req, { names: (await env.DB.prepare("SELECT name FROM users WHERE plan = 'abyssal' ORDER BY created").all()).results.map((r) => r.name) });
+        if (p[0] === "plans") return json(req, { checkout: parseJSON(env.LS_CHECKOUT, {}), allowance: ALLOWANCE, frames: FRAMES, banners: BANNERS, tithes: TITHES, boards: BOARDS });
+        if (p[0] === "credits") { const rows = (await env.DB.prepare("SELECT * FROM users WHERE plan = 'abyssal' ORDER BY created").all()).results; return json(req, { names: rows.map((r) => r.name), members: rows.map(userPub) }); }
         if (p[0] === "me") { if (!me) return bad(req, "Sign in first.", 401); return json(req, { user: await meOut(env, me, tz) }); }
         if (p[0] === "u" && p[1]) {
           const u = await env.DB.prepare("SELECT * FROM users WHERE name = ?").bind(decodeURIComponent(p[1])).first();
           if (!u) return bad(req, "Not found", 404);
           const s = await stats(env, u, tz);
+          if (url.searchParams.get("card")) return json(req, { user: { ...userPub(u), created: u.created }, stats: { reads: s.reads, posts: s.posts, likes: s.likes, tithesReceived: s.tithesReceived, readStreak: s.readStreak, badges: s.badges.filter((b) => b.earned).map((b) => ({ id: b.id, name: b.name, desc: b.desc })) } });
           const recent = (await env.DB.prepare(`SELECT ${POST_COLS} FROM posts p JOIN users u ON u.id = p.user WHERE p.user = ? AND p.hidden = 0 ORDER BY p.created DESC LIMIT 20`).bind(u.id).all()).results.map((x) => postOut(x));
           return json(req, { user: { ...userPub(u), created: u.created }, stats: { reads: s.reads, posts: s.posts, comments: s.comments, likes: s.likes, tithesReceived: s.tithesReceived, tithesIn: s.tithesIn, readStreak: s.readStreak, writeStreak: s.writeStreak, badges: s.badges }, posts: recent });
         }
@@ -353,6 +356,9 @@ export default {
         }
         if (b.avatar !== undefined) { if (!AVATARS.includes(b.avatar)) return bad(req, "avatar"); await env.DB.prepare("UPDATE users SET avatar = ? WHERE id = ?").bind(b.avatar, me.id).run(); }
         if (b.frame !== undefined) { if (!(b.frame in FRAMES)) return bad(req, "frame"); if (!can(me, FRAMES[b.frame])) return bad(req, "That frame needs a higher plan.", 403); await env.DB.prepare("UPDATE users SET frame = ? WHERE id = ?").bind(b.frame, me.id).run(); }
+        if (b.bio !== undefined) await env.DB.prepare("UPDATE users SET bio = ? WHERE id = ?").bind(clean(b.bio, 300), me.id).run();
+        if (b.link !== undefined) { const l = clean(b.link, 200); if (!okLink(l)) return bad(req, "The link must start with https://"); await env.DB.prepare("UPDATE users SET link = ? WHERE id = ?").bind(l, me.id).run(); }
+        if (b.banner !== undefined) { if (!(b.banner in BANNERS)) return bad(req, "banner"); if (!can(me, BANNERS[b.banner])) return bad(req, "That banner needs a higher plan.", 403); await env.DB.prepare("UPDATE users SET banner = ? WHERE id = ?").bind(b.banner, me.id).run(); }
         if (b.flair !== undefined) { if (!can(me, "diver")) return bad(req, "Flair is for Diver and Abyssal members.", 403); await env.DB.prepare("UPDATE users SET flair = ? WHERE id = ?").bind(clean(b.flair, 24), me.id).run(); }
         if (b.newPassword !== undefined) {
           if (!(await checkPass(String(b.oldPassword || ""), me.pass))) return bad(req, "Your current password is wrong.", 401);

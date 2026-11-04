@@ -27,7 +27,7 @@
     const ids = new Set([...local, ...server]);
     return chapters.filter((c) => ids.has(c.id)).reduce((m, c) => Math.max(m, c.number), 0);
   }
-  const who = (a, size = "") => a ? `<a class="quien" href="#/u/${encodeURIComponent(a.name)}">${C().avatar(a, size)}<b>${esc(a.name)}</b>${C().planTag(a)}${a.flair ? `<span class="flair">${esc(a.flair)}</span>` : ""}</a>` : `<span class="quien quien--borrado">[deleted]</span>`;
+  const who = (a, size = "") => a ? `<a class="quien" href="#/u/${encodeURIComponent(a.name)}" data-user="${esc(a.name)}">${C().avatar(a, size)}<b>${esc(a.name)}</b>${C().planTag(a)}${a.flair ? `<span class="flair">${esc(a.flair)}</span>` : ""}</a>` : `<span class="quien quien--borrado">[deleted]</span>`;
   const tithesRow = (t) => { const k = Object.entries(t || {}); return k.length ? `<span class="tithes">${k.map(([kind, n]) => `<span class="tithe tithe--${kind}" title="${TITHE[kind]?.name} Tithe">${TITHE[kind]?.ic}${n > 1 ? `<small>${n}</small>` : ""}</span>`).join("")}</span>` : ""; };
   const voteBox = (type, id, score, vote) => `<div class="voto" data-voto="${type}:${id}"><button type="button" data-v="1" aria-pressed="${vote === 1}" aria-label="Upvote" data-tip="Upvote">▲</button><b>${score}</b><button type="button" data-v="-1" aria-pressed="${vote === -1}" aria-label="Downvote" data-tip="Downvote">▼</button></div>`;
   const spoilerOk = (upto, ctx) => !upto || upto <= maxRead(ctx.chapters);
@@ -134,8 +134,10 @@
   async function profile(name, ctx) {
     const d = await call(`/u/${encodeURIComponent(name)}`), u = d.user, s = d.stats;
     const groups = [...new Set(s.badges.map((b) => b.group))];
-    return `<header class="pagina perfil">${ctx.crumbs(["Shardwell", "#/"], ["Forum", "#/forum"], [u.name])}
-        <div class="perfil__cab">${C().avatar(u, "avatar--xl")}<div><h1 class="titulo titulo--xl">${esc(u.name)}</h1><p class="perfil__meta">${C().planTag(u) || '<span class="plan-tag">Free reader</span>'}${u.flair ? `<span class="flair">${esc(u.flair)}</span>` : ""}<span>Joined ${new Date(u.created).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</span></p></div></div></header>
+    return `<header class="perfil-portada">${u.banner ? `<img class="perfil-portada__img cargada" src="img/${u.banner}.jpg" alt="">` : ""}
+        <div class="perfil-portada__in">${ctx.crumbs(["Shardwell", "#/"], ["Forum", "#/forum"], [u.name])}
+        <div class="perfil__cab">${C().avatar(u, "avatar--xl")}<div><h1 class="titulo titulo--xl">${esc(u.name)}</h1><p class="perfil__meta">${C().planTag(u) || '<span class="plan-tag">Free reader</span>'}${u.flair ? `<span class="flair">${esc(u.flair)}</span>` : ""}<span>Joined ${new Date(u.created).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</span></p>
+          ${u.bio ? `<p class="perfil__bio">${esc(u.bio)}</p>` : ""}${u.link ? `<a class="perfil__link" href="${esc(u.link)}" target="_blank" rel="noopener nofollow ugc">${esc(u.link.replace(/^https:\/\//, ""))}</a>` : ""}</div></div></div></header>
       <section class="bloque bloque--pegado">
         <div class="cifras-perfil">
           <div><i>☾</i><b>${s.readStreak.current}</b><span>reading streak · best ${s.readStreak.best}</span></div>

@@ -124,7 +124,73 @@
   async function remove(password) { await call("/me/delete", { password }); save(null, null); window.dispatchEvent(new CustomEvent("cuenta:cambio")); }
 
   addEventListener("hashchange", () => { const m = $(".cuenta__menu", slot); if (m) { m.hidden = true; $("[data-menu-cuenta]", slot)?.setAttribute("aria-expanded", "false"); } });
+  // ---------- profile card on hover (any element with data-user) ----------
+  const cardCache = new Map();
+  const card = document.createElement("div"); card.className = "tarjeta-u"; card.hidden = true; card.setAttribute("role", "tooltip");
+  document.body.append(card);
+  let hoverT = null, hideT = null, anchor = null;
+  async function cardData(name) {
+    const c = cardCache.get(name); if (c && Date.now() - c.t < 60000) return c.d;
+    const r = await fetch(API + "/u/" + encodeURIComponent(name) + "?card=1&tz=" + new Date().getTimezoneOffset()); if (!r.ok) throw 0;
+    const d = await r.json(); cardCache.set(name, { t: Date.now(), d }); return d;
+  }
+  function placeCard(el) {
+    const b = el.getBoundingClientRect(), w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = Math.min(Math.max(12, b.left), innerWidth - w - 12) + "px";
+    card.style.top = (b.bottom + 10 + h > innerHeight ? Math.max(12, b.top - h - 10) : b.bottom + 10) + "px";
+  }
+  async function showCard(el) {
+    const name = el.dataset.user; anchor = el;
+    try {
+      const { user: u, stats: s } = await cardData(name); if (anchor !== el) return;
+      card.innerHTML = `<div class="tarjeta-u__banner">${u.banner ? `<img src="img/${u.banner}.jpg" alt="">` : ""}</div>
+        <div class="tarjeta-u__cuerpo"><div class="tarjeta-u__av">${avatar(u, "avatar--g")}</div>
+          <p class="tarjeta-u__nombre"><b>${esc(u.name)}</b>${planTag(u)}</p>${u.flair ? `<p class="flair">${esc(u.flair)}</p>` : ""}
+          ${u.bio ? `<p class="tarjeta-u__bio">${esc(u.bio)}</p>` : ""}
+          <dl class="tarjeta-u__cifras"><div><dt>☾</dt><dd>${s.readStreak.current}</dd></div><div><dt>♥</dt><dd>${s.likes}</dd></div><div><dt>◇</dt><dd>${s.reads}</dd></div><div><dt>✦</dt><dd>${s.badges.length}</dd></div></dl>
+          ${s.badges.length ? `<div class="tarjeta-u__ins">${s.badges.slice(-7).map((b) => `<span title="${esc(b.name)}">${badgeImg(b)}</span>`).join("")}</div>` : ""}
+          <p class="tarjeta-u__pie">Joined ${new Date(u.created).toLocaleDateString("en-GB", { month: "short", year: "numeric" })} · <span>View profile →</span></p></div>`;
+      card.dataset.n = u.name; card.hidden = false; placeCard(el); requestAnimationFrame(() => card.classList.add("on"));
+    } catch {}
+  }
+  function hideCard() { card.classList.remove("on"); anchor = null; hideT = setTimeout(() => (card.hidden = true), 160); }
+  if (matchMedia("(hover: hover)").matches) {
+    document.addEventListener("mouseover", (ev) => {
+      const el = ev.target.closest("[data-user]");
+      if (el) { clearTimeout(hideT); if (anchor === el) return; clearTimeout(hoverT); hoverT = setTimeout(() => showCard(el), 280); return; }
+      if (ev.target.closest(".tarjeta-u")) { clearTimeout(hideT); return; }
+    });
+    document.addEventListener("mouseout", (ev) => {
+      const el = ev.target.closest("[data-user], .tarjeta-u"); if (!el) return;
+      if (ev.relatedTarget && (ev.relatedTarget.closest?.(".tarjeta-u") || ev.relatedTarget.closest?.("[data-user]") === anchor)) return;
+      clearTimeout(hoverT); hideT = setTimeout(hideCard, 180);
+    });
+    card.addEventListener("click", () => { if (card.dataset.n) location.hash = "#/u/" + encodeURIComponent(card.dataset.n); });
+  }
+  addEventListener("hashchange", () => { card.hidden = true; card.classList.remove("on"); anchor = null; });
+  addEventListener("scroll", () => { if (!card.hidden) { card.hidden = true; card.classList.remove("on"); anchor = null; } }, { passive: true });
+  const userAttr = (name) => `data-user="${esc(name)}"`;
+
+  // ---------- show / hide password on every password field ----------
+  const EYE = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
+  const EYE_OFF = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A10.6 10.6 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 4.6-1.1M9.9 9.9a3 3 0 0 0 4.2 4.2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
+  function eyes(root = document) {
+    root.querySelectorAll('input[type="password"]:not([data-ojo])').forEach((inp) => {
+      inp.dataset.ojo = "1";
+      const w = document.createElement("span"); w.className = "clave-w"; inp.parentNode.insertBefore(w, inp); w.append(inp);
+      const b = document.createElement("button"); b.type = "button"; b.className = "clave-ojo"; b.innerHTML = EYE; b.setAttribute("aria-label", "Show password"); b.dataset.tip = "Show password";
+      b.addEventListener("click", () => {
+        const show = inp.type === "password"; inp.type = show ? "text" : "password";
+        b.innerHTML = show ? EYE_OFF : EYE; b.setAttribute("aria-label", show ? "Hide password" : "Show password"); b.dataset.tip = show ? "Hide password" : "Show password";
+        b.setAttribute("aria-pressed", String(show)); inp.focus({ preventScroll: true });
+      });
+      w.append(b);
+    });
+  }
+  new MutationObserver(() => eyes()).observe(document.body, { childList: true, subtree: true });
+  eyes();
+
   paintBar(); refresh();
   const setUser = (u) => save(token, u);
-  window.Cuenta = { get user() { return user; }, get token() { return token; }, open, logout, refresh, update, remove, avatar, badgeImg, planName, planTag, rank, PLAN, AVATARS, call, setUser, announce, on: (f) => listeners.add(f) };
+  window.Cuenta = { get user() { return user; }, get token() { return token; }, open, logout, refresh, update, remove, avatar, badgeImg, planName, planTag, rank, userAttr, cardCache, PLAN, AVATARS, call, setUser, announce, on: (f) => listeners.add(f) };
 })();

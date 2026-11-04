@@ -198,7 +198,7 @@
       <div class="cform__pie"><label class="chk"><input type="checkbox" name="spoiler"> Spoiler</label><span class="cform__n">0/2000</span><button class="boton boton--chico" type="submit">${parent ? "Reply" : "Post"}</button></div>
       <p class="cform__err" hidden></p></form>`;
     const cHTML = (c, replies = []) => `<li class="com${c.spoiler ? " com--spoiler" : ""}" data-c="${c.id}">
-      <div class="com__cab">${window.Cuenta ? window.Cuenta.avatar({ name: c.name, avatar: c.avatar, frame: c.frame }) : ""}<a class="com__nombre" href="#/u/${encodeURIComponent(c.name)}">${esc(c.name)}</a>${window.Cuenta ? window.Cuenta.planTag({ plan: c.plan, role: c.role }) : ""}<time>${ago(c.created)}</time></div>
+      <div class="com__cab">${window.Cuenta ? window.Cuenta.avatar({ name: c.name, avatar: c.avatar, frame: c.frame }) : ""}<a class="com__nombre" href="#/u/${encodeURIComponent(c.name)}" data-user="${esc(c.name)}">${esc(c.name)}</a>${window.Cuenta ? window.Cuenta.planTag({ plan: c.plan, role: c.role }) : ""}<time>${ago(c.created)}</time></div>
       ${c.spoiler ? '<button class="com__revelar" type="button" data-revelar>Spoiler · show</button>' : ""}
       <p class="com__txt">${esc(c.body).replace(/\n/g, "<br>")}</p>
       <div class="com__acc"><button type="button" data-like="${c.id}" aria-pressed="${c.liked}">♥ <span>${c.likes || ""}</span></button>${c.parent ? "" : `<button type="button" data-responder="${c.id}">Reply</button>`}${c.mine ? `<button type="button" data-borrar="${c.id}">Delete</button>` : ""}</div>

@@ -145,7 +145,7 @@
       if (!url) { msg.innerHTML = `Payments open very soon. <form class="aviso aviso--linea" data-aviso><input type="email" name="email" value="${u.email}" required><input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"><button class="boton boton--chico" type="submit">Tell me when</button><span class="aviso__msg" hidden></span></form>`; msg.hidden = false; $("[data-aviso]", msg).addEventListener("submit", notify); return; }
       location.href = `${url}${url.includes("?") ? "&" : "?"}checkout[email]=${encodeURIComponent(u.email)}&checkout[custom][user_id]=${u.id}&checkout[name]=${encodeURIComponent(u.name)}`;
     }));
-    try { const c = await (await fetch("https://shardwell-reader.maxpino.workers.dev/credits")).json(); const box = $("[data-creditos]", v); if (box) box.innerHTML = `<header class="cabeza cabeza--centro"><p class="rotulo">Credits</p><h2 class="titulo">Abyssal members</h2></header><p class="creditos__nombres">${c.names.length ? c.names.join(" · ") : "Your name could be the first one here."}</p>`; } catch {}
+    try { const c = await (await fetch("https://shardwell-reader.maxpino.workers.dev/credits")).json(); const box = $("[data-creditos]", v); if (box) box.innerHTML = `<header class="cabeza cabeza--centro"><p class="rotulo">Credits</p><h2 class="titulo">Abyssal members</h2><p class="bajada">The readers who hold Shardwell up.</p></header>${c.members?.length ? `<ul class="creditos__lista">${c.members.map((m) => `<li><a href="#/u/${encodeURIComponent(m.name)}" data-user="${m.name.replace(/"/g, "&quot;")}">${window.Cuenta.avatar(m, "avatar--g")}<b>${m.name.replace(/</g, "&lt;")}</b></a></li>`).join("")}</ul>` : `<p class="creditos__nombres">Your name could be the first one here.</p>`}`; } catch {}
   }
   async function notify(ev) {
     ev.preventDefault(); const f = ev.target, msg = $(".aviso__msg", f), fd = new FormData(f);
@@ -276,14 +276,15 @@
       ${u && !isMember() ? `<p class="nota-gate">You are signed in as ${u.name} (${window.Cuenta.planName(u)}). The Codex opens with Diver or Abyssal.</p>` : ""}</header>`;
   }
   // ---------- account page ----------
+  const BANNERS = [["", "free"], ["pozo", "free"], ["borde", "free"], ["corazon", "free"], ["catedral", "free"], ["mar", "free"], ["chrona", "diver"], ["vast", "diver"], ["axion", "diver"], ["nyther", "diver"], ["anastasis", "diver"], ["leviathan", "diver"], ["echoforms", "diver"], ["first-drowning", "diver"], ["rig", "diver"], ["mar-ahogado", "abyssal"], ["black-veil", "abyssal"], ["sea-before-time", "abyssal"], ["endro", "abyssal"], ["tithes", "abyssal"]];
   const FRAMES = [["", "free", "None"], ["iron", "reader", "Iron"], ["ash", "reader", "Ash"], ["silver", "diver", "Silver"], ["endro", "diver", "Endro"], ["godblood", "diver", "Godblood"], ["bone", "diver", "Bone"], ["abyssal", "abyssal", "Abyssal"], ["crown", "abyssal", "Crown"]];
   function account() {
     const C = window.Cuenta, u = C?.user;
     if (!u) return `<header class="pagina">${crumbs(["Shardwell", "#/"], ["Account"])}<h1 class="titulo titulo--xl">Your account</h1><p class="bajada">Sign in to comment, join the forum, keep your streaks and become a member.</p><div class="acciones acciones--izq"><button class="boton" type="button" data-entrar>Sign in</button></div></header>`;
     const s = u.stats || { readStreak: { current: 0, best: 0 }, writeStreak: { current: 0, best: 0 }, badges: [], tithesLeft: 0, likes: 0, tithesReceived: 0, reads: 0 };
     const marks = window.Lector?.store.get("marks", []) || [], ch = chapters(), cont = progressCta(), r = C.rank(u), RK = { free: 0, reader: 1, diver: 2, abyssal: 3 };
-    return `<header class="pagina perfil">${crumbs(["Shardwell", "#/"], ["Account"])}
-      <div class="perfil__cab">${C.avatar(u, "avatar--xl")}<div><h1 class="titulo titulo--xl">${u.name}</h1><p class="perfil__meta">${C.planTag(u) || '<span class="plan-tag">Free reader</span>'}${u.flair ? `<span class="flair">${u.flair}</span>` : ""}<span>Joined ${new Date(u.created).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</span><a href="#/u/${encodeURIComponent(u.name)}">Public page →</a></p></div></div></header>
+    return `<header class="perfil-portada">${u.banner ? `<img class="perfil-portada__img cargada" src="img/${u.banner}.jpg" alt="">` : ""}<div class="perfil-portada__in">${crumbs(["Shardwell", "#/"], ["Account"])}
+      <div class="perfil__cab">${C.avatar(u, "avatar--xl")}<div><h1 class="titulo titulo--xl">${u.name}</h1><p class="perfil__meta">${C.planTag(u) || '<span class="plan-tag">Free reader</span>'}${u.flair ? `<span class="flair">${u.flair}</span>` : ""}<span>Joined ${new Date(u.created).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</span><a href="#/u/${encodeURIComponent(u.name)}">Public page →</a></p>${u.bio ? `<p class="perfil__bio">${u.bio.replace(/</g, "&lt;")}</p>` : ""}</div></div></div></header>
     <section class="bloque bloque--pegado">
       <div class="cifras-perfil">
         <div><i>☾</i><b>${s.readStreak.current}</b><span>day reading streak · best ${s.readStreak.best}${s.readStreak.today ? "" : s.readStreak.current ? " · read today to keep it" : ""}</span></div>
@@ -300,6 +301,12 @@
       <div class="perfil__caja perfil__caja--ancha"><p class="rotulo">Badges</p>${window.Foro.badgeGrid(s.badges)}</div>
       <div class="perfil__caja perfil__caja--ancha" id="marcas"><p class="rotulo">Bookmarks</p>
         ${marks.length ? `<ul class="perfil__marcas">${marks.map((m) => `<li><a href="#/e/${m.id}"><span>${m.n}</span><b>${m.title}</b></a></li>`).join("")}</ul>` : `<p class="nota">No bookmarks yet. Use ☆ while reading.</p>`}</div>
+      <form class="perfil__caja perfil__caja--ancha" data-perfil="bio"><p class="rotulo">About you</p>
+        <textarea name="bio" maxlength="300" rows="3" placeholder="A few lines other readers see on your card and profile">${(u.bio || "").replace(/</g, "&lt;")}</textarea>
+        <input name="link" value="${u.link || ""}" maxlength="200" placeholder="A link (https://), optional">
+        <p class="perfil__msg" hidden></p><button class="boton boton--quieto" type="submit">Save</button></form>
+      <div class="perfil__caja perfil__caja--ancha"><p class="rotulo">Banner</p>
+        <div class="banners">${BANNERS.map(([b, min]) => { const ok = r >= RK[min]; return `<button type="button" class="banner-op" data-banner="${b}" aria-pressed="${(u.banner || "") === b}" ${ok ? "" : "disabled"} title="${ok ? "" : C.PLAN[min] + " and up"}">${b ? `<img src="img/${b}.jpg" alt="" loading="lazy">` : "<span>None</span>"}${ok ? "" : `<i>${C.PLAN[min]}</i>`}</button>`; }).join("")}</div></div>
       <div class="perfil__caja perfil__caja--ancha"><p class="rotulo">Picture</p>
         <div class="avatares">${C.AVATARS.map((a) => `<button type="button" data-avatar="${a}" aria-pressed="${u.avatar === a}" aria-label="${a || "Initial"}">${C.avatar({ ...u, avatar: a, frame: "" }, "avatar--g")}</button>`).join("")}</div></div>
       <div class="perfil__caja perfil__caja--ancha"><p class="rotulo">Frame</p>
@@ -312,8 +319,9 @@
   }
   async function accountEvents() {
     $$("[data-avatar]", vista).forEach((b) => b.addEventListener("click", async () => { try { await window.Cuenta.update({ avatar: b.dataset.avatar }); route(); } catch (x) { alert(x.message); } }));
+    $$("[data-banner]", vista).forEach((b) => b.addEventListener("click", async () => { try { await window.Cuenta.update({ banner: b.dataset.banner }); window.Cuenta.cardCache?.clear(); route(); } catch (x) { alert(x.message); } }));
     $$("[data-frame]", vista).forEach((b) => b.addEventListener("click", async () => { try { await window.Cuenta.update({ frame: b.dataset.frame }); route(); } catch (x) { alert(x.message); } }));
-    $$("form[data-perfil=nombre], form[data-perfil=clave], form[data-perfil=flair]", vista).forEach((f) => f.addEventListener("submit", async (ev) => {
+    $$("form[data-perfil=nombre], form[data-perfil=clave], form[data-perfil=flair], form[data-perfil=bio]", vista).forEach((f) => f.addEventListener("submit", async (ev) => {
       ev.preventDefault(); const m = $(".perfil__msg", f), fd = Object.fromEntries(new FormData(f));
       try { await window.Cuenta.update(fd); m.textContent = "Saved."; m.hidden = false; if (f.dataset.perfil !== "clave") setTimeout(route, 600); else f.reset(); }
       catch (x) { m.textContent = x.message; m.hidden = false; }
