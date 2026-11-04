@@ -27,7 +27,7 @@
     const ids = new Set([...local, ...server]);
     return chapters.filter((c) => ids.has(c.id)).reduce((m, c) => Math.max(m, c.number), 0);
   }
-  const who = (a, size = "") => a ? `<a class="quien" href="#/u/${encodeURIComponent(a.name)}" data-user="${esc(a.name)}">${C().avatar(a, size)}<b>${esc(a.name)}</b>${C().planTag(a)}${a.flair ? `<span class="flair">${esc(a.flair)}</span>` : ""}</a>` : `<span class="quien quien--borrado">[deleted]</span>`;
+  const who = (a, size = "") => a ? `<a class="quien" href="#/u/${encodeURIComponent(a.name)}" data-user="${esc(a.name)}">${C().avatar(a, size)}<b>${esc(a.name)}</b>${a.lv ? `<span class="lv" title="Forum level">Lv ${a.lv}</span>` : ""}${C().planTag(a)}${a.flair ? `<span class="flair">${esc(a.flair)}</span>` : ""}</a>` : `<span class="quien quien--borrado">[deleted]</span>`;
   const tithesRow = (t) => { const k = Object.entries(t || {}); return k.length ? `<span class="tithes">${k.map(([kind, n]) => `<span class="tithe tithe--${kind}" title="${TITHE[kind]?.name} Tithe">${TITHE[kind]?.ic}${n > 1 ? `<small>${n}</small>` : ""}</span>`).join("")}</span>` : ""; };
   const voteBox = (type, id, score, vote) => `<div class="voto" data-voto="${type}:${id}"><button type="button" data-v="1" aria-pressed="${vote === 1}" aria-label="Upvote" data-tip="Upvote">▲</button><b>${score}</b><button type="button" data-v="-1" aria-pressed="${vote === -1}" aria-label="Downvote" data-tip="Downvote">▼</button></div>`;
   const spoilerOk = (upto, ctx) => !upto || upto <= maxRead(ctx.chapters);
@@ -40,24 +40,57 @@
   }
   const loading = '<p class="cargando">Loading…</p>';
 
-  async function home(ctx) {
-    const d = await call("/forum");
+  const BOARD_IC = { announcements: "✦", chapters: "❡", theories: "⌖", art: "✎", general: "≋", ask: "♛", stories: "❦" };
+  async function home(ctx, sort = "hot") {
     const me = C().user;
+    const [d, r] = await Promise.all([call("/forum?sort=" + sort), me ? call("/daily").catch(() => null) : null]);
+    const tabs = [["hot", "Hot"], ["new", "New"], ["top", "Top this week"]];
     return `
-      <div class="foro__grid">
-        <section>
-          <h2 class="rotulo">Boards</h2>
-          <ul class="tableros">${d.boards.map((b) => `<li><a href="#/forum/b/${b.id}"><b>${esc(b.name)}</b><span>${esc(b.line)}</span><small>${b.n} post${b.n === 1 ? "" : "s"}${b.last ? " · " + ago(b.last) : ""}</small>${b.post !== "free" ? `<i class="tablero__regla">${b.post === "admin" ? "The author posts" : "Abyssal posts"}</i>` : ""}</a></li>`).join("")}</ul>
-          <h2 class="rotulo foro__sub">Latest</h2>
+      <div class="foro2">
+        <nav class="foro2__nav" aria-label="Boards"><h2 class="rotulo">Boards</h2>
+          <ul>${d.boards.map((b) => `<li><a href="#/forum/b/${b.id}"><i aria-hidden="true">${BOARD_IC[b.id] || "◇"}</i><span><b>${esc(b.name)}</b><small>${b.n} post${b.n === 1 ? "" : "s"}${b.post !== "free" ? ` · ${b.post === "admin" ? "author only" : C().PLAN[b.post] + " asks"}` : ""}</small></span></a></li>`).join("")}</ul>
+          <h2 class="rotulo foro__sub">Yours</h2>
+          <ul><li><a href="#/forum/shop"><i aria-hidden="true">◈</i><span><b>The shop</b><small>Spend your Ink</small></span></a></li><li><a href="#/look"><i aria-hidden="true">☉</i><span><b>Your look</b><small>Picture, frame, banner</small></span></a></li><li><a href="#/codex"><i aria-hidden="true">✒</i><span><b>The Codex</b><small>The readers' wiki</small></span></a></li></ul>
+        </nav>
+        <section class="foro2__feed">
+          ${me ? `<a class="redactar" href="#/forum/new/general">${C().avatar(me, "")}<span>Share a theory, a moment, a drawing…</span><b class="boton boton--chico">New post</b></a>` : ""}
+          <div class="feed-tabs" role="tablist">${tabs.map(([k, n]) => `<a role="tab" href="#/forum?sort=${k}" aria-selected="${sort === k}">${n}</a>`).join("")}</div>
           ${list(d.latest, ctx, true)}
         </section>
-        <aside class="foro__lado">
-          ${me ? meCard(me) : `<div class="caja-lado"><p>Sign in to post, vote and give Tithes.</p><button class="boton" type="button" data-entrar>Sign in</button></div>`}
+        <aside class="foro2__lado">
+          ${me && r ? rewardsCards(r) : `<div class="caja-lado"><p>Sign in to check in every day, complete missions and earn Ink for the shop.</p><button class="boton" type="button" data-entrar>Sign in</button></div>`}
+          ${me ? meCard(me) : ""}
           <div class="caja-lado"><h2 class="rotulo">Top voices this month</h2>${d.top.length ? `<ol class="top">${d.top.map((u) => `<li>${who(u)}<span>${u.n} ▲</span></li>`).join("")}</ol>` : `<p class="nota">Nobody yet. Be the first.</p>`}</div>
           <div class="caja-lado"><h2 class="rotulo">Tithes</h2><ul class="leyenda-tithes">${Object.entries(TITHE).map(([k, t]) => `<li><span class="tithe tithe--${k}">${t.ic}</span><b>${t.name}</b><span>${t.desc}${t.min !== "free" ? ` · ${C().PLAN[t.min]}+` : ""}</span></li>`).join("")}</ul>
-            <p class="nota">Diver members get one Tithe a month, Abyssal five. A 7-day reading streak earns one more.</p></div>
+            <p class="nota">Diver members get one Tithe a month, Abyssal and Sovereign five. A 7-day reading streak earns one more, and the shop sells Shard Tithes for Ink.</p></div>
         </aside>
       </div>`;
+  }
+  // ---------- rewards: check-in, missions, level, Ink ----------
+  const GO = { read: "#/novel", vote: "#/forum", talk: "#/forum/new/general", codex: "#/codex" };
+  function rewardsCards(r) {
+    const c = r.checkin, pct = Math.round(((r.exp - r.from) / (r.to - r.from)) * 100);
+    return `<div class="caja-lado premio" data-premios>
+        <div class="premio__nivel"><span class="premio__lv">Lv ${r.level}</span><div class="premio__exp"><i style="width:${pct}%"></i></div><small>${r.exp - r.from} / ${r.to - r.from} EXP</small><a class="premio__tinta" href="#/forum/shop" title="Ink: spend it in the shop"><i class="gota" aria-hidden="true"></i><b>${r.ink}</b> Ink</a></div>
+        <h2 class="rotulo">Daily check-in</h2>
+        <ol class="checkin">${c.rewards.map((ink, i) => { const d = i + 1, got = c.done ? d <= c.cycleDay : d < c.cycleDay, now = !c.done && d === c.cycleDay; return `<li class="${got ? "ok" : ""}${now ? " hoy" : ""}${d === 7 ? " grande" : ""}"><span>Day ${d}</span><b>${ink}</b><small>Ink</small>${got ? "<i>✓</i>" : ""}</li>`; }).join("")}</ol>
+        ${c.done ? `<p class="nota">Checked in. ${c.streak} day${c.streak === 1 ? "" : "s"} in a row. Come back tomorrow.</p>` : `<button class="boton premio__btn" type="button" data-checkin>Check in · +${c.rewards[c.cycleDay - 1]} Ink</button>`}
+        <h2 class="rotulo premio__sep">Daily missions</h2>
+        <ul class="misiones">${r.missions.filter((m) => m.id !== "checkin").map((m) => `<li class="${m.claimed ? "ok" : m.ready ? "lista" : ""}"><span><b>${esc(m.name)}</b><small>${esc(m.desc)} · +${m.ink} Ink, +${m.exp} EXP</small></span>${m.claimed ? "<i>✓</i>" : m.ready ? `<button class="boton boton--chico" type="button" data-reclamar="${m.id}">Claim</button>` : `<a class="boton boton--chico boton--quieto" href="${GO[m.id] || "#/forum"}">Go</a>`}</li>`).join("")}</ul>
+      </div>`;
+  }
+  async function shop(ctx) {
+    const [d, cat] = await Promise.all([call("/shop"), C().cosmetics()]);
+    const owned = new Set(d.items), me = C().user;
+    const art = (it) => it.kind === "avatar" ? `<img src="img/avatars/${it.id}.jpg" alt="" loading="lazy">` : it.kind === "banner" ? `<img src="img/${it.id}.jpg" alt="" loading="lazy">` : it.kind === "frame" ? C().avatar({ ...me, frame: it.id }, "avatar--xl") : `<span class="tienda__tithe">${TITHE.shard.ic}</span>`;
+    const card = (it) => { const has = owned.has(`${it.kind}:${it.id}`) && it.kind !== "tithe"; return `<li class="tienda__it tienda__it--${it.kind}${has ? " ok" : ""}"><span class="tienda__arte">${art(it)}</span><b>${esc(it.name)}</b>${it.desc ? `<small>${esc(it.desc)}</small>` : ""}${has ? `<a class="boton boton--chico boton--quieto" href="#/look">Owned · wear it</a>` : `<button class="boton boton--chico" type="button" data-comprar-tienda="${it.kind}:${it.id}" ${d.ink < it.cost ? "disabled" : ""}>${it.cost} Ink</button>`}</li>`; };
+    const groups = [["avatar", "Pictures"], ["banner", "Banners"], ["frame", "Frames"], ["tithe", "Tithes"]].map(([k, n]) => [n, d.shop.filter((x) => x.kind === k)]).filter(([, l]) => l.length);
+    return { title: "The shop", sub: "Earn Ink by checking in and completing daily missions. Spend it here. Nothing in the shop is sold for money.", html: `
+      <div class="tienda">
+        <div class="tienda__saldo"><span>Your Ink</span><b>${d.ink}</b><a class="boton boton--quieto boton--chico" href="#/forum">Earn more</a></div>
+        ${groups.map(([n, l]) => `<h2 class="rotulo foro__sub">${n}</h2><ul class="tienda__grid">${l.map(card).join("")}</ul>`).join("")}
+        <h2 class="rotulo foro__sub">Your Ink history</h2>${d.log.length ? `<ol class="tienda__log">${d.log.map((x) => `<li><b class="${x.delta > 0 ? "mas" : "menos"}">${x.delta > 0 ? "+" : ""}${x.delta}</b><span>${esc(x.reason)}</span><small>${ago(x.created)}</small></li>`).join("")}</ol>` : `<p class="nota">Nothing yet. Check in to get your first Ink.</p>`}
+      </div>` };
   }
   function meCard(me) {
     const s = me.stats; if (!s) return "";
@@ -181,13 +214,18 @@
     const q = new URLSearchParams(location.hash.split("?")[1] || "");
     try {
       if (a === "u") { root.innerHTML = await profile(decodeURIComponent(b), CTX); }
-      else if (!b) { root.innerHTML = shell(await home(CTX), CTX); }
+      else if (!b) { root.innerHTML = shell(await home(CTX, q.get("sort") || "hot"), CTX); }
       else {
-        const v = b === "b" ? await board(c, CTX, q.get("sort"), q.get("chapter")) : b === "p" ? await post(c, CTX) : b === "new" ? newPost(c, CTX) : { title: "Forum", sub: "", html: "" };
+        const v = b === "b" ? await board(c, CTX, q.get("sort"), q.get("chapter")) : b === "p" ? await post(c, CTX) : b === "new" ? newPost(c, CTX) : b === "shop" ? await shop(CTX) : { title: "Forum", sub: "", html: "" };
         root.innerHTML = shell(v.html, CTX, v.title, v.sub);
       }
       CTX.after?.();
     } catch (x) { root.innerHTML = shell(`<p class="vacio-foro">${esc(x.message)}</p>`, CTX); }
+  }
+  // a small reward toast
+  function pop(big, small) {
+    const el = document.createElement("div"); el.className = "premio-pop"; el.innerHTML = `<b>${esc(big)}</b><span>${esc(small)}</span>`;
+    document.body.appendChild(el); requestAnimationFrame(() => el.classList.add("ver")); setTimeout(() => { el.classList.remove("ver"); setTimeout(() => el.remove(), 500); }, 2200);
   }
   function mount(el, ctx) {
     root = el; CTX = ctx;
@@ -205,6 +243,9 @@
       ev.preventDefault(); return;
     }
     const dar = t.closest("[data-dar]"); if (dar) { pickTithe(dar.dataset.dar); return; }
+    const ci = t.closest("[data-checkin]"); if (ci) { ci.disabled = true; try { const r = await call("/daily/checkin", {}); pop(`+${r.ink} Ink`, `Day ${r.day} of 7`); await C().refresh(); render(); } catch (x) { alert(x.message); ci.disabled = false; } return; }
+    const rc = t.closest("[data-reclamar]"); if (rc) { rc.disabled = true; try { const r = await call("/daily/claim", { mission: rc.dataset.reclamar }); pop(`+${r.ink} Ink`, `+${r.exp} EXP`); await C().refresh(); render(); } catch (x) { alert(x.message); rc.disabled = false; } return; }
+    const bt = t.closest("[data-comprar-tienda]"); if (bt) { const [kind, id] = bt.dataset.comprarTienda.split(":"); if (!confirm(`Spend ${bt.textContent} on this?`)) return; bt.disabled = true; try { await call("/shop/buy", { kind, id }); pop("Yours", kind === "tithe" ? "A Shard Tithe to give" : "Wear it in Your look"); await C().refresh(); render(); } catch (x) { alert(x.message); bt.disabled = false; } return; }
     const del = t.closest("[data-borrar]");
     if (del && del.closest("[data-foro]")) { if (!confirm("Delete this?")) return; const [type, id] = del.dataset.borrar.split(":"); try { await call("/forum/delete", { type, id: +id }); if (type === "post") location.hash = "#/forum"; else render(); } catch (x) { alert(x.message); } return; }
     const rep = t.closest("[data-reportar]"); if (rep) { const reason = prompt("Why are you reporting this?"); if (!reason) return; try { await call("/forum/report", { target: rep.dataset.reportar, reason }); alert("Thank you. The author will look at it."); } catch (x) { alert(x.message); } return; }

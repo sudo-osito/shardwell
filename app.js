@@ -86,14 +86,6 @@
       </aside>
     </section>
 
-    <section class="bloque dos">
-      <header class="cabeza cabeza--centro"><p class="rotulo">At the center</p><h2 class="titulo">A boy on the roof. A lamp left on.</h2></header>
-      <div class="dos__grid">
-        <figure class="dos__p">${img("kalfu", "Kalfu on a rooftop in the rain", "dos__img")}<figcaption><b>Kalfu</b><q>If he was going to die, it would be with his own two hands. His choice.</q><span>Chapter 1</span></figcaption></figure>
-        <figure class="dos__p dos__p--calida">${img("hinata", "A girl reading a tablet under a lamp in a small kitchen", "dos__img")}<figcaption><b>The girl with the lamp</b><q>You’re late, she had said. I wasn’t waiting. I was studying.</q><span>Chapter 1</span></figcaption></figure>
-      </div>
-    </section>
-
     <section class="bloque leer">
       <header class="cabeza"><p class="rotulo">Reading here</p><h2 class="titulo">Made for reading, together</h2></header>
       <ul class="leer__lista">
@@ -349,21 +341,22 @@
   async function lookEvents() {
     const C = window.Cuenta, u = C?.user, box = $("[data-look]", vista);
     if (!u || !box) return;
-    const cat = await C.cosmetics(), r = C.rank(u), RK = { free: 0, reader: 1, diver: 2, abyssal: 3, sovereign: 4 };
+    const [cat, mine0] = await Promise.all([C.cosmetics(), C.call("/shop").catch(() => ({ items: [] }))]), r = C.rank(u), RK = { free: 0, reader: 1, diver: 2, abyssal: 3, sovereign: 4 };
+    const owned = new Set(mine0.items || []), admin = u.role === "admin";
     const fresh = (it) => it.added && Date.now() - Date.parse(it.added) < 30 * 864e5;
-    const ok = (it) => r >= (RK[it.plan] || 0);
+    const ok = (it, kind) => it.shop ? admin || owned.has(`${kind}:${it.id}`) : r >= (RK[it.plan] || 0);
     const saved = { avatar: u.avatar || "", frame: u.frame || "", banner: u.banner || "", flair: u.flair || "" };
     let draft = { ...saved }, tab = "avatar", set = "all", mine = false, peek = null;
     const TABS = [["avatar", "Picture", cat.avatars], ["frame", "Frame", cat.frames], ["banner", "Banner", cat.banners], ["flair", "Flair", null]];
     const sets = { avatar: cat.sets.avatars, banner: cat.sets.banners, frame: [] };
-    const lock = (it) => ok(it) ? "" : `<span class="pieza__lock">◆ ${C.PLAN[it.plan]}${it.plan === "sovereign" ? "" : " and up"}</span>`;
+    const lock = (it, kind) => ok(it, kind) ? "" : it.shop ? `<span class="pieza__lock pieza__lock--tienda">${it.shop} Ink · shop</span>` : `<span class="pieza__lock">◆ ${C.PLAN[it.plan]}${it.plan === "sovereign" ? "" : " and up"}</span>`;
     const tile = (kind, it) => {
-      const id = it ? it.id : "", on = draft[kind] === id, can = !it || ok(it), name = it ? it.name : "None";
+      const id = it ? it.id : "", on = draft[kind] === id, can = !it || ok(it, kind), name = it ? it.name : "None";
       const art = kind === "avatar" ? (it ? `<img src="img/avatars/${id}.jpg" alt="" loading="lazy">` : `<span class="pieza__letra">${u.name[0].toUpperCase()}</span>`)
         : kind === "frame" ? C.avatar({ ...u, avatar: draft.avatar, frame: id }, "avatar--xl")
         : it ? `<img src="img/${id}.jpg" alt="" loading="lazy">` : `<span class="pieza__nada">No banner</span>`;
       return `<button type="button" class="pieza pieza--${kind}${on ? " pieza--on" : ""}${can ? "" : " pieza--cerrada"}" data-pieza="${kind}" data-id="${id}" aria-pressed="${on}" ${can ? "" : 'aria-disabled="true"'}>
-        <span class="pieza__arte">${art}</span>${it && fresh(it) ? '<span class="pieza__nueva">New</span>' : ""}${it ? lock(it) : ""}<span class="pieza__nombre">${name}</span></button>`;
+        <span class="pieza__arte">${art}</span>${it && fresh(it) ? '<span class="pieza__nueva">New</span>' : ""}${it ? lock(it, kind) : ""}<span class="pieza__nombre">${name}</span></button>`;
     };
     const preview = () => {
       const d = { ...draft, ...(peek || {}) }, v = { ...u, ...d };
@@ -376,7 +369,7 @@
       const [, , items] = TABS.find((t) => t[0] === tab);
       if (tab === "flair") return r >= 2 ? `<div class="look__flair"><label><span class="rotulo">A few words under your name</span><input data-flair maxlength="24" value="${draft.flair.replace(/"/g, "&quot;")}" placeholder="e.g. Diver since Chapter 1"></label><p class="nota">Shown in the forum, the comments and on your card. 24 characters.</p></div>`
         : `<div class="look__flair"><p class="nota">Flair, a few words under your name, comes with Diver and above.</p><a class="boton boton--quieto" href="#/membership">See the plans</a></div>`;
-      const list = items.filter((it) => (set === "all" || it.set === set) && (!mine || ok(it)));
+      const list = items.filter((it) => (set === "all" || it.set === set) && (!mine || ok(it, tab)));
       const chips = (sets[tab] || []).length ? `<div class="look__sets" role="group" aria-label="Collections"><button type="button" data-set="all" aria-pressed="${set === "all"}">All <small>${items.length}</small></button>${sets[tab].map(([k, n]) => `<button type="button" data-set="${k}" aria-pressed="${set === k}">${n} <small>${items.filter((i) => i.set === k).length}</small></button>`).join("")}</div>` : "";
       const groups = tab === "frame" ? [["", list]] : (set === "all" && sets[tab]?.length ? sets[tab].map(([k, n]) => [n, list.filter((i) => i.set === k)]) : [["", list]]);
       return `<div class="look__filtros">${chips}<label class="look__mios"><input type="checkbox" data-mios ${mine ? "checked" : ""}> Only what I can use</label></div>
@@ -399,7 +392,7 @@
         b.addEventListener("mouseenter", () => { peek = { [k]: id }; repaint(); });
         b.addEventListener("mouseleave", () => { peek = null; repaint(); });
         b.addEventListener("click", () => {
-          if (b.getAttribute("aria-disabled")) { const m = $("[data-look-msg]", box); m.textContent = "That one opens with a higher plan. See Membership."; m.hidden = false; return; }
+          if (b.getAttribute("aria-disabled")) { const m = $("[data-look-msg]", box), shopIt = [...cat.avatars, ...cat.banners, ...cat.frames].find((x) => x.id === id && x.shop); m.innerHTML = shopIt ? `That one is in the forum shop for ${shopIt.shop} Ink. <a href="#/forum/shop">Open the shop</a>` : `That one opens with a higher plan. <a href="#/membership">See the plans</a>`; m.hidden = false; return; }
           draft[k] = id; peek = null;
           $$(`[data-pieza="${k}"]`, box).forEach((x) => { const on = x.dataset.id === id; x.classList.toggle("pieza--on", on); x.setAttribute("aria-pressed", String(on)); });
           if (k === "avatar") $$('[data-pieza="frame"] .avatar img', box).forEach((im) => (im.src = `img/avatars/${id}.jpg`));

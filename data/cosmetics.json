@@ -1,5 +1,5 @@
 {
- "_note": "Every cosmetic in one place. Add an item here (and its image) and both the site and the Worker pick it up. 'added' (YYYY-MM-DD) marks it New for 30 days. Plans: free, reader, diver, abyssal, sovereign.",
+ "_note": "Every cosmetic in one place. Add an item here (and its image) and both the site and the Worker pick it up. 'added' (YYYY-MM-DD) marks it New for 30 days. Plans: free, reader, diver, abyssal, sovereign. Items with 'shop' (an Ink price) are earned in the forum shop, not by plan.",
  "sets": {
   "avatars": [
    [
@@ -13,6 +13,10 @@
    [
     "inhuman",
     "Inhuman"
+   ],
+   [
+    "rare",
+    "Rare · from the shop"
    ]
   ],
   "banners": [
@@ -27,6 +31,10 @@
    [
     "depths",
     "The depths"
+   ],
+   [
+    "shop",
+    "From the shop"
    ]
   ]
  },
@@ -210,6 +218,78 @@
    "name": "The Pale",
    "set": "inhuman",
    "plan": "free"
+  },
+  {
+   "id": "litvein",
+   "name": "The Lit Vein",
+   "set": "rare",
+   "plan": "free",
+   "shop": 300,
+   "added": "2026-11-04"
+  },
+  {
+   "id": "porcelain",
+   "name": "The Porcelain Smile",
+   "set": "rare",
+   "plan": "free",
+   "shop": 300,
+   "added": "2026-11-04"
+  },
+  {
+   "id": "diver",
+   "name": "The Diver",
+   "set": "rare",
+   "plan": "free",
+   "shop": 300,
+   "added": "2026-11-04"
+  },
+  {
+   "id": "seer",
+   "name": "The Blind Seer",
+   "set": "rare",
+   "plan": "free",
+   "shop": 300,
+   "added": "2026-11-04"
+  },
+  {
+   "id": "budding",
+   "name": "The Budding Horn",
+   "set": "rare",
+   "plan": "free",
+   "shop": 300,
+   "added": "2026-11-04"
+  },
+  {
+   "id": "inkweeper",
+   "name": "The Ink Weeper",
+   "set": "rare",
+   "plan": "free",
+   "shop": 300,
+   "added": "2026-11-04"
+  },
+  {
+   "id": "antennae",
+   "name": "The Antenna Crown",
+   "set": "rare",
+   "plan": "free",
+   "shop": 300,
+   "added": "2026-11-04"
+  },
+  {
+   "id": "lantern",
+   "name": "The Lanternbearer",
+   "set": "rare",
+   "plan": "free",
+   "shop": 300,
+   "added": "2026-11-04"
+  },
+  {
+   "id": "veiled",
+   "name": "The Veiled",
+   "set": "rare",
+   "plan": "free",
+   "shop": 300,
+   "added": "2026-11-04"
   }
  ],
  "frames": [
@@ -368,6 +448,38 @@
    "name": "Tithes",
    "plan": "abyssal",
    "set": "depths"
+  },
+  {
+   "id": "siren-wall",
+   "name": "The Siren Wall",
+   "plan": "free",
+   "set": "shop",
+   "shop": 500,
+   "added": "2026-11-04"
+  },
+  {
+   "id": "one-light",
+   "name": "One Light Left",
+   "plan": "free",
+   "set": "shop",
+   "shop": 500,
+   "added": "2026-11-04"
+  },
+  {
+   "id": "drowned-cathedral",
+   "name": "The Drowned Cathedral",
+   "plan": "free",
+   "set": "shop",
+   "shop": 800,
+   "added": "2026-11-04"
+  },
+  {
+   "id": "bone-field",
+   "name": "The Bone Field",
+   "plan": "free",
+   "set": "shop",
+   "shop": 800,
+   "added": "2026-11-04"
   }
  ]
 }

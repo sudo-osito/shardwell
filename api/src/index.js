@@ -1,4 +1,5 @@
 import { codexRoute } from "./codex.js";
+import { rewardsRoute, levelOf } from "./rewards.js";
 import COS from "../../data/cosmetics.json"; // one catalog for the site and the Worker
 // Shardwell API (Cloudflare Worker + D1 + KV).
 // Novel:     GET /chapter/:id · GET /chapter/:id/para/:n · GET /chapter-text/:id (early access / members)
@@ -12,6 +13,12 @@ const ORIGINS = ["https://sudo-osito.github.io", "http://127.0.0.1:4815", "http:
 const KINDS = ["heart", "dread", "tears", "chills", "awe"];
 const AVATARS = ["", ...COS.avatars.map((a) => a.id)];
 const AVATAR_PLAN = Object.fromEntries(COS.avatars.map((a) => [a.id, a.plan || "free"]));
+const SHOP = new Set([...COS.avatars.filter((a) => a.shop).map((a) => "avatar:" + a.id), ...COS.banners.filter((b) => b.shop).map((b) => "banner:" + b.id), ...COS.frames.filter((f) => f.shop).map((f) => "frame:" + f.id)]);
+async function mayWear(env, me, kind, id, plan) {
+  if (!id) return true;
+  if (SHOP.has(kind + ":" + id)) return me.role === "admin" || !!(await env.DB.prepare("SELECT 1 FROM user_items WHERE user = ? AND kind = ? AND item = ?").bind(me.id, kind, id).first());
+  return can(me, plan);
+}
 const RANK = { free: 0, reader: 1, diver: 2, abyssal: 3, sovereign: 4 };
 // profile banners (painted art), the plan they need
 const BANNERS = { "": "free", ...Object.fromEntries(COS.banners.map((b) => [b.id, b.plan])) };
@@ -86,7 +93,7 @@ async function session(env, req) {
 async function newSession(env, userId) {
   const t = token(); await env.DB.prepare("INSERT INTO sessions (token, user, created, expires) VALUES (?, ?, ?, ?)").bind(t, userId, now(), now() + 1000 * 60 * 60 * 24 * 90).run(); return t;
 }
-const userPub = (u) => ({ id: u.id, name: u.name, avatar: u.avatar, frame: u.frame || "", flair: u.flair || "", plan: u.plan || "free", role: u.role || "", bio: u.bio || "", banner: u.banner || "", link: u.link || "" });
+const userPub = (u) => ({ lv: levelOf(u.exp || 0).level, id: u.id, name: u.name, avatar: u.avatar, frame: u.frame || "", flair: u.flair || "", plan: u.plan || "free", role: u.role || "", bio: u.bio || "", banner: u.banner || "", link: u.link || "" });
 
 // ---------- streaks, stats, badges ----------
 function streaks(days, tz) {
@@ -103,7 +110,7 @@ function streaks(days, tz) {
 }
 async function stats(env, u, tz = 0) {
   const id = u.id;
-  const [acts, posts, fcom, ccom, lp, lf, lc, tr, tg, rd, theo, wk, wn] = await env.DB.batch([
+  const [acts, posts, fcom, ccom, lp, lf, lc, tr, tg, rd, theo, wk, wn, tb] = await env.DB.batch([
     env.DB.prepare("SELECT day, kind FROM activity WHERE user = ? ORDER BY day DESC LIMIT 800").bind(id),
     env.DB.prepare("SELECT COUNT(*) n FROM posts WHERE user = ? AND hidden = 0").bind(id),
     env.DB.prepare("SELECT COUNT(*) n FROM fcomments WHERE user = ? AND hidden = 0").bind(id),
@@ -117,6 +124,7 @@ async function stats(env, u, tz = 0) {
     env.DB.prepare("SELECT MAX(score) n FROM posts WHERE user = ? AND board = 'theories' AND hidden = 0").bind(id),
     env.DB.prepare("SELECT COUNT(*) n FROM wiki_revs WHERE user = ?").bind(id),
     env.DB.prepare("SELECT COUNT(*) n FROM wiki_revs r WHERE r.user = ? AND r.id = (SELECT MIN(id) FROM wiki_revs x WHERE x.slug = r.slug)").bind(id),
+    env.DB.prepare("SELECT n FROM tithe_bonus WHERE user = ? AND month = ?").bind(id, monthStart()),
   ]);
   const days = (k) => acts.results.filter((a) => a.kind === k).map((a) => a.day);
   const read = streaks(days("read"), tz), write = streaks(days("post"), tz);
@@ -127,7 +135,7 @@ async function stats(env, u, tz = 0) {
     tithesReceived: tr.results.reduce((t, r) => t + r.n, 0), tithesIn, tithesGiven: n(tg), tithesMonth: tg.results[0]?.month || 0,
     theory: n(theo), readStreak: read, writeStreak: write, codexEdits: n(wk), codexPages: n(wn),
   };
-  s.tithesLeft = Math.max(0, (ALLOWANCE[u.role === "admin" ? "abyssal" : u.plan] || 0) + (read.current >= 7 ? 1 : 0) - s.tithesMonth);
+  s.tithesLeft = Math.max(0, (ALLOWANCE[u.role === "admin" ? "abyssal" : u.plan] || 0) + (read.current >= 7 ? 1 : 0) + n(tb) - s.tithesMonth);
   s.badges = badges(u, s);
   return s;
 }
@@ -169,7 +177,7 @@ async function mark(env, u, kind, tz) { await env.DB.prepare("INSERT OR IGNORE I
 async function meOut(env, u, tz) {
   const s = await stats(env, u, tz);
   const reads = (await env.DB.prepare("SELECT chapter FROM user_reads WHERE user = ?").bind(u.id).all()).results.map((r) => r.chapter);
-  return { id: u.id, email: u.email, name: u.name, avatar: u.avatar, frame: u.frame || "", flair: u.flair || "", bio: u.bio || "", banner: u.banner || "", link: u.link || "", plan: u.plan || "free", role: u.role || "", wiki_role: u.wiki_role || "", member: rank(u) >= 1, portal: u.portal || "", created: u.created, reads, stats: s };
+  return { id: u.id, email: u.email, name: u.name, avatar: u.avatar, frame: u.frame || "", flair: u.flair || "", bio: u.bio || "", banner: u.banner || "", link: u.link || "", plan: u.plan || "free", role: u.role || "", wiki_role: u.wiki_role || "", ink: u.ink || 0, level: levelOf(u.exp || 0), member: rank(u) >= 1, portal: u.portal || "", created: u.created, reads, stats: s };
 }
 
 // ---------- Lemon Squeezy ----------
@@ -186,13 +194,13 @@ async function applySubscriptions(env, userId) {
 }
 
 // ---------- forum ----------
-const POST_COLS = "p.*, u.name uname, u.avatar uavatar, u.frame uframe, u.flair uflair, u.plan uplan, u.role urole";
+const POST_COLS = "p.*, u.name uname, u.avatar uavatar, u.frame uframe, u.flair uflair, u.plan uplan, u.role urole, u.exp uexp";
 function postOut(p, my = {}) {
   return {
     id: p.id, board: p.board, title: p.title, body: p.body, link: p.link, chapter: p.chapter, upto: p.upto, score: p.score, ncom: p.ncom,
     pinned: !!p.pinned, locked: !!p.locked, created: p.created, edited: p.edited,
     poll: p.poll ? parseJSON(p.poll, null) : null, pollMin: p.poll_min || "",
-    author: { id: p.user, name: p.uname, avatar: p.uavatar, frame: p.uframe, flair: p.uflair, plan: p.uplan, role: p.urole },
+    author: { id: p.user, name: p.uname, avatar: p.uavatar, frame: p.uframe, flair: p.uflair, plan: p.uplan, role: p.urole, lv: levelOf(p.uexp || 0).level },
     vote: my.votes?.get(p.id) || 0, tithes: my.tithes?.get("p" + p.id) || {},
   };
 }
@@ -232,6 +240,9 @@ export default {
       const me = await session(env, req);
       const tz = tzOf(req.headers.get("x-tz") || url.searchParams.get("tz"));
       const admin = (me && me.role === "admin") || (env.ADMIN && req.headers.get("x-admin") === env.ADMIN);
+      if (me && req.method === "GET" && p[0] === "codex" && p[1] === "p" && p[2] && !p[3]) await mark(env, me, "codex", tz);
+      const rw = await rewardsRoute(req, env, url, p, me, tz, { json, bad, now, COS, can, dayKey, monthStart });
+      if (rw) return rw;
       const cx = await codexRoute(req, env, url, p, me, { json, bad, clean, now, limited, userPub, can, ipHash });
       if (cx) return cx;
 
@@ -289,7 +300,11 @@ export default {
         if (p[0] === "forum") {
           if (!p[1]) {
             const counts = (await env.DB.prepare("SELECT board, COUNT(*) n, MAX(created) last FROM posts WHERE hidden = 0 GROUP BY board").all()).results;
-            const latest = (await env.DB.prepare(`SELECT ${POST_COLS} FROM posts p JOIN users u ON u.id = p.user WHERE p.hidden = 0 ORDER BY p.created DESC LIMIT 12`).all()).results;
+            const sort = url.searchParams.get("sort") || "hot", weekAgo = now() - 7 * 86400000;
+            let latest = (await env.DB.prepare(`SELECT ${POST_COLS} FROM posts p JOIN users u ON u.id = p.user WHERE p.hidden = 0 ORDER BY p.created DESC LIMIT 200`).all()).results;
+            if (sort === "top") latest = latest.filter((x) => x.created > weekAgo).sort((a, b) => b.score - a.score);
+            else if (sort === "hot") latest.sort((a, b) => hot(b) - hot(a));
+            latest = latest.slice(0, 30);
             const top = (await env.DB.prepare("SELECT u.name, u.avatar, u.frame, u.plan, u.role, COUNT(v.user) n FROM post_votes v JOIN posts p ON p.id = v.post JOIN users u ON u.id = p.user WHERE v.v = 1 AND v.user != p.user AND p.created > ? GROUP BY u.id ORDER BY n DESC LIMIT 5").bind(now() - 30 * 86400000).all()).results;
             const votes = await myVotes(env, "post_votes", "post", latest.map((x) => x.id), me);
             const tm = await tithesFor(env, latest.map((x) => "p" + x.id));
@@ -368,11 +383,11 @@ export default {
           if (await env.DB.prepare("SELECT 1 FROM users WHERE name = ? AND id != ?").bind(name, me.id).first()) return bad(req, "That name is taken.");
           await env.DB.prepare("UPDATE users SET name = ? WHERE id = ?").bind(name, me.id).run();
         }
-        if (b.avatar !== undefined) { if (!AVATARS.includes(b.avatar)) return bad(req, "avatar"); if (b.avatar && !can(me, AVATAR_PLAN[b.avatar])) return bad(req, `That picture is for ${PLAN_NAME[AVATAR_PLAN[b.avatar]]} members and up.`, 403); await env.DB.prepare("UPDATE users SET avatar = ? WHERE id = ?").bind(b.avatar, me.id).run(); }
-        if (b.frame !== undefined) { if (!(b.frame in FRAMES)) return bad(req, "frame"); if (!can(me, FRAMES[b.frame])) return bad(req, "That frame needs a higher plan.", 403); await env.DB.prepare("UPDATE users SET frame = ? WHERE id = ?").bind(b.frame, me.id).run(); }
+        if (b.avatar !== undefined) { if (!AVATARS.includes(b.avatar)) return bad(req, "avatar"); if (!(await mayWear(env, me, "avatar", b.avatar, AVATAR_PLAN[b.avatar]))) return bad(req, SHOP.has("avatar:" + b.avatar) ? "Get that picture in the shop first." : `That picture is for ${PLAN_NAME[AVATAR_PLAN[b.avatar]]} members and up.`, 403); await env.DB.prepare("UPDATE users SET avatar = ? WHERE id = ?").bind(b.avatar, me.id).run(); }
+        if (b.frame !== undefined) { if (!(b.frame in FRAMES)) return bad(req, "frame"); if (!(await mayWear(env, me, "frame", b.frame, FRAMES[b.frame]))) return bad(req, SHOP.has("frame:" + b.frame) ? "Get that frame in the shop first." : "That frame needs a higher plan.", 403); await env.DB.prepare("UPDATE users SET frame = ? WHERE id = ?").bind(b.frame, me.id).run(); }
         if (b.bio !== undefined) await env.DB.prepare("UPDATE users SET bio = ? WHERE id = ?").bind(clean(b.bio, 300), me.id).run();
         if (b.link !== undefined) { const l = clean(b.link, 200); if (!okLink(l)) return bad(req, "The link must start with https://"); await env.DB.prepare("UPDATE users SET link = ? WHERE id = ?").bind(l, me.id).run(); }
-        if (b.banner !== undefined) { if (!(b.banner in BANNERS)) return bad(req, "banner"); if (!can(me, BANNERS[b.banner])) return bad(req, "That banner needs a higher plan.", 403); await env.DB.prepare("UPDATE users SET banner = ? WHERE id = ?").bind(b.banner, me.id).run(); }
+        if (b.banner !== undefined) { if (!(b.banner in BANNERS)) return bad(req, "banner"); if (!(await mayWear(env, me, "banner", b.banner, BANNERS[b.banner]))) return bad(req, SHOP.has("banner:" + b.banner) ? "Get that banner in the shop first." : "That banner needs a higher plan.", 403); await env.DB.prepare("UPDATE users SET banner = ? WHERE id = ?").bind(b.banner, me.id).run(); }
         if (b.flair !== undefined) { if (!can(me, "diver")) return bad(req, "Flair is for Diver members and above.", 403); await env.DB.prepare("UPDATE users SET flair = ? WHERE id = ?").bind(clean(b.flair, 24), me.id).run(); }
         if (b.newPassword !== undefined) {
           if (!(await checkPass(String(b.oldPassword || ""), me.pass))) return bad(req, "Your current password is wrong.", 401);
@@ -472,6 +487,7 @@ export default {
         }
         if (p[1] === "vote") {
           if (await limited(env, "fv:" + me.id, 200, 10 * 60 * 1000)) return bad(req, "Too many votes. Wait a moment.", 429);
+          if (+b.v > 0) await mark(env, me, "vote", tz);
           const v = Math.sign(+b.v || 0), isC = b.type === "comment", id = +b.id;
           const T = isC ? ["fcomment_votes", "comment", "fcomments"] : ["post_votes", "post", "posts"];
           const target = await env.DB.prepare(`SELECT id FROM ${T[2]} WHERE id = ?`).bind(id).first(); if (!target) return bad(req, "Not found", 404);
