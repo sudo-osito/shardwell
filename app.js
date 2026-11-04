@@ -94,8 +94,8 @@
   }
 
   const PLANS = [
-    { id: "reader", name: "Reader", m: 4.99, y: 49.9, line: "Read the whole novel", perks: [() => `Every chapter after ${FREE()}, the day it is out`, "Reader badge and two avatar frames"] },
-    { id: "diver", name: "Diver", m: 8.99, y: 89.9, line: "Read, and know the world", perks: ["Everything in Reader", "<b>The Codex</b>: the full lore of Shardwell", "Art of Shardwell", "One Tithe to give each month", "More frames and a flair under your name"], hot: true },
+    { id: "reader", name: "Reader", m: 4.99, y: 49.9, line: "Read the whole novel", perks: [() => `Every chapter after ${FREE()}, one behind the newest`, "Reader badge and two avatar frames"] },
+    { id: "diver", name: "Diver", m: 8.99, y: 89.9, line: "Read, and know the world", perks: ["Everything in Reader", "<b>The newest chapter</b> the day it is out", "<b>The Codex</b>: the full lore of Shardwell", "Art of Shardwell", "One Tithe to give each month", "More frames and a flair under your name"], hot: true },
     { id: "abyssal", name: "Abyssal", m: 14.99, y: 149.9, line: "The deepest dive", perks: ["Everything in Diver", "Vote on side stories", "Your name in the credits", "Five Tithes a month", "Every frame, including the Crown"] },
   ];
   // The patron tier: for readers who want to carry the work. Its one extra is asking the author.
@@ -106,7 +106,7 @@
       <header class="cabeza cabeza--centro"><p class="rotulo">How to read</p><h2 class="titulo">Free to start. Kept alive by readers.</h2></header>
       <div class="planes planes--landing">
         <div class="plan"><p class="rotulo">Free</p><b>Chapters 1 to ${FREE()}</b><ul><li>Read every chapter up to ${FREE()}</li><li>Comment with a free account</li><li>Bookmarks and reading settings</li></ul><a class="boton" href="#/e/${chapters()[0].id}">Start reading</a></div>
-        <div class="plan plan--miembro"><p class="rotulo">Membership</p><b>From ${usd(PLANS[0].m)} a month</b><ul><li>Every chapter after ${FREE()}, the day it is out</li><li>Three plans, cancel anytime</li></ul><a class="boton boton--quieto" href="#/membership">See the plans</a></div>
+        <div class="plan plan--miembro"><p class="rotulo">Membership</p><b>From ${usd(PLANS[0].m)} a month</b><ul><li>Every chapter after ${FREE()}</li><li>Three plans, cancel anytime</li></ul><a class="boton boton--quieto" href="#/membership">See the plans</a></div>
       </div>
     </section>`;
   }
@@ -114,7 +114,7 @@
   async function checkoutLinks() { if (CHECKOUT) return CHECKOUT; try { CHECKOUT = (await (await fetch("https://shardwell-reader.maxpino.workers.dev/plans")).json()).checkout || {}; } catch { CHECKOUT = {}; } return CHECKOUT; }
   function membership() {
     const u = window.Cuenta?.user, r = window.Cuenta?.rank(u) || 0;
-    const ROWS = [["Chapters 1 to " + FREE(), 1, 1, 1, 1, 1], [`Chapters after ${FREE()}`, 0, 1, 1, 1, 1], ["Comments, forum, streaks and badges", 1, 1, 1, 1, 1], ["The Codex (lore)", 0, 0, 1, 1, 1], ["Art of Shardwell", 0, 0, 1, 1, 1], ["Tithes to give each month", "—", "—", "1", "5", "5"], ["Avatar frames", "—", "2", "6", "All 8", "All 8"], ["Flair under your name", 0, 0, 1, 1, 1], ["Ask the Author", 0, 0, 0, 0, 1], ["Vote on side stories", 0, 0, 0, 1, 1], ["Name in the credits", 0, 0, 0, 1, 1]];
+    const ROWS = [["Chapters 1 to " + FREE(), 1, 1, 1, 1, 1], [`Chapters after ${FREE()}`, 0, 1, 1, 1, 1], ["The newest chapter, the day it is out", 0, 0, 1, 1, 1], ["Comments, forum, streaks and badges", 1, 1, 1, 1, 1], ["The Codex (lore)", 0, 0, 1, 1, 1], ["Art of Shardwell", 0, 0, 1, 1, 1], ["Tithes to give each month", "—", "—", "1", "5", "5"], ["Avatar frames", "—", "2", "6", "All 8", "All 8"], ["Flair under your name", 0, 0, 1, 1, 1], ["Ask the Author", 0, 0, 0, 0, 1], ["Vote on side stories", 0, 0, 0, 1, 1], ["Name in the credits", 0, 0, 0, 1, 1]];
     const cell = (v) => v === 1 ? '<span class="si">●</span>' : v === 0 ? '<span class="no">—</span>' : v;
     return `<header class="pagina pagina--img">${img("borde", "", "pagina__img")}${crumbs(["Shardwell", "#/"], ["Membership"])}<h1 class="titulo titulo--xl">Membership</h1><p class="bajada">Chapters 1 to ${FREE()} are free. After that, readers keep Shardwell going.</p></header>
     <section class="bloque bloque--pegado">
@@ -138,7 +138,7 @@
     <section class="bloque"><header class="cabeza"><p class="rotulo">Compare</p><h2 class="titulo">What each plan opens</h2></header>
       <div class="tabla tabla--planes"><table><thead><tr><th></th><th>Free</th>${[...PLANS, SOVEREIGN].map((p) => `<th>${p.name}</th>`).join("")}</tr></thead><tbody>${ROWS.map(([t, ...v]) => `<tr><td>${t}</td>${v.map((x) => `<td>${cell(x)}</td>`).join("")}</tr>`).join("")}</tbody></table></div></section>
     <section class="bloque faq"><header class="cabeza"><p class="rotulo">Questions</p><h2 class="titulo">Before you choose</h2></header>
-      ${[["Can I cancel?", "Yes, anytime, from the link in your account. You keep your plan until the end of the period you paid."], ["Which chapters does each plan read?", `Chapters 1 to ${FREE()} are free for everyone. Every plan reads every chapter after that, the day it comes out. The plans differ in the Codex, the art and the forum.`], ["What is Sovereign?", "The patron tier, for readers who want to support the work more. It has everything in Abyssal, and it is the only way to ask the author your own questions: the author answers them in the Ask the Author board, which everyone can read."], ["What are Tithes?", "Awards you give to posts and comments you value in the forum. In Shardwell, a Tithe is an offering."], ["Who handles the payment?", "Lemon Squeezy, our payment partner. It handles cards, taxes and receipts. We never see your card."], ["Is it for adults?", "Shardwell is written for adult readers (18+)."]].map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}
+      ${[["Can I cancel?", "Yes, anytime, from the link in your account. You keep your plan until the end of the period you paid."], ["Which chapters does each plan read?", `Chapters 1 to ${FREE()} are free for everyone. Reader reads every chapter after that except the newest one, which opens for Reader when the next comes out. Diver, Abyssal and Sovereign read the newest chapter the day it is out.`], ["What is Sovereign?", "The patron tier, for readers who want to support the work more. It has everything in Abyssal, and it is the only way to ask the author your own questions: the author answers them in the Ask the Author board, which everyone can read."], ["What are Tithes?", "Awards you give to posts and comments you value in the forum. In Shardwell, a Tithe is an offering."], ["Who handles the payment?", "Lemon Squeezy, our payment partner. It handles cards, taxes and receipts. We never see your card."], ["Is it for adults?", "Shardwell is written for adult readers (18+)."]].map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}
     </section>
     <section class="bloque creditos" data-creditos></section>`;
   }

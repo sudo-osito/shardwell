@@ -287,7 +287,7 @@ fs.mkdirSync(path.join(path.dirname(new URL(import.meta.url).pathname), "out"), 
 const RELEASE = JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "release.json"), "utf8"));
 const today = new Date().toISOString().slice(0, 10);
 const LATEST = Math.max(0, ...entries.filter((e) => e.section === "novel" && e.status !== "Draft").map((e) => e.number));
-// the lowest plan that can read chapter n: free up to RELEASE.free, then every paid plan (behind = 0 for all since 2026-11-04)
+// the lowest plan that can read chapter n: free up to RELEASE.free, then by how far behind the newest each plan is (only Reader, 1 behind, since 2026-11-04)
 const needOf = (e) => {
   if (e.number <= RELEASE.free && !(e.membersUntil && e.membersUntil > today)) return "free";
   for (const plan of ["reader", "diver", "abyssal"]) if (e.number <= LATEST - RELEASE.behind[plan]) return plan;
