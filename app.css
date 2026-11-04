@@ -470,3 +470,4 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
   .cuenta__menu { position: fixed; top: 64px; right: 8px; }
 }
 @media (max-width: 760px) { .portada--novela .portada__img { object-position: 74% 50%; } }
+.pagina--novela .pagina__img { object-position: center 40%; }

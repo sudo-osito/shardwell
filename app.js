@@ -150,7 +150,7 @@
 
   function novel() {
     const n = BY.get("shardwell-novel");
-    return `<header class="pagina pagina--img">${img("novel", "", "pagina__img")}${crumbs(["Shardwell", "#/"], ["The Novel"])}<h1 class="titulo titulo--xl">Shardwell</h1><p class="bajada">${NOVEL_SYNOPSIS}</p></header>
+    return `<header class="pagina pagina--img pagina--novela">${img("borde", "", "pagina__img")}${crumbs(["Shardwell", "#/"], ["The Novel"])}<h1 class="titulo titulo--xl">Shardwell</h1><p class="bajada">${NOVEL_SYNOPSIS}</p></header>
       <section class="bloque bloque--pegado">${chList("capitulos--grande")}
       ${n ? `<p class="mas"><a href="#/e/${n.id}">About the novel</a></p>` : ""}</section>`;
   }
