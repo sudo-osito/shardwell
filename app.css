@@ -824,3 +824,41 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
 .soberano .plan__precio { color: #f3dcae; }
 .soberano .boton { background: #f3dcae; color: #140d0a; border-color: #f3dcae; }
 @media (max-width: 760px) { .soberano { grid-template-columns: 1fr; } .soberano__compra { justify-items: start; } }
+/* ---------- the fall: Chapter 1 opening told by the scroll ---------- */
+.caida { position: relative; height: 560vh; background: #0b0b0b; }
+.caida__escena { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; isolation: isolate; }
+.caida__techo, .caida__ciudad, .caida__lampara { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity 1.1s var(--e), transform 1.1s var(--e), filter 1.1s var(--e); }
+.caida__techo { z-index: 1; object-position: 50% 30%; transform: scale(calc(1.04 + var(--p, 0) * .5)) translateY(calc(var(--p, 0) * -6%)); filter: brightness(.85); }
+.caida__ciudad { z-index: 2; opacity: 0; }
+.caida__lampara { z-index: 3; opacity: 0; object-position: 58% 40%; transform: scale(1.12); filter: brightness(.6) blur(2px); }
+.caida[data-beat="caida"] .caida__techo { opacity: 0; transform: scale(1.7) translateY(-30%); }
+.caida[data-beat="caida"] .caida__ciudad { opacity: 1; }
+.caida[data-beat="lampara"] .caida__ciudad, .caida[data-beat="fin"] .caida__ciudad { opacity: .25; }
+.caida[data-beat="lampara"] .caida__techo, .caida[data-beat="fin"] .caida__techo { opacity: 0; }
+.caida[data-beat="lampara"] .caida__lampara { opacity: 1; transform: scale(1.02); filter: brightness(.82) blur(0); }
+.caida[data-beat="fin"] .caida__lampara { opacity: .5; transform: scale(1); filter: brightness(.45) blur(1px); }
+.caida__velo { position: absolute; inset: 0; z-index: 4; pointer-events: none; background: radial-gradient(90% 70% at 50% 60%, transparent 30%, rgba(8,8,8,.75) 100%), linear-gradient(180deg, rgba(11,11,11,.9), transparent 22%, transparent 55%, rgba(11,11,11,.85)); }
+.caida__cap { position: absolute; z-index: 5; top: 92px; left: 0; right: 0; text-align: center; color: #b9b5ac; }
+.caida__lineas { position: absolute; z-index: 5; inset: auto 0 15vh; display: grid; place-items: center; padding: 0 var(--pad); }
+.caida__l, .caida__fin { grid-area: 1 / 1; max-width: 860px; margin: 0; text-align: center; opacity: 0; transform: translateY(26px); filter: blur(6px); transition: opacity .7s var(--e), transform .9s var(--e), filter .7s var(--e); pointer-events: none; }
+.caida__l { font: italic 400 clamp(1.6rem, 1.1rem + 2vw, 2.9rem)/1.3 var(--f-text); color: #efebe3; text-wrap: balance; text-shadow: 0 2px 30px rgba(0,0,0,.9), 0 0 2px rgba(0,0,0,.8); }
+.caida__l i { font-style: normal; }
+.caida__l--big { font: 400 clamp(4rem, 2rem + 9vw, 9rem)/1 var(--f-title); letter-spacing: .04em; font-style: normal; }
+.caida__l.ver, .caida__fin.ver { opacity: 1; transform: none; filter: none; pointer-events: auto; }
+.caida__l.ver ~ .caida__l { transform: translateY(26px); }
+.caida__fin { display: grid; gap: 26px; justify-items: center; }
+.caida__fin .titulo { text-shadow: 0 4px 40px rgba(0,0,0,.9); line-height: 1.02; }
+.caida[data-beat="caida"] .caida__l.ver { animation: temblor .18s steps(2) infinite; }
+@keyframes temblor { 50% { transform: translate(1px, -1px); } }
+.caida__barra { position: absolute; z-index: 5; right: clamp(14px, 3vw, 36px); top: 30vh; height: 40vh; width: 1px; background: rgba(217,213,204,.16); }
+.caida__barra i { position: absolute; inset: 0; background: #d9d5cc; transform-origin: top; transform: scaleY(0); }
+.caida__saltar { position: absolute; z-index: 6; right: var(--pad); bottom: 28px; font: 600 .7rem/1 var(--f-text); letter-spacing: .24em; text-transform: uppercase; color: #8f8c86; }
+.caida__saltar:hover { color: var(--text); }
+@media (prefers-reduced-motion: reduce) { .caida__l, .caida__fin, .caida__techo, .caida__ciudad, .caida__lampara { transition: opacity .3s linear; transform: none !important; filter: none !important; } .caida[data-beat="caida"] .caida__l.ver { animation: none; } }
+@media (max-width: 760px) { .caida { height: 520vh; } .caida__lineas { inset: auto 0 18vh; } .caida__cap { top: 84px; } .caida__techo { object-position: 50% 25%; } .caida__lampara { object-position: 60% 35%; } }
+/* the fall layers ignore the generic image fade-in */
+.caida img.caida__lampara { opacity: 0; }
+.caida[data-beat="lampara"] img.caida__lampara { opacity: 1; }
+.caida[data-beat="fin"] img.caida__lampara { opacity: .5; }
+.caida img.caida__techo { opacity: 1; }
+.caida[data-beat="caida"] img.caida__techo, .caida[data-beat="lampara"] img.caida__techo, .caida[data-beat="fin"] img.caida__techo { opacity: 0; }

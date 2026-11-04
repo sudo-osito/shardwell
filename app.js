@@ -38,6 +38,22 @@
   // ---------- home: the novel's landing page ----------
   const FREE = () => window.Lector?.release?.free || 50;
   const OPENING = "The sun cast uncountable shadows across the ocean, and to him they felt like the bars of a cell.";
+  // The fall: exact lines from Chapter 1 (free chapter), shown one by one as the page scrolls. Beats: roof, fall, lamp.
+  const FALL = [
+    { t: "He had been running for six hours.", b: "techo" },
+    { t: "This was where the running ended.", b: "techo" },
+    { t: "They watched. They only had to wait.", b: "techo" },
+    { t: "The edge was a low lip of concrete, no higher than his shin.", b: "techo" },
+    { t: "He held his breath.", b: "techo" },
+    { t: "Sky.", b: "techo", big: 1 },
+    { t: "Then not sky.", b: "caida", big: 1 },
+    { t: "Glass, a smile, a smile, a smile, too fast to be anything.", b: "caida" },
+    { t: "A bridge. A light. Concrete streaming past like water.", b: "caida" },
+    { t: "He had jumped. He had actually jumped.", b: "caida" },
+    { t: "He remembered a lamp.", b: "lampara" },
+    { t: "<i>You’re late,</i> she had said. <i>I wasn’t waiting. I was studying.</i>", b: "lampara" },
+    { t: "The fall went on.", b: "lampara" },
+  ];
   const TAGS = ["Dark fantasy", "Science fantasy", "Dystopia", "Gods and abyss", "Adult 18+"];
   function progressCta() {
     const pr = window.Lector?.progress(); const last = pr?.last && BY.get(pr.last.id);
@@ -64,13 +80,22 @@
       </div>
     </section>
 
-    <section class="gancho" id="gancho">
-      <p class="gancho__cap rotulo">Chapter 1 · ${ch[0].title}</p>
-      <blockquote class="gancho__txt">${OPENING}</blockquote>
-      <a class="boton" href="#/e/${ch[0].id}">Keep reading</a>
+    <section class="caida" id="gancho" data-caida aria-label="Chapter 1, the opening">
+      <div class="caida__escena">
+        ${img("kalfu", "", "caida__techo")}
+        <canvas class="caida__ciudad" aria-hidden="true"></canvas>
+        ${img("hinata", "", "caida__lampara")}
+        <div class="caida__velo"></div>
+        <p class="caida__cap rotulo">Chapter 1 · ${ch[0].title}</p>
+        <div class="caida__lineas">${FALL.map((l, i) => `<p class="caida__l${l.big ? " caida__l--big" : ""}" data-i="${i}">${l.t}</p>`).join("")}
+          <div class="caida__fin" data-i="${FALL.length}"><h2 class="titulo titulo--xl">Something wakes<br>when he falls</h2><a class="boton" href="#/e/${ch[0].id}">Read Chapter 1 · free</a></div></div>
+        <div class="caida__barra" aria-hidden="true"><i></i></div>
+        <a class="caida__saltar" href="#historia" data-ancla="historia">Skip</a>
+      </div>
+      <noscript><p>${OPENING}</p></noscript>
     </section>
 
-    <section class="bloque sinopsis">
+    <section class="bloque sinopsis" id="historia">
       <div class="sinopsis__texto">
         <p class="rotulo">The story</p><h2 class="titulo">Something wakes when he falls</h2>
         <p class="obra__sinopsis">${NOVEL_SYNOPSIS}</p>
@@ -157,7 +182,7 @@
       if (!url) { msg.innerHTML = `Payments open very soon. <form class="aviso aviso--linea" data-aviso><input type="email" name="email" value="${u.email}" required><input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"><button class="boton boton--chico" type="submit">Tell me when</button><span class="aviso__msg" hidden></span></form>`; msg.hidden = false; $("[data-aviso]", msg).addEventListener("submit", notify); return; }
       location.href = `${url}${url.includes("?") ? "&" : "?"}checkout[email]=${encodeURIComponent(u.email)}&checkout[custom][user_id]=${u.id}&checkout[name]=${encodeURIComponent(u.name)}`;
     }));
-    try { const c = await (await fetch("https://shardwell-reader.maxpino.workers.dev/credits")).json(); const box = $("[data-creditos]", v); if (box) box.innerHTML = `<header class="cabeza cabeza--centro"><p class="rotulo">Credits</p><h2 class="titulo">Abyssal members</h2><p class="bajada">The readers who hold Shardwell up.</p></header>${c.members?.length ? `<ul class="creditos__lista">${c.members.map((m) => `<li><a href="#/u/${encodeURIComponent(m.name)}" data-user="${m.name.replace(/"/g, "&quot;")}">${window.Cuenta.avatar(m, "avatar--g")}<b>${m.name.replace(/</g, "&lt;")}</b></a></li>`).join("")}</ul>` : `<p class="creditos__nombres">Your name could be the first one here.</p>`}`; } catch {}
+    try { const c = await (await fetch("https://shardwell-reader.maxpino.workers.dev/credits")).json(); const box = $("[data-creditos]", v); if (box) box.innerHTML = `<header class="cabeza cabeza--centro"><p class="rotulo">Credits</p><h2 class="titulo">Abyssal and Sovereign members</h2><p class="bajada">The readers who hold Shardwell up.</p></header>${c.members?.length ? `<ul class="creditos__lista">${c.members.map((m) => `<li><a href="#/u/${encodeURIComponent(m.name)}" data-user="${m.name.replace(/"/g, "&quot;")}">${window.Cuenta.avatar(m, "avatar--g")}<b>${m.name.replace(/</g, "&lt;")}</b></a></li>`).join("")}</ul>` : `<p class="creditos__nombres">Your name could be the first one here.</p>`}`; } catch {}
   }
   async function notify(ev) {
     ev.preventDefault(); const f = ev.target, msg = $(".aviso__msg", f), fd = new FormData(f);
@@ -386,9 +411,67 @@
     }
     $$(".articulo section[id] > h2", vista).forEach((h) => { h.tabIndex = 0; h.setAttribute("role", "button"); h.setAttribute("aria-expanded", "true"); const t = () => { const p = h.parentElement.classList.toggle("plegada"); h.setAttribute("aria-expanded", String(!p)); }; h.addEventListener("click", t); h.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); t(); } }); });
     rain($(".lluvia", vista));
+    fall($("[data-caida]", vista));
     const re = document.body.dataset.ruta === "e" && BY.get(location.hash.split("/")[2]);
     if (re && re.section === "novel") window.Lector.mount(vista, re, readerCtx(re));
     $("[data-aviso]", vista)?.addEventListener("submit", notify);
+  }
+
+  // ---------- the fall: the opening of Chapter 1 told by the scroll ----------
+  let stopFall = null;
+  function fall(sec) {
+    stopFall?.(); stopFall = null;
+    if (!sec) return;
+    const lines = $$("[data-i]", sec), n = FALL.length, cv = $(".caida__ciudad", sec), ctx = cv.getContext("2d"), bar = $(".caida__barra i", sec);
+    // beat of each line: where the scene is when it shows
+    const beatAt = (i) => (i >= n ? "fin" : FALL[i].b);
+    let p = 0, cur = -1, on = false, raf = 0, t0 = performance.now(), speed = 0, towers = [];
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    function size() {
+      cv.width = cv.clientWidth * dpr; cv.height = cv.clientHeight * dpr;
+      const W = cv.width; towers = []; let x = -20 * dpr;
+      while (x < W) { const w = (60 + Math.random() * 150) * dpr, z = 0.35 + Math.random() * 0.65; towers.push({ x, w, z, gap: 6 + Math.random() * 10, seed: Math.random() * 1000, screen: Math.random() < 0.22 }); x += w + (8 + Math.random() * 40) * dpr; }
+      towers.sort((a, b) => a.z - b.z);
+    }
+    const rnd = (k) => { const v = Math.sin(k * 12.9898) * 43758.5453; return v - Math.floor(v); };
+    function draw(now) {
+      const W = cv.width, H = cv.height, t = (now - t0) / 1000;
+      ctx.fillStyle = "#0d0e10"; ctx.fillRect(0, 0, W, H);
+      for (const tw of towers) {
+        const off = (t * speed * 900 * tw.z * dpr) % (H * 4), fl = 18 * dpr * (0.6 + tw.z);
+        const c = Math.round(26 + tw.z * 30); ctx.fillStyle = `rgb(${c},${c + 1},${c + 4})`; ctx.fillRect(tw.x, 0, tw.w, H);
+        // windows: rows scroll upward, a few lit
+        const rows = Math.ceil(H / fl) + 2, base = Math.floor(off / fl), shift = off % fl;
+        for (let r = 0; r < rows; r++) {
+          const k = base + r, y = H - (r * fl - shift) - fl;
+          if (tw.screen && rnd(tw.seed + Math.floor(k / 14)) < 0.18 && k % 14 < 6) { ctx.fillStyle = `rgba(206,214,222,${0.10 + tw.z * 0.12})`; ctx.fillRect(tw.x + 6 * dpr, y, tw.w - 12 * dpr, fl * 0.9); continue; }
+          for (let cx = tw.x + 5 * dpr; cx < tw.x + tw.w - 8 * dpr; cx += tw.gap * dpr) {
+            const lit = rnd(tw.seed + k * 31.7 + cx) ; if (lit > 0.86) { ctx.fillStyle = lit > 0.97 ? `rgba(240,200,140,${0.35 + tw.z * 0.4})` : `rgba(170,180,195,${0.10 + tw.z * 0.18})`; ctx.fillRect(cx, y + fl * 0.25, tw.gap * dpr * 0.45, fl * 0.42); }
+          }
+        }
+      }
+      // bridges, thin as threads, crossing the canyon as he passes them
+      for (let b = 0; b < 3; b++) { const y = ((t * speed * 700 * dpr + b * H * 0.47 + rnd(b) * H) % (H * 1.4)); const yy = H * 1.2 - y; ctx.fillStyle = "rgba(18,19,22,.95)"; ctx.fillRect(0, yy, W, (5 + b * 3) * dpr); ctx.fillStyle = "rgba(240,200,140,.25)"; for (let x = rnd(b * 9) * 60 * dpr; x < W; x += 140 * dpr) ctx.fillRect(x, yy + 1 * dpr, 3 * dpr, 2 * dpr); }
+      // the canyon has no bottom: it goes dark downward
+      const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "rgba(40,36,44,.35)"); g.addColorStop(.55, "rgba(10,10,12,0)"); g.addColorStop(1, "rgba(5,5,6,.92)"); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      // speed: streaks of wind
+      if (speed > 0.15) { ctx.strokeStyle = `rgba(220,225,232,${0.05 + speed * 0.08})`; ctx.lineWidth = dpr; for (let i = 0; i < 40; i++) { const x = rnd(i * 7.1) * W, y = ((rnd(i * 3.3) * H) - t * 2600 * speed * dpr) % H; const yy = y < 0 ? y + H : y; ctx.beginPath(); ctx.moveTo(x, yy); ctx.lineTo(x, yy + 90 * dpr * speed); ctx.stroke(); } }
+    }
+    function loop(now) { raf = 0; if (!on) return; draw(now); if (!reduce) raf = requestAnimationFrame(loop); }
+    function update() {
+      const r = sec.getBoundingClientRect(), total = sec.offsetHeight - innerHeight;
+      p = Math.min(1, Math.max(0, -r.top / total));
+      const i = Math.min(n, Math.floor(p * (n + 1.4)));
+      sec.style.setProperty("--p", p.toFixed(4)); bar.style.transform = `scaleY(${p})`;
+      if (i !== cur) { cur = i; lines.forEach((l) => l.classList.toggle("ver", +l.dataset.i === i)); sec.dataset.beat = beatAt(i); }
+      speed = sec.dataset.beat === "caida" ? 1 : sec.dataset.beat === "lampara" ? 0.12 : 0;
+    }
+    const io = new IntersectionObserver(([x]) => { on = x.isIntersecting; if (on) { size(); if (!raf) raf = requestAnimationFrame(loop); } }, { threshold: 0 });
+    io.observe(sec);
+    const onScroll = () => update(), onResize = () => { size(); update(); };
+    addEventListener("scroll", onScroll, { passive: true }); addEventListener("resize", onResize);
+    update();
+    stopFall = () => { on = false; cancelAnimationFrame(raf); io.disconnect(); removeEventListener("scroll", onScroll); removeEventListener("resize", onResize); };
   }
 
   // ---------- rain ----------
