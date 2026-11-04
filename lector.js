@@ -12,7 +12,7 @@
     set(k, v) { try { localStorage.setItem("sw:" + k, JSON.stringify(v)); } catch {} },
   };
   const reader = (() => { let r = store.get("reader"); if (!r) { r = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(36).padStart(2, "0")).join("").slice(0, 24); store.set("reader", r); } return r; })();
-  const DEF = { size: 21, font: "book", line: 1.78, width: 34, align: "left", theme: "night", bubbles: true, indent: false };
+  const DEF = { size: 21, font: "book", line: 1.78, width: 34, align: "left", theme: "night", bubbles: true, indent: false, sound: false, focus: false, moments: true, chip: true };
   const FONTS = { book: '"Cormorant", Georgia, serif', classic: 'Georgia, "Times New Roman", serif', sans: '-apple-system, "Helvetica Neue", Arial, sans-serif', mono: 'ui-monospace, "SF Mono", Menlo, monospace' };
   const THEMES = { night: "Night", ink: "Ink", sepia: "Sepia", paper: "Paper" };
   const REACT = [["heart", "♥", "Loved it"], ["dread", "☾", "Dread"], ["tears", "≋", "Tears"], ["chills", "❄", "Chills"], ["awe", "✶", "Awe"]];
@@ -45,13 +45,16 @@
       art.classList.toggle("sin-burbujas", !s.bubbles);
       store.set("settings", s);
       $$("[data-set]", root).forEach((b) => b.setAttribute("aria-pressed", String(String(s[b.dataset.set]) === b.dataset.val)));
+      window.Vivo?.sync(s);
       $$("[data-rango]", root).forEach((i) => { i.value = s[i.dataset.rango]; const o = $(`[data-out="${i.dataset.rango}"]`, root); if (o) o.textContent = i.dataset.rango === "line" ? (+s.line).toFixed(2) : s[i.dataset.rango]; });
     }
     on(root, "click", (ev) => {
       const b = ev.target.closest("[data-set]"); if (!b) return;
       const k = b.dataset.set, v = b.dataset.val; s[k] = v === "true" ? true : v === "false" ? false : v; apply();
     });
+    on(root, "click", (ev) => { if (!ev.target.closest("[data-sonido]")) return; s.sound = !s.sound; apply(); });
     on(root, "input", (ev) => { const i = ev.target.closest("[data-rango]"); if (!i) return; s[i.dataset.rango] = +i.value; apply(); });
+    window.Vivo?.mount(root, e, s);
     apply();
 
     // ---------- panels ----------
@@ -284,7 +287,7 @@
   }
   let refreshForms = () => {};
 
-  function unmount() { cleanup.forEach((f) => f()); cleanup = []; delete document.documentElement.dataset.lectura; }
+  function unmount() { window.Vivo?.unmount(); cleanup.forEach((f) => f()); cleanup = []; delete document.documentElement.dataset.lectura; }
 
   // ---------- markup ----------
   function html(e, ctx) {
@@ -299,7 +302,12 @@
       <div class="ajuste"><span>Alignment</span><div class="seg"><button type="button" data-set="align" data-val="left">Left</button><button type="button" data-set="align" data-val="justify">Justified</button></div></div>
       <div class="ajuste"><span>Paragraphs</span><div class="seg"><button type="button" data-set="indent" data-val="false">Spaced</button><button type="button" data-set="indent" data-val="true">Indented</button></div></div>
       <div class="ajuste"><span>Comment bubbles</span><div class="seg"><button type="button" data-set="bubbles" data-val="true">Show</button><button type="button" data-set="bubbles" data-val="false">Hide</button></div></div>
-      <p class="ajuste__nota">Shortcuts: ← → chapters · + − text size · Esc closes.</p>
+      <p class="ajuste__titulo rotulo">Only here</p>
+      <div class="ajuste"><span>Atmosphere <small>Rain, wind or water, made live while you read</small></span><div class="seg"><button type="button" data-set="sound" data-val="false">Off</button><button type="button" data-set="sound" data-val="true">On</button></div></div>
+      <div class="ajuste"><span>Moments <small>Short lines land as beats</small></span><div class="seg"><button type="button" data-set="moments" data-val="true">On</button><button type="button" data-set="moments" data-val="false">Off</button></div></div>
+      <div class="ajuste"><span>The chip line <small>The pale line at the edge of his sight, at the edge of yours</small></span><div class="seg"><button type="button" data-set="chip" data-val="true">Show</button><button type="button" data-set="chip" data-val="false">Hide</button></div></div>
+      <div class="ajuste"><span>Focus <small>Only the paragraph you are reading stays lit</small></span><div class="seg"><button type="button" data-set="focus" data-val="false">Off</button><button type="button" data-set="focus" data-val="true">On</button></div></div>
+      <p class="ajuste__nota">Select any line to make a quote card. Shortcuts: ← → chapters · + − text size · Esc closes.</p>
     </div>`;
     const index = `<div class="panel" data-panel="indice" hidden role="dialog" aria-label="Chapters">
       <div class="panel__cab"><b>Chapters</b><button class="panel__cerrar" type="button" data-cerrar aria-label="Close">×</button></div>
@@ -333,6 +341,7 @@
         <span class="lbar__tit"><b>${e.number}</b> ${esc(e.title)}</span>
         <span class="lbar__meta" data-tip="How much of this chapter you have read"><span data-pct>0%</span> · <span data-left></span></span>
         <button class="lbar__btn" type="button" data-auto aria-pressed="false" aria-label="Auto scroll" data-tip="Auto scroll: the page moves by itself. Scroll to pause"><span class="ico">⇣</span><span class="lbl">Auto</span></button>
+        <button class="lbar__btn" type="button" data-sonido aria-pressed="false" aria-label="Atmosphere" data-tip="Atmosphere: rain, wind or water, made live while you read"><span class="ico">♪</span><span class="lbl">Sound</span></button>
         <button class="lbar__btn" type="button" data-marcar aria-pressed="false" aria-label="Bookmark" data-tip="Bookmark this place"><span class="ico">☆</span><span class="lbl">Mark</span></button>
         <button class="lbar__btn" type="button" data-compartir aria-label="Share" data-tip="Share this chapter"><span class="ico">↗</span><span class="lbl">Share</span></button>
         <button class="lbar__btn" type="button" data-abrir="indice" aria-expanded="false" aria-label="Chapters and bookmarks" data-tip="Chapters and bookmarks"><span class="ico">☰</span><span class="lbl">Chapters</span></button>
@@ -347,7 +356,7 @@
         <button type="button" data-auto-stop aria-label="Stop auto scroll" data-tip="Stop auto scroll">×</button>
       </div>
       <div class="reanudar" hidden><span>Continue where you left off?</span><button type="button" class="boton boton--chico" data-reanudar>Continue</button><button type="button" class="lbar__btn" data-desde-inicio aria-label="Start from the top">×</button></div>
-      <header class="lector__cabeza"><p class="rotulo">Chapter ${e.number}${e.status === "Draft" ? " · Draft" : ""}</p><h1 class="titulo titulo--xl">${esc(e.title)}</h1>
+      <header class="lector__cabeza"><figure class="lector__portada" aria-hidden="true"><img class="cargada" src="img/chapters/${e.id}.jpg" alt="" onerror="this.parentNode.remove()"></figure><p class="rotulo">Chapter ${e.number}${e.status === "Draft" ? " · Draft" : ""}</p><h1 class="titulo titulo--xl">${esc(e.title)}</h1>
         <p class="lector__min">${ctx.minutes} min read</p></header>
       <div class="texto texto--prosa${locked ? " texto--muro" : ""}">${locked ? (e.intro ? e.intro.split("</p>").slice(0, 4).join("</p>") + "</p>" : "<p>…</p>") : e.intro + e.html}</div>
       ${paywall}${end}

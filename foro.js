@@ -48,9 +48,9 @@
     return `
       <div class="foro2">
         <nav class="foro2__nav" aria-label="Boards"><h2 class="rotulo">Boards</h2>
-          <ul>${d.boards.map((b) => `<li><a href="#/forum/b/${b.id}"><i aria-hidden="true">${BOARD_IC[b.id] || "◇"}</i><span><b>${esc(b.name)}</b><small>${b.n} post${b.n === 1 ? "" : "s"}${b.post !== "free" ? ` · ${b.post === "admin" ? "author only" : C().PLAN[b.post] + " asks"}` : ""}</small></span></a></li>`).join("")}</ul>
+          <ul>${d.boards.map((b) => `<li><a href="#/forum/b/${b.id}"><img class="ic" src="img/ui/ic-${{ art: "art" }[b.id] || b.id}.png" alt="" loading="lazy"><span><b>${esc(b.name)}</b><small>${b.n} post${b.n === 1 ? "" : "s"}${b.post !== "free" ? ` · ${b.post === "admin" ? "author only" : C().PLAN[b.post] + " asks"}` : ""}</small></span></a></li>`).join("")}</ul>
           <h2 class="rotulo foro__sub">Yours</h2>
-          <ul><li><a href="#/forum/shop"><i aria-hidden="true">◈</i><span><b>The shop</b><small>Spend your Ink</small></span></a></li><li><a href="#/look"><i aria-hidden="true">☉</i><span><b>Your look</b><small>Picture, frame, banner</small></span></a></li><li><a href="#/codex"><i aria-hidden="true">✒</i><span><b>The Codex</b><small>The readers' wiki</small></span></a></li></ul>
+          <ul><li><a href="#/forum/shop"><img class="ic" src="img/ui/ic-shop.png" alt="" loading="lazy"><span><b>The shop</b><small>Spend your Ink</small></span></a></li><li><a href="#/look"><img class="ic" src="img/ui/ic-look.png" alt="" loading="lazy"><span><b>Your look</b><small>Picture, frame, banner</small></span></a></li><li><a href="#/codex"><img class="ic" src="img/ui/ic-codex.png" alt="" loading="lazy"><span><b>The Codex</b><small>The readers' wiki</small></span></a></li></ul>
         </nav>
         <section class="foro2__feed">
           ${me ? `<a class="redactar" href="#/forum/new/general">${C().avatar(me, "")}<span>Share a theory, a moment, a drawing…</span><b class="boton boton--chico">New post</b></a>` : ""}
@@ -71,12 +71,12 @@
   function rewardsCards(r) {
     const c = r.checkin, pct = Math.round(((r.exp - r.from) / (r.to - r.from)) * 100);
     return `<div class="caja-lado premio" data-premios>
-        <div class="premio__nivel"><span class="premio__lv">Lv ${r.level}</span><div class="premio__exp"><i style="width:${pct}%"></i></div><small>${r.exp - r.from} / ${r.to - r.from} EXP</small><a class="premio__tinta" href="#/forum/shop" title="Ink: spend it in the shop"><i class="gota" aria-hidden="true"></i><b>${r.ink}</b> Ink</a></div>
+        <div class="premio__nivel"><span class="premio__lv"><img src="img/ui/ic-level.png" alt=""><b>${r.level}</b><small>Level</small></span><div class="premio__exp"><i style="width:${pct}%"></i></div><small>${r.exp - r.from} / ${r.to - r.from} EXP</small><a class="premio__tinta" href="#/forum/shop" title="Ink: spend it in the shop"><img src="img/ui/ic-ink.png" alt=""><b>${r.ink}</b><span>Ink</span></a></div>
         <h2 class="rotulo">Daily check-in</h2>
-        <ol class="checkin">${c.rewards.map((ink, i) => { const d = i + 1, got = c.done ? d <= c.cycleDay : d < c.cycleDay, now = !c.done && d === c.cycleDay; return `<li class="${got ? "ok" : ""}${now ? " hoy" : ""}${d === 7 ? " grande" : ""}"><span>Day ${d}</span><b>${ink}</b><small>Ink</small>${got ? "<i>✓</i>" : ""}</li>`; }).join("")}</ol>
+        <ol class="checkin">${c.rewards.map((ink, i) => { const d = i + 1, got = c.done ? d <= c.cycleDay : d < c.cycleDay, now = !c.done && d === c.cycleDay; return `<li class="${got ? "ok" : ""}${now ? " hoy" : ""}${d === 7 ? " grande" : ""}"><span>Day ${d}</span><img src="img/ui/pr-d${d}.png" alt=""><b>${ink}</b>${got ? "<i>✓</i>" : ""}</li>`; }).join("")}</ol>
         ${c.done ? `<p class="nota">Checked in. ${c.streak} day${c.streak === 1 ? "" : "s"} in a row. Come back tomorrow.</p>` : `<button class="boton premio__btn" type="button" data-checkin>Check in · +${c.rewards[c.cycleDay - 1]} Ink</button>`}
         <h2 class="rotulo premio__sep">Daily missions</h2>
-        <ul class="misiones">${r.missions.filter((m) => m.id !== "checkin").map((m) => `<li class="${m.claimed ? "ok" : m.ready ? "lista" : ""}"><span><b>${esc(m.name)}</b><small>${esc(m.desc)} · +${m.ink} Ink, +${m.exp} EXP</small></span>${m.claimed ? "<i>✓</i>" : m.ready ? `<button class="boton boton--chico" type="button" data-reclamar="${m.id}">Claim</button>` : `<a class="boton boton--chico boton--quieto" href="${GO[m.id] || "#/forum"}">Go</a>`}</li>`).join("")}</ul>
+        <ul class="misiones">${r.missions.filter((m) => m.id !== "checkin").map((m) => `<li class="${m.claimed ? "ok" : m.ready ? "lista" : ""}"><img class="misiones__ic" src="img/ui/pr-${m.id}.png" alt=""><span><b>${esc(m.name)}</b><small>${esc(m.desc)} · +${m.ink} Ink, +${m.exp} EXP</small></span>${m.claimed ? "<i>✓</i>" : m.ready ? `<button class="boton boton--chico" type="button" data-reclamar="${m.id}">Claim</button>` : `<a class="boton boton--chico boton--quieto" href="${GO[m.id] || "#/forum"}">Go</a>`}</li>`).join("")}</ul>
       </div>`;
   }
   async function shop(ctx) {
@@ -87,7 +87,7 @@
     const groups = [["avatar", "Pictures"], ["banner", "Banners"], ["frame", "Frames"], ["tithe", "Tithes"]].map(([k, n]) => [n, d.shop.filter((x) => x.kind === k)]).filter(([, l]) => l.length);
     return { title: "The shop", sub: "Earn Ink by checking in and completing daily missions. Spend it here. Nothing in the shop is sold for money.", html: `
       <div class="tienda">
-        <div class="tienda__saldo"><span>Your Ink</span><b>${d.ink}</b><a class="boton boton--quieto boton--chico" href="#/forum">Earn more</a></div>
+        <div class="tienda__saldo"><img src="img/ui/ic-ink.png" alt=""><span>Your Ink</span><b>${d.ink}</b><a class="boton boton--quieto boton--chico" href="#/forum">Earn more</a></div>
         ${groups.map(([n, l]) => `<h2 class="rotulo foro__sub">${n}</h2><ul class="tienda__grid">${l.map(card).join("")}</ul>`).join("")}
         <h2 class="rotulo foro__sub">Your Ink history</h2>${d.log.length ? `<ol class="tienda__log">${d.log.map((x) => `<li><b class="${x.delta > 0 ? "mas" : "menos"}">${x.delta > 0 ? "+" : ""}${x.delta}</b><span>${esc(x.reason)}</span><small>${ago(x.created)}</small></li>`).join("")}</ol>` : `<p class="nota">Nothing yet. Check in to get your first Ink.</p>`}
       </div>` };
