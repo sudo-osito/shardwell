@@ -9,6 +9,8 @@ const APPLY_READS = 10;     // and this many chapters read
 export const slugOf = (t) => String(t || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
 const wikiRank = (u) => (u?.role === "admin" ? 3 : WIKI_RANK[u?.wiki_role || ""] || 0);
 const linksIn = (body) => [...new Set([...String(body).matchAll(/\[\[([^\]|#]+)(?:[|#][^\]]*)?\]\]/g)].map((m) => m[1].trim()).filter((x) => !/^category:/i.test(x)).map(slugOf).filter(Boolean))];
+const chaptersIn = (body) => [...new Set([...String(body).matchAll(/\{\{ch\|(\d{1,4})\}\}/g)].map((m) => +m[1]))].slice(0, 200);
+const okImage = (v) => /^img\/[a-z0-9-]+(\/[a-z0-9-]+)?\.jpg$/.test(v) || /^cx:[a-f0-9]{24}$/.test(v);
 const catsIn = (body) => [...new Set([...String(body).matchAll(/\[\[category:([^\]|]+)\]\]/gi)].map((m) => m[1].trim().slice(0, 60)).filter(Boolean))];
 
 export async function codexRoute(req, env, url, p, me, h) {
@@ -63,13 +65,20 @@ export async function codexRoute(req, env, url, p, me, h) {
         const linked = (await env.DB.prepare("SELECT COUNT(*) n FROM wiki_links WHERE dst = ?").bind(slug).first()).n;
         return json(req, { missing: true, slug, linked, canCreate: wr >= 1 });
       }
+      const [pollRows, myPolls] = await Promise.all([
+        env.DB.prepare("SELECT pid, opt, COUNT(*) n FROM wiki_polls WHERE slug = ? GROUP BY pid, opt").bind(slug).all(),
+        env.DB.prepare("SELECT pid, opt FROM wiki_polls WHERE slug = ? AND user = ?").bind(slug, me.id).all(),
+      ]);
+      const polls = {};
+      for (const r of pollRows.results) (polls[r.pid] ||= { counts: {}, mine: null }).counts[r.opt] = r.n;
+      for (const r of myPolls.results) (polls[r.pid] ||= { counts: {}, mine: null }).mine = r.opt;
       const [cats, watch, by, talkN] = await Promise.all([
         env.DB.prepare("SELECT cat FROM wiki_cats WHERE slug = ? ORDER BY cat").bind(slug).all(),
         env.DB.prepare("SELECT 1 FROM wiki_watch WHERE user = ? AND slug = ?").bind(me.id, slug).first(),
         who([pg.updated_by]),
         env.DB.prepare("SELECT COUNT(*) n FROM wiki_talk WHERE slug = ? AND hidden = 0").bind(slug).first(),
       ]);
-      return json(req, { page: { ...pageOut(pg, cats.results.map((c) => c.cat)), updatedBy: by[pg.updated_by] || null, talk: talkN.n, watching: !!watch, hidden: !!pg.hidden }, can: { edit: wr >= (pg.protected ? 2 : 1), moderate: wr >= 2, seal: admin } });
+      return json(req, { polls, page: { ...pageOut(pg, cats.results.map((c) => c.cat)), updatedBy: by[pg.updated_by] || null, talk: talkN.n, watching: !!watch, hidden: !!pg.hidden }, can: { edit: wr >= (pg.protected ? 2 : 1), moderate: wr >= 2, seal: admin } });
     }
     if (p[1] === "rev" && p[2]) {
       const r = await env.DB.prepare("SELECT * FROM wiki_revs WHERE id = ?").bind(+p[2]).first();
@@ -93,6 +102,14 @@ export async function codexRoute(req, env, url, p, me, h) {
       const like = "%" + q.replace(/[%_]/g, "") + "%";
       const rows = (await env.DB.prepare("SELECT slug, title, type, spoiler, substr(body, 1, 400) body, (title LIKE ?) t FROM wiki_pages WHERE hidden = 0 AND (title LIKE ? OR body LIKE ?) ORDER BY t DESC, updated DESC LIMIT 30").bind(like, like, like).all()).results;
       return json(req, { pages: rows });
+    }
+    if (p[1] === "chapter" && p[2]) { // Codex pages that cite this chapter (for the reader)
+      const rows = (await env.DB.prepare("SELECT pg.slug, pg.title, pg.type, pg.spoiler FROM wiki_chapters c JOIN wiki_pages pg ON pg.slug = c.slug AND pg.hidden = 0 WHERE c.ch = ? ORDER BY pg.sealed DESC, pg.updated DESC LIMIT 12").bind(+p[2]).all()).results;
+      return json(req, { pages: rows });
+    }
+    if (p[1] === "files") {
+      const rows = (await env.DB.prepare("SELECT f.id, f.name, f.w, f.h, f.created, u.name uname FROM wiki_files f LEFT JOIN users u ON u.id = f.user ORDER BY f.created DESC LIMIT 200").all()).results;
+      return json(req, { files: rows });
     }
     if (p[1] === "random") {
       const r = await env.DB.prepare("SELECT slug FROM wiki_pages WHERE hidden = 0 ORDER BY RANDOM() LIMIT 1").first();
@@ -140,7 +157,7 @@ export async function codexRoute(req, env, url, p, me, h) {
     const title = clean(b.title || pg?.title || decodeURIComponent(p[2]), 120), body = String(b.body || "").replace(/\r/g, "").slice(0, 60000);
     const type = WIKI_TYPES.includes(b.type) ? b.type : pg?.type || "article";
     const ib = b.infobox && typeof b.infobox === "object" ? b.infobox : JSON.parse(pg?.infobox || "{}");
-    const infobox = JSON.stringify({ image: /^img\/[a-z0-9-]+(\/[a-z0-9-]+)?\.jpg$/.test(String(ib.image || "")) ? ib.image : "", caption: clean(ib.caption, 200), rows: (Array.isArray(ib.rows) ? ib.rows : []).slice(0, 30).map((r) => [clean(r?.[0], 60), clean(r?.[1], 400)]).filter((r) => r[0] && r[1]) });
+    const infobox = JSON.stringify({ image: okImage(String(ib.image || "")) ? ib.image : "", accent: ["", "endro", "ember", "gold", "sea", "bone", "moss"].includes(ib.accent) ? ib.accent : "", caption: clean(ib.caption, 200), rows: (Array.isArray(ib.rows) ? ib.rows : []).slice(0, 30).map((r) => [clean(r?.[0], 60), clean(r?.[1], 400)]).filter((r) => r[0] && (r[1] || r[0].startsWith("#"))) });
     const spoiler = b.spoiler === undefined ? pg?.spoiler || 0 : Math.max(0, Math.min(9999, Math.round(+b.spoiler || 0)));
     const summary = clean(b.summary, 200), minor = b.minor ? 1 : 0, cats = catsIn(body);
     if (pg && pg.body === body && pg.title === title && pg.infobox === infobox && pg.spoiler === spoiler && pg.type === type) return json(req, { ok: true, slug, rev: pg.rev, unchanged: true });
@@ -153,6 +170,8 @@ export async function codexRoute(req, env, url, p, me, h) {
       env.DB.prepare("DELETE FROM wiki_links WHERE src = ?").bind(slug),
       ...cats.map((c) => env.DB.prepare("INSERT OR IGNORE INTO wiki_cats (slug, cat) VALUES (?, ?)").bind(slug, c)),
       ...linksIn(body).filter((d) => d !== slug).map((d) => env.DB.prepare("INSERT OR IGNORE INTO wiki_links (src, dst) VALUES (?, ?)").bind(slug, d)),
+      env.DB.prepare("DELETE FROM wiki_chapters WHERE slug = ?").bind(slug),
+      ...chaptersIn(body).map((c) => env.DB.prepare("INSERT OR IGNORE INTO wiki_chapters (slug, ch) VALUES (?, ?)").bind(slug, c)),
       env.DB.prepare("INSERT OR IGNORE INTO wiki_watch (user, slug, created) VALUES (?, ?, ?)").bind(me.id, slug, t),
     ];
     await env.DB.batch(st);
@@ -167,6 +186,13 @@ export async function codexRoute(req, env, url, p, me, h) {
       if (body.length < 2) return bad(req, "Write something first.");
       if (await limited(env, "wtalk:" + me.id, 30, 600000)) return bad(req, "Slow down a little.", 429);
       await env.DB.prepare("INSERT INTO wiki_talk (slug, parent, user, body, created) VALUES (?, ?, ?, ?, ?)").bind(slug, b.parent ? +b.parent : null, me.id, body, now()).run();
+      return json(req, { ok: true });
+    }
+    if (act === "poll") {
+      const pid = String(b.pid || "").slice(0, 40), opt = Math.round(+b.opt);
+      if (!/^[a-z0-9-]{1,40}$/.test(pid) || !(opt >= 0 && opt < 20)) return bad(req, "poll");
+      if (!pg || !new RegExp("::poll\\{id=" + pid + "\\}").test(pg.body)) return bad(req, "That poll is not on this page.");
+      await env.DB.prepare("INSERT INTO wiki_polls (slug, pid, user, opt, created) VALUES (?, ?, ?, ?, ?) ON CONFLICT(slug, pid, user) DO UPDATE SET opt = excluded.opt").bind(slug, pid, me.id, opt, now()).run();
       return json(req, { ok: true });
     }
     if (act === "suggest") { // any account: propose a change for an Archivist to apply
@@ -191,6 +217,8 @@ export async function codexRoute(req, env, url, p, me, h) {
         env.DB.prepare("DELETE FROM wiki_links WHERE src = ?").bind(slug),
         ...cats.map((c) => env.DB.prepare("INSERT OR IGNORE INTO wiki_cats (slug, cat) VALUES (?, ?)").bind(slug, c)),
         ...linksIn(r.body).filter((d) => d !== slug).map((d) => env.DB.prepare("INSERT OR IGNORE INTO wiki_links (src, dst) VALUES (?, ?)").bind(slug, d)),
+        env.DB.prepare("DELETE FROM wiki_chapters WHERE slug = ?").bind(slug),
+        ...chaptersIn(r.body).map((c) => env.DB.prepare("INSERT OR IGNORE INTO wiki_chapters (slug, ch) VALUES (?, ?)").bind(slug, c)),
       ]);
       return json(req, { ok: true, rev });
     }
@@ -200,6 +228,22 @@ export async function codexRoute(req, env, url, p, me, h) {
     return bad(req, "Not found", 404);
   }
 
+  // upload an image (Scribes and up). The site compresses it first; bytes live in KV, served at /cximg/:id
+  if (p[1] === "upload") {
+    if (wr < 1) return bad(req, "Only Scribes upload images.", 403);
+    if (await limited(env, "cxup:" + me.id, 40, 86400000)) return bad(req, "That is a lot of images for one day. Try tomorrow.", 429);
+    const m = /^data:(image\/(webp|jpeg|png));base64,([A-Za-z0-9+/=]+)$/.exec(String(b.data || ""));
+    if (!m) return bad(req, "Send a WebP, JPEG or PNG image.");
+    const bytes = Uint8Array.from(atob(m[3]), (c) => c.charCodeAt(0));
+    if (bytes.length > 1200000) return bad(req, "The image is too large (1.2 MB max after compression).");
+    const sig = [...bytes.slice(0, 12)].map((x) => x.toString(16).padStart(2, "0")).join("");
+    const real = sig.startsWith("ffd8ff") ? "image/jpeg" : sig.startsWith("89504e47") ? "image/png" : sig.startsWith("52494646") && sig.slice(16, 24) === "57454250" ? "image/webp" : "";
+    if (!real) return bad(req, "That file is not an image.");
+    const id = [...crypto.getRandomValues(new Uint8Array(12))].map((x) => x.toString(16).padStart(2, "0")).join("");
+    await env.LORE.put("cximg:" + id, bytes, { metadata: { type: real } });
+    await env.DB.prepare("INSERT INTO wiki_files (id, user, name, type, w, h, size, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").bind(id, me.id, clean(b.name, 120), real, Math.round(+b.w || 0), Math.round(+b.h || 0), bytes.length, now()).run();
+    return json(req, { ok: true, id, ref: "cx:" + id });
+  }
   // apply to become a Scribe
   if (p[1] === "apply") {
     if (wr >= 1) return bad(req, "You already write in the Codex.");

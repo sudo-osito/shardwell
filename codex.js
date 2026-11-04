@@ -38,7 +38,7 @@
     try { const d = await call("/codex/all"); known = new Map(d.pages.map((p) => [p.slug, p])); knownAt = Date.now(); } catch { known = known || new Map(); }
     return known;
   }
-  async function art() { if (ART) return ART; const c = await C().cosmetics(); ART = [...c.banners.map((b) => [`img/${b.id}.jpg`, b.name]), ...c.avatars.filter((a) => a.set === "shardwell").map((a) => [`img/${a.id}.jpg`, a.name])]; return ART; }
+  async function art(force) { if (ART && !force) return ART; const c = await C().cosmetics(); ART = [...c.banners.map((b) => [`img/${b.id}.jpg`, b.name]), ...c.avatars.filter((a) => a.set === "shardwell").map((a) => [`img/${a.id}.jpg`, a.name]), ...((await call("/codex/files").catch(() => ({ files: [] }))).files.map((f) => [`cx:${f.id}`, `Uploaded: ${f.name || f.id.slice(0, 6)}`]))]; return ART; }
   function maxRead() {
     const local = window.Lector?.progress().done || [], server = C()?.user?.reads || [], ids = new Set([...local, ...server]);
     return (CTX?.chapters || []).filter((c) => ids.has(c.id)).reduce((m, c) => Math.max(m, c.number), 0);
@@ -68,7 +68,26 @@
         flush(); const inner = []; i++;
         while (i < lines.length && !/^::\s*$/.test(lines[i])) inner.push(lines[i++]);
         i++; const n = +sp[1], hid = n > read && !opts.reveal;
-        out.push(`<div class="cx-spoiler${hid ? " cx-spoiler--velo" : ""}" data-ch="${n}"><p class="cx-spoiler__tag">Spoilers up to Chapter ${n}</p>${hid ? `<button type="button" class="cx-spoiler__ver" data-ver-spoiler>You have not read Chapter ${n} yet. Show it anyway</button>` : ""}<div class="cx-spoiler__in">${md(inner.join("\n").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'"), ks, { nested: 1 })}</div></div>`);
+        out.push(`<div class="cx-spoiler${hid ? " cx-spoiler--velo" : ""}" data-ch="${n}"><p class="cx-spoiler__tag">Spoilers up to Chapter ${n}</p>${hid ? `<button type="button" class="cx-spoiler__ver" data-ver-spoiler>You have not read Chapter ${n} yet. Show it anyway</button>` : ""}<div class="cx-spoiler__in">${md(inner.join("\n").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'"), ks, { ...opts, nested: 1 })}</div></div>`);
+        continue;
+      }
+      // blocks that end with a line "::"
+      const blk = l.match(/^::(gallery|tabs|map|poll|note)(?:\{([a-z]+)=([^}]+)\})?\s*$/);
+      if (blk) {
+        flush(); const inner = []; i++;
+        while (i < lines.length && !/^::\s*$/.test(lines[i])) inner.push(lines[i++]);
+        i++; out.push(block(blk[1], blk[3] || "", inner, ks, opts)); continue;
+      }
+      // one-line templates
+      const tp = l.match(/^\{\{(quote|note|navbox|image)\|(.+)\}\}\s*$/);
+      if (tp) { flush(); out.push(template(tp[1], tp[2].split("|").map((x) => x.trim()), ks)); i++; continue; }
+      // tables: | a | b |
+      if (/^\|.*\|\s*$/.test(l)) {
+        flush(); const rows = []; while (i < lines.length && /^\|.*\|\s*$/.test(lines[i])) rows.push(lines[i++]);
+        const cells = (r) => r.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+        const sep = rows[1] && /^\|[\s:|-]+\|$/.test(rows[1].trim());
+        const head = sep ? cells(rows[0]) : null, body2 = (sep ? rows.slice(2) : rows).map(cells);
+        out.push(`<div class="cx-tabla-w"><table class="cx-tabla">${head ? `<thead><tr>${head.map((c) => `<th>${inline(c, ks)}</th>`).join("")}</tr></thead>` : ""}<tbody>${body2.map((r) => `<tr>${r.map((c) => `<td>${inline(c, ks)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`);
         continue;
       }
       const h = l.match(/^(#{2,4})\s+(.+)$/);
@@ -84,6 +103,39 @@
     const html = out.join("\n");
     return opts.nested || heads.length < 3 ? html : `<nav class="cx-indice" aria-label="Contents"><p class="rotulo">Contents</p><ol>${heads.map(([id, t]) => `<li><a href="#${id}" data-cx-ancla="${id}">${t}</a></li>`).join("")}</ol></nav>${html}`;
   }
+  // images: an uploaded file (cx:<id>) or the site's art (img/….jpg)
+  const imgSrc = (ref) => { ref = String(ref || "").trim(); return /^cx:[a-f0-9]{24}$/.test(ref) ? `${API}/cximg/${ref.slice(3)}` : /^img\/[a-z0-9\/-]+\.jpg$/.test(ref) ? ref : ""; };
+  const ACCENTS = { "": "Default", endro: "Endro violet", ember: "Ember red", gold: "Old gold", sea: "Black sea", bone: "Bone", moss: "Moss" };
+  function template(kind, a, ks) {
+    if (kind === "quote") return `<figure class="cx-cita-g"><blockquote>${inline(a[0] || "", ks)}</blockquote>${a[1] ? `<figcaption>— ${inline(a[1], ks)}${a[2] ? `, <span>${inline(a[2], ks)}</span>` : ""}</figcaption>` : ""}</figure>`;
+    if (kind === "note") return `<aside class="cx-nota"><p>${inline(a.join(" | "), ks)}</p></aside>`;
+    if (kind === "navbox") return `<nav class="cx-navbox"><p class="cx-navbox__t">${inline(a[0] || "", ks)}</p><p>${inline(a.slice(1).join(" · "), ks)}</p></nav>`;
+    if (kind === "image") { const src = imgSrc(a[0]); if (!src) return ""; const al = ["left", "right", "center", "wide"].includes(a[2]) ? a[2] : "right"; return `<figure class="cx-img cx-img--${al}"><img class="cargada" src="${src}" alt="${a[1] || ""}" loading="lazy">${a[1] ? `<figcaption>${inline(a[1], ks)}</figcaption>` : ""}</figure>`; }
+    return "";
+  }
+  function block(kind, arg, lines, ks, opts) {
+    if (kind === "note") return `<aside class="cx-nota">${md(unesc(lines.join("\n")), ks, { ...opts, nested: 1 })}</aside>`;
+    if (kind === "gallery") return `<div class="cx-galeria">${lines.filter((x) => x.trim()).map((x) => { const [ref, cap = ""] = x.split("|").map((y) => y.trim()); const src = imgSrc(ref); return src ? `<figure><img class="cargada" src="${src}" alt="" loading="lazy" data-cx-zoom>${cap ? `<figcaption>${inline(cap, ks)}</figcaption>` : ""}</figure>` : ""; }).join("")}</div>`;
+    if (kind === "tabs") {
+      const tabs = []; let cur = null;
+      for (const x of lines) { const m = x.match(/^==\s*(.+?)\s*==\s*$/); if (m) { cur = { name: m[1], lines: [] }; tabs.push(cur); } else if (cur) cur.lines.push(x); }
+      if (!tabs.length) return "";
+      const id = "t" + Math.random().toString(36).slice(2, 8);
+      return `<div class="cx-tabs" data-cx-tabs><div class="cx-tabs__bar" role="tablist">${tabs.map((t, k) => `<button type="button" role="tab" data-cx-tab="${id}-${k}" aria-selected="${k === 0}">${inline(t.name, ks)}</button>`).join("")}</div>${tabs.map((t, k) => `<div class="cx-tabs__panel" data-cx-panel="${id}-${k}" ${k ? "hidden" : ""}>${md(unesc(t.lines.join("\n")), ks, { ...opts, nested: 1 })}</div>`).join("")}</div>`;
+    }
+    if (kind === "map") {
+      const src = imgSrc(arg); if (!src) return `<p class="nota">Map: choose an image with ::map{img=…}</p>`;
+      const pins = lines.map((x) => x.split("|").map((y) => y.trim())).filter((p) => /^\d+(\.\d+)?\s*,\s*\d+(\.\d+)?$/.test(p[0] || "")).map(([xy, label = "", link = ""]) => { const [x, y] = xy.split(",").map((n) => Math.max(0, Math.min(100, +n))); return { x, y, label, link }; });
+      return `<figure class="cx-mapa" data-cx-mapa><div class="cx-mapa__in"><img class="cargada" src="${src}" alt="Map">${pins.map((p, k) => `<span class="cx-pin" style="left:${p.x}%;top:${p.y}%" tabindex="0"><i>${k + 1}</i><span class="cx-pin__info"><b>${inline(p.label, ks)}</b>${p.link ? `<span>${inline(p.link, ks)}</span>` : ""}</span></span>`).join("")}</div>${pins.length ? `<figcaption><ol>${pins.map((p) => `<li>${inline(p.label, ks)}${p.link ? ` · ${inline(p.link, ks)}` : ""}</li>`).join("")}</ol></figcaption>` : ""}</figure>`;
+    }
+    if (kind === "poll") {
+      const q = lines.find((x) => x.trim() && !/^\s*-\s+/.test(x)) || "", op = lines.filter((x) => /^\s*-\s+/.test(x)).map((x) => x.replace(/^\s*-\s+/, "")).slice(0, 20);
+      const data = opts.polls?.[arg] || { counts: {}, mine: null }, total = Object.values(data.counts).reduce((a, b) => a + b, 0), voted = data.mine !== null && data.mine !== undefined;
+      return `<div class="cx-encuesta" data-cx-encuesta="${esc(arg)}"><p class="cx-encuesta__q">${inline(q, ks)}</p><ul>${op.map((o, k) => { const n = data.counts[k] || 0, pct = total ? Math.round((n / total) * 100) : 0; return `<li><button type="button" data-cx-voto="${esc(arg)}:${k}" class="${data.mine === k ? "mio" : ""}" ${opts.reveal ? "disabled" : ""}><span class="cx-encuesta__barra" style="width:${voted ? pct : 0}%"></span><span class="cx-encuesta__o">${inline(o, ks)}</span>${voted ? `<b>${pct}%</b>` : ""}</button></li>`; }).join("")}</ul><p class="cx-encuesta__n">${total} vote${total === 1 ? "" : "s"}${voted ? " · you can change your vote" : ""}</p></div>`;
+    }
+    return "";
+  }
+  const unesc = (t) => t.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
   const catsIn = (b) => [...new Set([...String(b || "").matchAll(/\[\[category:([^\]|]+)\]\]/gi)].map((m) => m[1].trim()))];
 
   // ---------- line diff (LCS) ----------
@@ -150,7 +202,8 @@
     }
     const p = d.page, read = maxRead(), veiled = p.spoiler > read;
     const ib = p.infobox || {}, rows = ib.rows || [];
-    const box = (/^img\/[a-z0-9\/-]+\.jpg$/.test(ib.image || "") || rows.length) ? `<aside class="cx-ficha"><p class="cx-ficha__tit">${esc(p.title)}</p>${/^img\/[a-z0-9\/-]+\.jpg$/.test(ib.image || "") ? `<figure><img class="cargada" src="${esc(ib.image)}" alt="">${ib.caption ? `<figcaption>${esc(ib.caption)}</figcaption>` : ""}</figure>` : ""}<p class="cx-ficha__tipo">${TYPES[p.type] || "Article"}</p>${rows.length ? `<dl>${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${inline(esc(v), ks)}</dd></div>`).join("")}</dl>` : ""}</aside>` : "";
+    const isrc = imgSrc(ib.image);
+    const box = (isrc || rows.length) ? `<aside class="cx-ficha"><p class="cx-ficha__tit">${esc(p.title)}</p>${isrc ? `<figure><img class="cargada" src="${isrc}" alt="">${ib.caption ? `<figcaption>${esc(ib.caption)}</figcaption>` : ""}</figure>` : ""}<p class="cx-ficha__tipo">${TYPES[p.type] || "Article"}</p>${rows.length ? `<dl>${rows.map(([k, v]) => /^#/.test(k) ? `<div class="cx-ficha__sec"><dt>${esc(k.replace(/^#+\s*/, ""))}</dt></div>` : `<div><dt>${esc(k)}</dt><dd>${inline(esc(v), ks)}</dd></div>`).join("")}</dl>` : ""}</aside>` : "";
     const tools = `<nav class="cx-herr" aria-label="Page tools">
       <a href="#/codex/p/${p.slug}" aria-current="page">Read</a>${d.can.edit ? `<a href="#/codex/edit/${p.slug}">Edit</a>` : `<a href="#/codex/edit/${p.slug}" title="Suggest a change for an Archivist to review">Suggest an edit</a>`}<a href="#/codex/history/${p.slug}">History</a><a href="#/codex/talk/${p.slug}">Talk${p.talk ? ` <small>${p.talk}</small>` : ""}</a>
       <button type="button" data-cx-seguir="${p.slug}" aria-pressed="${p.watching}">${p.watching ? "Following" : "Follow"}</button>
@@ -158,8 +211,8 @@
       ${d.can.seal ? `<button type="button" data-cx-mod="seal:${p.sealed ? 0 : 1}">${p.sealed ? "Remove seal" : "Seal as confirmed"}</button>` : ""}</nav>`;
     const marks = `${p.sealed ? `<span class="cx-sello" title="The author checked this page">✦ Confirmed by the author</span>` : ""}${p.protected ? `<span class="cx-marca">Protected</span>` : ""}${p.hidden ? `<span class="cx-marca cx-marca--roja">Removed</span>` : ""}${p.spoiler ? `<span class="cx-marca">Spoilers up to Chapter ${p.spoiler}</span>` : ""}`;
     const cats = p.cats.length ? `<footer class="cx-cats"><span class="rotulo">Categories</span>${p.cats.map((c) => `<a href="#/codex/cat/${encodeURIComponent(c)}">${esc(c)}</a>`).join("")}</footer>` : "";
-    const content = `<div class="cx-pagina${veiled ? " cx-pagina--velo" : ""}">${veiled ? `<div class="cx-velo"><p>This page has spoilers up to <b>Chapter ${p.spoiler}</b>. You have read up to Chapter ${read || "none"}.</p><a class="boton" href="#/e/${chapterId(read + 1 || 1)}">Keep reading</a><button class="boton boton--quieto" type="button" data-cx-velo>Show it anyway</button></div>` : ""}
-      <div class="cx-pagina__in">${box}<div class="cx-texto">${p.body.trim() ? md(p.body, ks) : `<p class="nota">This page is empty.</p>`}</div></div>
+    const content = `<div class="cx-pagina${veiled ? " cx-pagina--velo" : ""}${ib.accent ? " cx-acc--" + ib.accent : ""}" data-slug="${p.slug}">${veiled ? `<div class="cx-velo"><p>This page has spoilers up to <b>Chapter ${p.spoiler}</b>. You have read up to Chapter ${read || "none"}.</p><a class="boton" href="#/e/${chapterId(read + 1 || 1)}">Keep reading</a><button class="boton boton--quieto" type="button" data-cx-velo>Show it anyway</button></div>` : ""}
+      <div class="cx-pagina__in">${box}<div class="cx-texto">${p.body.trim() ? md(p.body, ks, { polls: d.polls || {} }) : `<p class="nota">This page is empty.</p>`}</div></div>
       ${cats}<p class="cx-pie">Last edited ${ago(p.updated)}${p.updatedBy ? ` by ${who(p.updatedBy)}` : ""} · <a href="#/codex/links/${p.slug}">What links here</a></p></div>`;
     return shell(esc(p.title), `<span class="cx-marcas">${marks}</span>`, tools + content, [[TYPES[p.type] || "Article"]]);
   }
@@ -187,16 +240,25 @@
         <label class="cx-campo"><span>Spoilers</span><select class="sel" name="spoiler" ${sugg ? "disabled" : ""}><option value="0">No spoilers</option>${chOpts}</select></label>
       </div>
       ${sugg ? "" : `<details class="cx-ficha-ed" ${rows.some((r) => r[1]) || s.infobox.image ? "open" : ""}><summary>Infobox</summary>
-        <div class="cx-ficha-ed__in"><label class="cx-campo"><span>Image</span><select class="sel" name="ib_image"><option value="">No image</option>${pics.map(([src, n]) => `<option value="${src}"${s.infobox.image === src ? " selected" : ""}>${esc(n)}</option>`).join("")}</select></label>
+        <div class="cx-ficha-ed__in"><label class="cx-campo"><span>Image</span><select class="sel" name="ib_image" data-cx-imgsel><option value="">No image</option>${pics.map(([src, n]) => `<option value="${src}"${s.infobox.image === src ? " selected" : ""}>${esc(n)}</option>`).join("")}</select></label>
+        <button class="boton boton--chico boton--quieto" type="button" data-cx-elegir="ficha">Upload or browse images</button>
+        <label class="cx-campo"><span>Page color</span><select class="sel" name="ib_accent">${Object.entries(ACCENTS).map(([k, n]) => `<option value="${k}"${(s.infobox.accent || "") === k ? " selected" : ""}>${n}</option>`).join("")}</select></label>
+        <p class="nota">Tip: a field whose name starts with # becomes a section title inside the infobox (e.g. "# Appearance").</p>
         <label class="cx-campo"><span>Caption</span><input name="ib_caption" value="${esc(s.infobox.caption || "")}" maxlength="200"></label>
         <div class="cx-filas" data-cx-filas>${rows.map(([k, val]) => `<div class="cx-fila"><input name="ib_k" value="${esc(k)}" placeholder="Field" maxlength="60"><input name="ib_v" value="${esc(val)}" placeholder="Value (you can use [[links]])" maxlength="400"><button type="button" data-cx-quitar aria-label="Remove field">×</button></div>`).join("")}</div>
         <button class="boton boton--chico boton--quieto" type="button" data-cx-fila>Add a field</button></div></details>`}
       <div class="cx-editor__barra" role="toolbar" aria-label="Formatting">
-        <button type="button" data-ins="**|**" title="Bold"><b>B</b></button><button type="button" data-ins="*|*" title="Italic"><i>I</i></button>
-        <button type="button" data-ins="\n## |\n" title="Section heading">H2</button><button type="button" data-ins="\n### |\n" title="Subheading">H3</button>
-        <button type="button" data-ins="[[|]]" title="Link to a Codex page">[[ ]]</button><button type="button" data-ins="{{ch||}}" title="Cite a chapter">Ch.</button>
-        <button type="button" data-ins="\n::spoiler{ch=1}\n|\n::\n" title="Spoiler block">Spoiler</button><button type="button" data-ins="\n> |\n" title="Quote">“ ”</button>
-        <button type="button" data-ins="\n- |\n" title="List">• List</button><button type="button" data-ins="\n[[Category:|]]" title="Category">Category</button>
+        <button type="button" data-ins="**§**" title="Bold"><b>B</b></button><button type="button" data-ins="*§*" title="Italic"><i>I</i></button>
+        <button type="button" data-ins="\n## §\n" title="Section heading">H2</button><button type="button" data-ins="\n### §\n" title="Subheading">H3</button>
+        <button type="button" data-ins="[[§]]" title="Link to a Codex page">[[ ]]</button><button type="button" data-ins="{{ch|§}}" title="Cite a chapter">Ch.</button>
+        <button type="button" data-ins="\n::spoiler{ch=1}\n§\n::\n" title="Spoiler block">Spoiler</button><button type="button" data-ins="\n> §\n" title="Quote">“ ”</button>
+        <button type="button" data-ins="\n- §\n" title="List">• List</button><button type="button" data-ins="\n[[Category:§]]" title="Category">Category</button>
+        <span class="cx-editor__sep"></span>
+        <button type="button" data-cx-elegir="texto" title="Insert an image">Image</button><button type="button" data-ins="\n::gallery\n§img/pozo.jpg | Caption\n::\n" title="Gallery">Gallery</button>
+        <button type="button" data-ins="\n| §Column | Column |\n|---|---|\n|  |  |\n" title="Table">Table</button><button type="button" data-ins="\n::tabs\n== First ==\n§\n== Second ==\n\n::\n" title="Tabs">Tabs</button>
+        <button type="button" data-ins="\n{{quote|§|Who|Chapter 1}}\n" title="Quote template">Quote</button><button type="button" data-ins="\n{{note|§}}\n" title="Note box">Note</button>
+        <button type="button" data-ins="\n{{navbox|§Title|[[Page]] · [[Page]]}}\n" title="Navigation box">Navbox</button><button type="button" data-ins="\n::map{img=img/mar.jpg}\n50, 50 | §Label | [[Page]]\n::\n" title="Map with pins (x, y in %)">Map</button>
+        <button type="button" data-ins="\n::poll{id=poll-1}\n§Question?\n- Option one\n- Option two\n::\n" title="Poll">Poll</button>
         <span class="cx-editor__modo" role="tablist"><button type="button" data-modo="escribir" aria-selected="true">Write</button><button type="button" data-modo="ver" aria-selected="false">Preview</button></span>
       </div>
       <div class="cx-editor__zona" data-modo-actual="escribir"><textarea name="body" rows="22" spellcheck="true" placeholder="Write what the chapters show. Link pages with [[Name]]; cite with {{ch|3}}.">${esc(s.body)}</textarea><div class="cx-editor__vista cx-texto" data-cx-vista></div></div>
@@ -274,7 +336,8 @@
     const ex = (a, b) => `<tr><td><code>${esc(a)}</code></td><td>${b}</td></tr>`;
     return shell("Writing guide", "How to write in the Codex.", `<div class="cx-guia cx-texto">
       <h2>The rules</h2><ul><li>Write only what the chapters show. No guesses as facts: theories go to the forum.</li><li>Cite the chapter for every claim: <code>{{ch|12}}</code>.</li><li>Mark spoilers. A page that reveals Chapter 20 gets "Spoilers up to Chapter 20"; a section inside a page gets a spoiler block.</li><li>Be neutral and clear. English only.</li></ul>
-      <h2>Formatting</h2><table class="cx-tabla"><tbody>${ex("**bold**", "<b>bold</b>")}${ex("*italic*", "<i>italic</i>")}${ex("## Section", "A section heading (three or more make a contents box)")}${ex("[[Kalfu]]", "A link to another page (red if it does not exist yet)")}${ex("[[Kalfu|the boy]]", "A link with other words")}${ex("{{ch|3}}", "A chapter citation")}${ex("::spoiler{ch=12}\n…\n::", "A block hidden from readers before Chapter 12")}${ex("[[Category:Characters]]", "Puts the page in a category")}${ex("> words", "A quote")}${ex("- item", "A list")}</tbody></table>
+      <h2>Formatting</h2><table class="cx-tabla"><tbody>${ex("**bold**", "<b>bold</b>")}${ex("*italic*", "<i>italic</i>")}${ex("## Section", "A section heading (three or more make a contents box)")}${ex("[[Kalfu]]", "A link to another page (red if it does not exist yet)")}${ex("[[Kalfu|the boy]]", "A link with other words")}${ex("{{ch|3}}", "A chapter citation")}${ex("::spoiler{ch=12}\n…\n::", "A block hidden from readers before Chapter 12")}${ex("[[Category:Characters]]", "Puts the page in a category")}${ex("> words", "A quote")}${ex("- item", "A list")}${ex("{{image|img/pozo.jpg|Caption|right}}", "An image (right, left, center or wide). Use the Image button to upload or pick one")}${ex("::gallery\nimg/a.jpg | Caption\nimg/b.jpg | Caption\n::", "A gallery")}${ex("| A | B |\n|---|---|\n| 1 | 2 |", "A table")}${ex("::tabs\n== Before ==\n…\n== After ==\n…\n::", "Tabs, like Fandom's tabbers")}${ex("{{quote|Words|Who|Chapter 3}}", "A quote with its speaker and source")}${ex("{{note|Text}}", "A note box")}${ex("{{navbox|Title|[[A]] · [[B]]}}", "A navigation box")}${ex("::map{img=img/mar.jpg}\n30, 60 | The Rig | [[The Rig]]\n::", "A map with pins (x, y in % of the image). In the preview, click the map to copy a position")}${ex("::poll{id=best-scene}\nQuestion?\n- One\n- Two\n::", "A poll readers vote on")}</tbody></table>
+      <h2>Infobox</h2><ul><li>Choose the kind of page and its fields fill in; add or remove any field.</li><li>A field starting with <code>#</code> becomes a section title inside the infobox.</li><li>Pick an image from the library or upload one, and a color for the page.</li></ul>
       <h2>Ranks</h2><ul><li><b>Reader</b>: every account. Reads, follows pages, talks, suggests edits.</li><li><b>Scribe</b>: writes and starts pages. Apply with a Diver plan or above and 10 chapters read.</li><li><b>Archivist</b>: reviews applications and suggestions, restores versions, protects and removes pages. Named by the author.</li><li><b>The Author</b>: seals pages as <i>Confirmed by the author</i>.</li></ul></div>`, [["Writing guide"]]);
   }
 
@@ -324,7 +387,7 @@
     $$("[data-modo]", f).forEach((b) => b.addEventListener("click", () => { zona.dataset.modoActual = b.dataset.modo; $$("[data-modo]", f).forEach((x) => x.setAttribute("aria-selected", String(x === b))); if (b.dataset.modo === "ver") paint(); }));
     $$("[data-ins]", f).forEach((b) => b.addEventListener("mousedown", (ev) => ev.preventDefault()));
     $$("[data-ins]", f).forEach((b) => b.addEventListener("click", () => {
-      const [pre, post = ""] = b.dataset.ins.replace(/\\n/g, "\n").split("|"), s0 = ta.selectionStart, s1 = ta.selectionEnd, sel = ta.value.slice(s0, s1);
+      const [pre, post = ""] = b.dataset.ins.replace(/\\n/g, "\n").split("§"), s0 = ta.selectionStart, s1 = ta.selectionEnd, sel = ta.value.slice(s0, s1);
       ta.setRangeText(pre + sel + post, s0, s1, "end"); ta.selectionStart = ta.selectionEnd = s0 + pre.length + sel.length; ta.focus(); save();
     }));
     f.type?.addEventListener("change", () => { const box = $("[data-cx-filas]", f); if (!box) return; const have = $$("input[name=ib_k]", box).map((i) => i.value.trim()).filter(Boolean); if ($$("input[name=ib_v]", box).some((i) => i.value.trim())) return; box.innerHTML = (FIELDS[f.type.value] || []).filter((k) => !have.includes(k) || true).map((k) => `<div class="cx-fila"><input name="ib_k" value="${esc(k)}" placeholder="Field" maxlength="60"><input name="ib_v" placeholder="Value (you can use [[links]])" maxlength="400"><button type="button" data-cx-quitar aria-label="Remove field">×</button></div>`).join(""); });
@@ -338,7 +401,7 @@
       try {
         if (f.dataset.sugg) { await call(`/codex/p/${slug}/suggest`, { body: ta.value, note: f.summary.value }); try { localStorage.removeItem(key); } catch {} location.hash = "#/codex/p/" + slug; alert("Thank you. An Archivist will review your suggestion."); return; }
         const ks = $$("input[name=ib_k]", f), vs = $$("input[name=ib_v]", f);
-        const infobox = { image: f.ib_image?.value || "", caption: f.ib_caption?.value || "", rows: ks.map((k, i) => [k.value.trim(), vs[i].value.trim()]).filter((r) => r[0] && r[1]) };
+        const infobox = { image: f.ib_image?.value || "", accent: f.ib_accent?.value || "", caption: f.ib_caption?.value || "", rows: ks.map((k, i) => [k.value.trim(), vs[i].value.trim()]).filter((r) => r[0] && (r[1] || r[0].startsWith("#"))) };
         if (!f.dataset.slug) { const k = await pagesKnown(true); if (k.has(slug)) { err.innerHTML = `A page called that already exists: <a href="#/codex/p/${slug}">open it</a>.`; err.hidden = false; btn.disabled = false; return; } }
         await call(`/codex/p/${slug}`, { title, type: f.type.value, spoiler: +f.spoiler.value, body: ta.value, infobox, summary: f.summary.value, minor: f.minor?.checked, base: +f.dataset.base });
         try { localStorage.removeItem(key); } catch {}
@@ -351,6 +414,30 @@
     });
   }
 
+  // ---------- image picker: upload (Scribes) or choose from the library ----------
+  async function compress(file) {
+    const bmp = await createImageBitmap(file), k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement("canvas"); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+    let data = c.toDataURL("image/webp", 0.82); if (!data.startsWith("data:image/webp")) data = c.toDataURL("image/jpeg", 0.85);
+    return { data, w: c.width, h: c.height };
+  }
+  async function picker(onPick) {
+    const lib = await art(true), canUp = (C().user?.role === "admin") || ["scribe", "archivist"].includes(C().user?.wiki_role);
+    const m = document.createElement("div"); m.className = "cx-modal"; m.setAttribute("role", "dialog"); m.setAttribute("aria-label", "Images");
+    m.innerHTML = `<div class="cx-modal__caja"><header><h2 class="rotulo">Images</h2><button type="button" data-cerrar aria-label="Close">×</button></header>
+      ${canUp ? `<form class="cx-subir" data-subir><label class="cx-campo"><span>Upload an image (it is compressed before sending)</span><input type="file" name="f" accept="image/*" required></label><label class="cx-campo"><span>Name</span><input name="name" maxlength="120" placeholder="What it shows"></label><button class="boton boton--chico" type="submit">Upload</button><p class="fform__err" hidden></p></form>` : `<p class="nota">Scribes can upload images. Pick one from the library.</p>`}
+      <ul class="cx-biblio">${lib.map(([ref, n]) => `<li><button type="button" data-ref="${esc(ref)}"><img src="${imgSrc(ref)}" alt="" loading="lazy"><span>${esc(n)}</span></button></li>`).join("")}</ul></div>`;
+    document.body.appendChild(m);
+    const close = () => m.remove();
+    m.addEventListener("click", (ev) => { if (ev.target === m || ev.target.closest("[data-cerrar]")) close(); const b = ev.target.closest("[data-ref]"); if (b) { onPick(b.dataset.ref, b.querySelector("span").textContent.replace(/^Uploaded: /, "")); close(); } });
+    $("[data-subir]", m)?.addEventListener("submit", async (ev) => {
+      ev.preventDefault(); const f = ev.target, err = $(".fform__err", f), btn = $("button", f); btn.disabled = true; err.hidden = true;
+      try { const file = f.f.files[0]; if (!file) throw new Error("Choose a file."); const c = await compress(file); const r = await call("/codex/upload", { ...c, name: f.name.value || file.name.replace(/\.[a-z]+$/i, "") }); onPick(r.ref, f.name.value); close(); }
+      catch (x) { err.textContent = x.message; err.hidden = false; btn.disabled = false; }
+    });
+  }
+
   // ---------- events ----------
   document.addEventListener("click", async (ev) => {
     if (!root || !root.isConnected) return;
@@ -359,6 +446,13 @@
     if (t.closest("[data-cx-entrar]")) { C().open("login", () => render()); return; }
     if (t.closest("[data-cx-velo]")) { t.closest(".cx-pagina").classList.remove("cx-pagina--velo"); $(".cx-velo", root)?.remove(); return; }
     const sv = t.closest("[data-ver-spoiler]"); if (sv) { sv.closest(".cx-spoiler").classList.remove("cx-spoiler--velo"); sv.remove(); return; }
+    const tb = t.closest("[data-cx-tab]"); if (tb) { const box = tb.closest("[data-cx-tabs]"), id = tb.dataset.cxTab; $$(":scope > .cx-tabs__bar [data-cx-tab]", box).forEach((x) => x.setAttribute("aria-selected", String(x === tb))); $$(":scope > [data-cx-panel]", box).forEach((x) => (x.hidden = x.dataset.cxPanel !== id)); return; }
+    const vt = t.closest("[data-cx-voto]"); if (vt && !vt.disabled) { const [pid, opt] = vt.dataset.cxVoto.split(":"), slug = t.closest("[data-slug]")?.dataset.slug; if (!slug) return; try { await call(`/codex/p/${slug}/poll`, { pid, opt: +opt }); render(); } catch (x) { alert(x.message); } return; }
+    const el = t.closest("[data-cx-elegir]"); if (el) { const f = el.closest("form"); picker((ref, name) => {
+      if (el.dataset.cxElegir === "ficha") { const sel = f.ib_image; if (![...sel.options].some((o) => o.value === ref)) sel.insertAdjacentHTML("beforeend", `<option value="${esc(ref)}">${esc(name || ref)}</option>`); sel.value = ref; }
+      else { const ta = f.body, s0 = ta.selectionStart; ta.setRangeText(`\n{{image|${ref}|${name || "Caption"}|right}}\n`, s0, ta.selectionEnd, "end"); ta.focus(); }
+    }); return; }
+    const mp = t.closest(".cx-editor .cx-mapa__in img"); if (mp) { const r = mp.getBoundingClientRect(), x = Math.round(((ev.clientX - r.left) / r.width) * 1000) / 10, y = Math.round(((ev.clientY - r.top) / r.height) * 1000) / 10, txt = `${x}, ${y} | Label | [[Page]]`; try { await navigator.clipboard.writeText(txt); } catch {} const tip = document.createElement("div"); tip.className = "cx-coord"; tip.textContent = `Copied: ${x}, ${y}`; tip.style.left = ev.clientX + "px"; tip.style.top = ev.clientY + "px"; document.body.appendChild(tip); setTimeout(() => tip.remove(), 1600); return; }
     const an = t.closest("[data-cx-ancla]"); if (an) { ev.preventDefault(); document.getElementById(an.dataset.cxAncla)?.scrollIntoView({ behavior: "smooth" }); return; }
     const seg = t.closest("[data-cx-seguir]"); if (seg) { const on = seg.getAttribute("aria-pressed") !== "true"; try { await call(`/codex/p/${seg.dataset.cxSeguir}/watch`, { on }); seg.setAttribute("aria-pressed", String(on)); seg.textContent = on ? "Following" : "Follow"; } catch (x) { alert(x.message); } return; }
     const mod = t.closest("[data-cx-mod]"); if (mod) { const [act, on] = mod.dataset.cxMod.split(":"), slug = location.hash.split("/")[3]; if (act === "hide" && on === "1" && !confirm("Remove this page? It can be restored later.")) return; try { await call(`/codex/p/${slug}/${act}`, { on: on === "1" }); known = null; render(); } catch (x) { alert(x.message); } return; }

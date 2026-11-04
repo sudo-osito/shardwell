@@ -240,6 +240,11 @@ export default {
       const me = await session(env, req);
       const tz = tzOf(req.headers.get("x-tz") || url.searchParams.get("tz"));
       const admin = (me && me.role === "admin") || (env.ADMIN && req.headers.get("x-admin") === env.ADMIN);
+      if (req.method === "GET" && p[0] === "cximg" && /^[a-f0-9]{24}$/.test(p[1] || "")) { // Codex images: public, cached forever
+        const o = await env.LORE.getWithMetadata("cximg:" + p[1], { type: "arrayBuffer" });
+        if (!o.value) return new Response("Not found", { status: 404 });
+        return new Response(o.value, { headers: { "content-type": o.metadata?.type || "image/webp", "cache-control": "public, max-age=31536000, immutable", "x-content-type-options": "nosniff", "access-control-allow-origin": "*" } });
+      }
       if (me && req.method === "GET" && p[0] === "codex" && p[1] === "p" && p[2] && !p[3]) await mark(env, me, "codex", tz);
       const rw = await rewardsRoute(req, env, url, p, me, tz, { json, bad, now, COS, can, dayKey, monthStart });
       if (rw) return rw;

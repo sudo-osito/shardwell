@@ -185,6 +185,15 @@
       const s = u.stats.readStreak;
       box.innerHTML = `<span class="racha"><i>☾</i><b>${s.current}</b> day reading streak${s.current >= 7 ? "" : ` · ${7 - s.current} more for a free Tithe`}</span>`;
     }
+    // Codex pages that cite this chapter (the readers' wiki)
+    (async () => {
+      const box = $("[data-fin-codex]", root); if (!box) return;
+      if (!window.Cuenta?.user) { box.innerHTML = `<p class="fin__codex-t"><a href="#/codex">The Codex</a>: the wiki readers write as the story unfolds.</p>`; return; }
+      try {
+        const d = await window.Cuenta.call("/codex/chapter/" + e.number);
+        box.innerHTML = d.pages.length ? `<p class="rotulo">In the Codex</p><ul>${d.pages.map((p) => `<li><a href="#/codex/p/${p.slug}">${esc(p.title)}</a></li>`).join("")}</ul>` : `<p class="fin__codex-t">Nothing in <a href="#/codex">the Codex</a> cites this chapter yet. Scribes cite chapters with <code>{{ch|${e.number}}}</code>.</p>`;
+      } catch {}
+    })();
     if (window.Cuenta?.user) paintStreak(window.Cuenta.user);
     else { const box = $("[data-racha]", root); if (box) box.innerHTML = `<button class="racha racha--entrar" type="button" data-entrar>Sign in to keep a reading streak</button>`; }
     function toast(m) { tst.textContent = m; tst.hidden = false; clearTimeout(tt); tt = setTimeout(() => (tst.hidden = true), 1800); }
@@ -306,7 +315,7 @@
     const end = locked ? "" : `<section class="fin">
       <p class="rotulo">End of chapter ${e.number}</p>
       <div class="reacciones" data-reacciones></div>
-      <p class="fin__lecturas" data-lecturas></p><div class="fin__racha" data-racha></div>
+      <p class="fin__lecturas" data-lecturas></p><div class="fin__racha" data-racha></div><div class="fin__codex" data-fin-codex></div>
       <div class="fin__sig">${ctx.next ? `<a class="boton" href="#/e/${ctx.next.id}">${ctx.next.need && ctx.next.need !== "free" ? "Unlock" : "Next"}: Chapter ${ctx.next.number} · ${esc(ctx.next.title)}</a>` : `<p class="fin__nada">You have reached the latest chapter. New chapters are on the way.</p><a class="boton boton--quieto" href="#/novel">All chapters</a>`}</div>
       <div class="coms-cap"><div class="coms-cap__cab"><h2 class="titulo">Comments <span data-n-com>0</span></h2>
         <div class="seg seg--chico"><button type="button" data-orden="new" aria-pressed="true">Newest</button><button type="button" data-orden="top" aria-pressed="false">Top</button><button type="button" data-orden="old" aria-pressed="false">Oldest</button></div></div>
