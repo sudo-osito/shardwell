@@ -3,7 +3,7 @@
 (() => {
   const API = "https://shardwell-reader.maxpino.workers.dev";
   let REL = { free: 50, behind: { abyssal: 0, diver: 0, reader: 0 }, latest: 0 }; // set by app.js from data/novel.json (build/release.json)
-  const PLAN_OF = { reader: "Reader", diver: "Diver", abyssal: "Abyssal" };
+  const PLAN_OF = { reader: "Reader", diver: "Diver", abyssal: "Abyssal", sovereign: "Sovereign" };
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -313,7 +313,7 @@
         <div data-form-capitulo></div><p class="estado" data-estado hidden></p><ul class="coms" data-comentarios></ul></div>
     </section>`;
     const need = e.need || "reader";
-    const WHO = { reader: "Reader, Diver and Abyssal", diver: "Diver and Abyssal", abyssal: "Abyssal" };
+    const WHO = { reader: "Reader, Diver and Abyssal", diver: "Diver and Abyssal", abyssal: "Abyssal", sovereign: "Sovereign" };
     const paywall = locked ? `<div class="muro"><p class="rotulo">Chapter ${e.number} · ${WHO[need]}</p><h2 class="titulo">${need === "abyssal" ? "The newest chapter is with Abyssal members" : "Members are reading ahead"}</h2>
       <p>Chapters 1 to ${REL.free} are free. Every plan reads every chapter after that, the day it is out. This chapter opens for <b>${WHO[need]}</b> members now.</p>
       <a class="boton" href="#/membership">See membership</a><a class="boton boton--quieto" href="#/novel">Back to the chapters</a></div>` : "";

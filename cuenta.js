@@ -4,9 +4,9 @@
   const $ = (s, r = document) => r.querySelector(s);
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const AVATARS = ["", "chrona", "vast", "axion", "nyther", "anastasis", "pozo", "endro", "tithes", "echoforms", "black-veil", "leviathan", "sea-before-time", "mar-ahogado", "borde"];
-  const PLAN = { free: "Free reader", reader: "Reader", diver: "Diver", abyssal: "Abyssal" };
-  const RANK = { free: 0, reader: 1, diver: 2, abyssal: 3 };
-  const rank = (u) => (u?.role === "admin" ? 3 : RANK[u?.plan] || 0);
+  const PLAN = { free: "Free reader", reader: "Reader", diver: "Diver", abyssal: "Abyssal", sovereign: "Sovereign" };
+  const RANK = { free: 0, reader: 1, diver: 2, abyssal: 3, sovereign: 4 };
+  const rank = (u) => (u?.role === "admin" ? 4 : RANK[u?.plan] || 0);
   let token = null, user = null;
   try { token = localStorage.getItem("sw:token"); user = JSON.parse(localStorage.getItem("sw:user") || "null"); } catch {}
   const listeners = new Set();

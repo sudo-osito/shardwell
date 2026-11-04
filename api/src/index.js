@@ -9,22 +9,22 @@
 const ORIGINS = ["https://sudo-osito.github.io", "http://127.0.0.1:4815", "http://localhost:4815"];
 const KINDS = ["heart", "dread", "tears", "chills", "awe"];
 const AVATARS = ["", "chrona", "vast", "axion", "nyther", "anastasis", "pozo", "endro", "tithes", "echoforms", "black-veil", "leviathan", "sea-before-time", "mar-ahogado", "borde"];
-const RANK = { free: 0, reader: 1, diver: 2, abyssal: 3 };
+const RANK = { free: 0, reader: 1, diver: 2, abyssal: 3, sovereign: 4 };
 // profile banners (painted art), the plan they need
 const BANNERS = { "": "free", pozo: "free", borde: "free", corazon: "free", catedral: "free", mar: "free", chrona: "diver", vast: "diver", axion: "diver", nyther: "diver", anastasis: "diver", leviathan: "diver", echoforms: "diver", "first-drowning": "diver", rig: "diver", "mar-ahogado": "abyssal", "black-veil": "abyssal", "sea-before-time": "abyssal", endro: "abyssal", tithes: "abyssal" };
-const PLAN_NAME = { free: "Free reader", reader: "Reader", diver: "Diver", abyssal: "Abyssal" };
+const PLAN_NAME = { free: "Free reader", reader: "Reader", diver: "Diver", abyssal: "Abyssal", sovereign: "Sovereign" };
 // avatar frames, the plan they need
 const FRAMES = { "": "free", iron: "reader", ash: "reader", silver: "diver", endro: "diver", godblood: "diver", abyssal: "abyssal", crown: "abyssal", bone: "diver" };
 // Tithes: awards (in-world offerings). Monthly allowance by plan; a 7-day reading streak adds one.
 const TITHES = { shard: { name: "Shard", min: "free" }, endro: { name: "Endro", min: "diver" }, crown: { name: "Crown", min: "abyssal" } };
-const ALLOWANCE = { free: 0, reader: 0, diver: 1, abyssal: 5 };
+const ALLOWANCE = { free: 0, reader: 0, diver: 1, abyssal: 5, sovereign: 5 };
 const BOARDS = {
   announcements: { name: "Announcements", line: "News from the author", post: "admin" },
   chapters: { name: "Chapters", line: "One thread per chapter. Talk about what you just read", post: "free" },
   theories: { name: "Theories", line: "What is really going on", post: "free" },
   art: { name: "Fan Art", line: "Drawings, edits, anything you made", post: "free" },
   general: { name: "General", line: "Everything else", post: "free" },
-  ask: { name: "Ask the Author", line: "Questions from Abyssal members, answered by the author", post: "abyssal" },
+  ask: { name: "Ask the Author", line: "Questions from Sovereign members, answered by the author", post: "sovereign" },
   stories: { name: "Side Stories", line: "Polls on what to write next. Abyssal members vote", post: "admin" },
 };
 const now = () => Date.now();
@@ -42,7 +42,7 @@ const clean = (s, max) => String(s || "").replace(/[\u0000-\u0008\u000B\u000C\u0
 const okEmail = (e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) && e.length <= 200;
 const okName = (n) => /^[\p{L}\p{N} _.\-]{2,24}$/u.test(n);
 const okLink = (l) => !l || (/^https:\/\/[^\s<>"]{3,490}$/.test(l));
-const rank = (u) => (u?.role === "admin" ? 3 : RANK[u?.plan] || 0);
+const rank = (u) => (u?.role === "admin" ? 4 : RANK[u?.plan] || 0);
 const can = (u, min) => (min === "admin" ? u?.role === "admin" : rank(u) >= (RANK[min] || 0));
 const tzOf = (v) => { const n = Math.round(+v); return Number.isFinite(n) && Math.abs(n) <= 840 ? n : 0; };
 const dayKey = (tz, t = now()) => new Date(t - tz * 60000).toISOString().slice(0, 10);
@@ -151,7 +151,7 @@ function badges(u, s) {
     B("generous", "Generous", "Give a Tithe", "⟡", "Recognition", s.tithesGiven, 1),
     B("founding", "Founding Reader", "One of the first 500 accounts", "⌂", "Special", u.id <= 500 ? 1 : 0, 1),
   ];
-  if (rank(u) >= 1) list.push(B("plan-" + (u.role === "admin" ? "author" : u.plan), u.role === "admin" ? "The Author" : PLAN_NAME[u.plan], u.role === "admin" ? "Writes Shardwell" : "Member of Shardwell", u.plan === "abyssal" || u.role === "admin" ? "♛" : u.plan === "diver" ? "▼" : "▽", "Special", 1, 1));
+  if (rank(u) >= 1) list.push(B("plan-" + (u.role === "admin" ? "author" : u.plan), u.role === "admin" ? "The Author" : PLAN_NAME[u.plan], u.role === "admin" ? "Writes Shardwell" : "Member of Shardwell", u.plan === "abyssal" || u.plan === "sovereign" || u.role === "admin" ? "♛" : u.plan === "diver" ? "▼" : "▽", "Special", 1, 1));
   return list;
 }
 async function mark(env, u, kind, tz) { await env.DB.prepare("INSERT OR IGNORE INTO activity (user, day, kind) VALUES (?, ?, ?)").bind(u.id, dayKey(tz), kind).run(); }
@@ -209,7 +209,7 @@ export default {
         if (!env.LS_WEBHOOK_SECRET || (await hmacHex(env.LS_WEBHOOK_SECRET, raw)) !== (req.headers.get("x-signature") || "")) return new Response("bad signature", { status: 401 });
         const ev = parseJSON(raw, {}), a = ev.data?.attributes || {}, userId = +ev.meta?.custom_data?.user_id;
         if (!ev.meta?.event_name?.startsWith("subscription_") || !userId) return new Response("ignored");
-        const plans = parseJSON(env.LS_PLANS, {}); // { "variantId": "reader" | "diver" | "abyssal" }
+        const plans = parseJSON(env.LS_PLANS, {}); // { "variantId": "reader" | "diver" | "abyssal" | "sovereign" }
         const plan = plans[String(a.variant_id)] || "free";
         await env.DB.prepare("INSERT OR REPLACE INTO subscriptions (id, user, variant, plan, status, renews_at, ends_at, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
           .bind(String(ev.data.id), userId, String(a.variant_id), plan, a.status || "", a.renews_at || "", a.ends_at || "", now()).run();
@@ -225,7 +225,7 @@ export default {
       // ---- public reads ----
       if (req.method === "GET") {
         if (p[0] === "plans") return json(req, { checkout: parseJSON(env.LS_CHECKOUT, {}), allowance: ALLOWANCE, frames: FRAMES, banners: BANNERS, tithes: TITHES, boards: BOARDS });
-        if (p[0] === "credits") { const rows = (await env.DB.prepare("SELECT * FROM users WHERE plan = 'abyssal' ORDER BY created").all()).results; return json(req, { names: rows.map((r) => r.name), members: rows.map(userPub) }); }
+        if (p[0] === "credits") { const rows = (await env.DB.prepare("SELECT * FROM users WHERE plan IN ('abyssal', 'sovereign') ORDER BY created").all()).results; return json(req, { names: rows.map((r) => r.name), members: rows.map(userPub) }); }
         if (p[0] === "me") { if (!me) return bad(req, "Sign in first.", 401); return json(req, { user: await meOut(env, me, tz) }); }
         if (p[0] === "u" && p[1]) {
           const u = await env.DB.prepare("SELECT * FROM users WHERE name = ?").bind(decodeURIComponent(p[1])).first();
@@ -424,7 +424,7 @@ export default {
         if (!me) return bad(req, "Sign in to take part in the forum.", 401);
         if (p[1] === "post") {
           const board = BOARDS[b.board]; if (!board) return bad(req, "board");
-          if (!can(me, board.post)) return bad(req, board.post === "abyssal" ? "Only Abyssal members can post here." : "Only the author posts here.", 403);
+          if (!can(me, board.post)) return bad(req, board.post === "sovereign" ? "Only Sovereign members can ask here." : "Only the author posts here.", 403);
           if (await limited(env, "fp:" + me.id, 5, 10 * 60 * 1000)) return bad(req, "Slow down a little: wait a few minutes before posting again.", 429);
           const title = clean(b.title, 140), body = clean(b.body, 10000), link = clean(b.link, 500);
           if (title.length < 3) return bad(req, "Write a title (3 characters or more).");

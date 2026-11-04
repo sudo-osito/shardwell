@@ -808,3 +808,19 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
 .perfil-portada:has(.perfil-portada__img) .perfil__cab > div { padding-top: 78px; }
 /* landing plan cards: prices never in Anglodavek */
 .plan > b { font: 600 1.9rem/1.1 var(--f-text); letter-spacing: 0; text-transform: none; }
+/* Sovereign: the patron tier, apart from the three plans */
+.plan-tag--sovereign { color: #f3dcae; border-color: #b0402f; background: linear-gradient(90deg, rgba(162, 56, 43, .35), rgba(227, 195, 142, .12)); }
+.soberano { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 28px 40px; align-items: center; max-width: 1180px; margin: 28px auto 0; padding: 38px clamp(22px, 4vw, 48px); border: 1px solid #6e2a20; background: #0d0b0a; overflow: hidden; isolation: isolate; }
+.soberano__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .22; z-index: -1; filter: saturate(.6); }
+.soberano::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, #0d0b0a 35%, rgba(13, 11, 10, .55)); }
+.soberano .rotulo { color: #d9806f; }
+.soberano .titulo { margin: 6px 0 12px; font-size: clamp(1.8rem, 3vw, 2.6rem); }
+.soberano__txt > p:not(.rotulo) { max-width: 620px; font-size: 1.12rem; color: var(--text-2); margin-bottom: 14px; }
+.soberano ul { display: grid; gap: 6px; }
+.soberano li { position: relative; padding-left: 1.2em; color: var(--text-2); }
+.soberano li::before { content: ""; position: absolute; left: 0; top: .78em; width: .55em; height: 1px; background: #d9806f; }
+.soberano li b { color: #f3dcae; }
+.soberano__compra { display: grid; gap: 16px; justify-items: end; }
+.soberano .plan__precio { color: #f3dcae; }
+.soberano .boton { background: #f3dcae; color: #140d0a; border-color: #f3dcae; }
+@media (max-width: 760px) { .soberano { grid-template-columns: 1fr; } .soberano__compra { justify-items: start; } }

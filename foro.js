@@ -9,7 +9,7 @@
   const C = () => window.Cuenta;
   const TITHE = { shard: { name: "Shard", min: "free", desc: "A small offering" }, endro: { name: "Endro", min: "diver", desc: "Purple, for something that moved you" }, crown: { name: "Crown", min: "abyssal", desc: "The highest offering" } };
   Object.entries(TITHE).forEach(([k, t]) => (t.ic = `<img class="tithe__img" src="img/ui/t-${k}.png" alt="${t.name}">`));
-  const RANK = { free: 0, reader: 1, diver: 2, abyssal: 3 };
+  const RANK = { free: 0, reader: 1, diver: 2, abyssal: 3, sovereign: 4 };
 
   async function call(path, body) {
     const h = { "x-tz": String(new Date().getTimezoneOffset()) };
@@ -82,12 +82,12 @@
   }
   async function board(id, ctx, sort, chapter) {
     const d = await call(`/forum/b/${id}?sort=${sort || "hot"}${chapter ? "&chapter=" + chapter : ""}`);
-    const me = C().user, canPost = d.board.post === "free" ? true : d.board.post === "admin" ? me?.role === "admin" : C().rank(me) >= 3;
+    const me = C().user, canPost = d.board.post === "free" ? true : d.board.post === "admin" ? me?.role === "admin" : C().rank(me) >= (RANK[d.board.post] ?? 4);
     return { title: d.board.name, sub: d.board.line, html: `
       <div class="foro__barra">
         <div class="seg seg--foro">${[["hot", "Hot"], ["new", "New"], ["top", "Top"], ["week", "This week"]].map(([k, t]) => `<a href="#/forum/b/${id}?sort=${k}${chapter ? "&chapter=" + chapter : ""}" aria-pressed="${(sort || "hot") === k}">${t}</a>`).join("")}</div>
         ${id === "chapters" ? `<select class="sel" data-filtro-cap><option value="">All chapters</option>${ctx.chapters.map((c) => `<option value="${c.number}"${+chapter === c.number ? " selected" : ""}>Chapter ${c.number} · ${esc(c.title)}</option>`).join("")}</select>` : ""}
-        ${canPost ? `<a class="boton" href="#/forum/new/${id}">New post</a>` : me ? `<span class="nota">${d.board.post === "abyssal" ? "Only Abyssal members post here." : "Only the author posts here."}</span>` : `<button class="boton" type="button" data-entrar>Sign in to post</button>`}
+        ${canPost ? `<a class="boton" href="#/forum/new/${id}">New post</a>` : me ? `<span class="nota">${d.board.post === "sovereign" ? "Only Sovereign members ask here." : d.board.post === "abyssal" ? "Only Abyssal members post here." : "Only the author posts here."}</span>` : `<button class="boton" type="button" data-entrar>Sign in to post</button>`}
       </div>${list(d.posts, ctx)}` };
   }
   async function post(id, ctx) {
@@ -126,7 +126,7 @@
         <label><span>Text</span><textarea name="body" rows="8" maxlength="10000"></textarea></label>
         ${boardId === "art" ? `<label><span>Link to your art (https://)</span><input name="link" type="url" placeholder="https://"></label>` : ""}
         <label><span>Spoilers</span><select class="sel" name="upto"><option value="0">No spoilers</option>${ctx.chapters.map((c) => `<option value="${c.number}"${boardId === "chapters" ? "" : ""}>Spoilers up to chapter ${c.number}</option>`).join("")}</select></label>
-        ${admin && boardId === "stories" ? `<label><span>Poll options (one per line)</span><textarea name="poll" rows="4"></textarea></label><label><span>Who can vote</span><select class="sel" name="pollMin"><option value="abyssal">Abyssal</option><option value="diver">Diver and up</option><option value="reader">Reader and up</option><option value="free">Everyone with an account</option></select></label>` : ""}
+        ${admin && boardId === "stories" ? `<label><span>Poll options (one per line)</span><textarea name="poll" rows="4"></textarea></label><label><span>Who can vote</span><select class="sel" name="pollMin"><option value="sovereign">Sovereign</option><option value="abyssal">Abyssal and up</option><option value="diver">Diver and up</option><option value="reader">Reader and up</option><option value="free">Everyone with an account</option></select></label>` : ""}
         <p class="fform__err" hidden></p>
         <div class="fform__pie"><a class="boton boton--quieto" href="#/forum/b/${boardId}">Cancel</a><button class="boton" type="submit">Post</button></div>
       </form>` };
