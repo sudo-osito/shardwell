@@ -44,8 +44,8 @@ const SUMMARY = {
 };
 // infobox rows (canon facts from the notes); "?" = not decided yet
 const INFO = {
-  "Kalfu": [["Age", "17"], ["Home", "Kobe, Kayaba"], ["Family", "Hinata (sister); mother (dead); father (unknown to him)"], ["Work", "Jobs for criminal syndicates"], ["Moves by", "Parkour"], ["Fears", "Water and falling; that Hinata is left alone"], ["Cannot", "Swim"], ["Shardwell", "Woke in Chapter 1"], ["Sovereign", "?"], ["Dominion", "?"], ["Appearance", "?"]],
-  "Hinata": [["Age", "10 to 13"], ["Family", "Kalfu (brother); mother (dead); father (unknown)"], ["Personality", "Luminous, stubborn, tender; very intelligent"], ["Name means", "A sunny place"], ["Shardwell", "?"], ["Appearance", "?"]],
+  "Kalfu": [["Age", "17"], ["Home", "Kobe, Kayaba"], ["Family", "Hinata (sister); mother (dead); father (unknown to him)"], ["Work", "Jobs for criminal syndicates"], ["Moves by", "Parkour"], ["Fears", "Water and falling; that Hinata is left alone"], ["Cannot", "Swim"], ["Shardwell", "Woke in Chapter 1"], ["Sovereign", "?"], ["Dominion", "?"], ["Look", "Black wolf cut, pale brown eyes, scar across the left eyebrow"], ["Wears", "Faded black bomber, grey hoodie, red laces"]],
+  "Hinata": [["Age", "10 to 13"], ["Family", "Kalfu (brother); mother (dead); father (unknown)"], ["Personality", "Luminous, stubborn, tender; very intelligent"], ["Name means", "A sunny place"], ["Shardwell", "?"], ["Look", "Black messy ponytail, amber-brown eyes, pencil behind the ear"], ["Wears", "Kalfu's old yellow sweater"]],
   "Kayaba Nationwide City": [["Type", "Megacity"], ["Covers", "All of Japan and about 30% of the surrounding ocean"], ["Population", "12.53 billion (2190)"], ["Buildings", "500 floors and more"], ["Ruled by", "The clans"], ["Neighbours", "Abaddon, Leviathan"]],
   "Abaddon": [["Type", "Godblood Zone"], ["Rank", "Third most terrible on Earth"], ["Outpost", "The Rig"], ["Border", "Sirens that have never sounded"]],
   "Leviathan (Godblood Zone)": [["Type", "Godblood Zone"], ["Known for", "Colossi that change the weather"], ["Outposts", "?"]],
@@ -217,7 +217,7 @@ const ART = {
   "Shardwell": "catedral", "Diving": "vast", "Diving Index": "vast", "Hierarchy Levels": "vast", "Initial Displacement": "novel",
   "Sovereignty and Domains": "axion", "Body and Mind Changes": "anastasis", "Endro": "endro", "Shardwell Activation": "endro", "Tithes": "tithes", "Edicts": "tithes", "Inheritance": "chrona",
   "Abaddon": "mar", "Godblood Zones": "mar", "Godblood": "mar", "The Rig": "rig", "Leviathan (Godblood Zone)": "leviathan",
-  "Echoforms": "echoforms", "Fishing Game": "rig", "Shardwell Novel": "novel",
+  "Echoforms": "echoforms", "Kalfu": "kalfu", "Hinata": "hinata", "Fishing Game": "rig", "Shardwell Novel": "novel",
 };
 
 // ---------- build ----------
@@ -279,7 +279,16 @@ const sections = [...CATS.map(({ id, name, line }) => ({ id, name, line })), { i
   .filter((s) => entries.some((e) => e.section === s.id));
 
 const data = { built: new Date().toISOString(), sections, entries, glossary, unknowns: openItems };
+// public data: only the free chapters (no lore)
+const FREE = 50;
+const pubSections = sections.filter((x) => x.id === "novel");
+const pubEntries = entries.filter((e) => e.section === "novel" && e.number <= FREE).map((e) => ({ ...e, links: [], backlinks: [] }));
+const locked = entries.filter((e) => e.section === "novel" && e.number > FREE).map((e) => ({ id: e.id, title: e.title, number: e.number, section: "novel", status: e.status, words: e.words, locked: true }));
+const extras = { "fishing-game": entries.find((e) => e.id === "fishing-game")?.info || [] };
+fs.writeFileSync(path.join(path.dirname(OUT), "novel.json"), JSON.stringify({ built: data.built, sections: pubSections, entries: [...pubEntries, ...locked], extras }));
+const PRIV = path.join(path.dirname(new URL(import.meta.url).pathname), "out", "lore.json");
+fs.mkdirSync(path.dirname(PRIV), { recursive: true });
+fs.writeFileSync(PRIV, JSON.stringify(data));
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
-fs.writeFileSync(OUT, JSON.stringify(data));
-console.log(`entries ${entries.length} · glossary ${glossary.length} · unknowns ${openItems.length} · ${(fs.statSync(OUT).size / 1024).toFixed(0)} kB`);
+console.log(`public data/novel.json · private build/out/lore.json · entries ${entries.length} · glossary ${glossary.length} · unknowns ${openItems.length} · ${(fs.statSync(PRIV).size / 1024).toFixed(0)} kB`);
 for (const s of sections) console.log(" ", s.name.padEnd(11), entries.filter((e) => e.section === s.id).map((e) => e.title).join(", "));

@@ -402,3 +402,70 @@ body[data-ruta="home"] .barra:not(.solida) .barra__nav a:hover { color: #fff; }
 body[data-ruta="home"] .barra:not(.solida) .barra__marca { text-shadow: 0 1px 14px rgba(0, 0, 0, .8); }
 body[data-ruta="home"] .barra:not(.solida) .barra__buscar { color: #ece8df; border-color: rgba(236, 232, 223, .5); background: rgba(8, 8, 8, .35); }
 .barra__nav a { font-size: .84rem; font-weight: 700; color: #b5b1a9; }
+.portada--novela .portada__img { object-position: center 55%; }
+
+/* ---------- accounts ---------- */
+.cuenta { position: relative; display: flex; align-items: center; }
+.cuenta__entrar { min-height: 40px; padding: 0 16px; background: var(--text); color: var(--bg); font: 700 .74rem/1 var(--f-text); letter-spacing: .2em; text-transform: uppercase; border: 1px solid var(--text); transition: background .2s, color .2s; }
+.cuenta__entrar:hover { background: transparent; color: var(--text); }
+.cuenta__yo { display: grid; place-items: center; width: 44px; height: 44px; }
+.avatar { display: inline-grid; place-items: center; width: 34px; height: 34px; flex: 0 0 auto; overflow: hidden; border-radius: 50%; border: 1px solid var(--line-2); background: #1c1c1b; vertical-align: middle; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; opacity: 1; }
+.avatar--letra { font: 400 1rem/1 var(--f-title); color: var(--text); background: radial-gradient(circle at 30% 30%, #3a3936, #161615); }
+.avatar--g { width: 52px; height: 52px; } .avatar--g.avatar--letra { font-size: 1.4rem; }
+.avatar--xl { width: 112px; height: 112px; } .avatar--xl.avatar--letra { font-size: 3rem; }
+.cuenta__yo:hover .avatar, .cuenta__yo[aria-expanded="true"] .avatar { border-color: var(--text); }
+.cuenta__menu { position: absolute; top: calc(100% + 10px); right: 0; z-index: 45; width: 260px; display: grid; background: rgba(18, 18, 17, .98); border: 1px solid var(--line-2); box-shadow: 0 24px 60px rgba(0, 0, 0, .6); }
+.cuenta__quien { display: flex; gap: 12px; align-items: center; padding: 16px; border-bottom: 1px solid var(--line); }
+.cuenta__quien b { display: block; font: 400 1.1rem/1.1 var(--f-title); letter-spacing: .05em; text-transform: uppercase; font-weight: 400; }
+.cuenta__quien span { font-size: .9rem; color: var(--text-2); font-style: italic; }
+.cuenta__menu a, .cuenta__menu button { display: block; width: 100%; text-align: left; padding: 12px 16px; font-size: 1.05rem; text-decoration: none; color: var(--text); border-bottom: 1px solid var(--line); }
+.cuenta__menu > :last-child { border-bottom: 0; color: var(--text-2); }
+.cuenta__menu a:hover, .cuenta__menu button:hover { background: rgba(217, 213, 204, .06); }
+body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 16px rgba(0,0,0,.5); }
+
+.acceso { width: min(440px, calc(100vw - 32px)); max-width: none; padding: 36px 32px 30px; border: 1px solid var(--line-2); background: #121211; color: var(--text); box-shadow: 0 40px 100px rgba(0, 0, 0, .7); }
+.acceso::backdrop { background: rgba(5, 5, 5, .75); backdrop-filter: blur(4px); }
+.acceso__cerrar { position: absolute; top: 10px; right: 12px; width: 40px; height: 40px; font-size: 1.6rem; color: var(--text-2); }
+.acceso__logo { font-size: 2rem; text-align: center; margin-bottom: 22px; animation: none; }
+.acceso__tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--line-2); margin-bottom: 22px; }
+.acceso__tabs button { padding: 12px 0; font-size: .82rem; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--text-3); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.acceso__tabs [aria-selected="true"] { color: var(--text); border-bottom-color: var(--text); }
+.acceso__form { display: grid; gap: 14px; }
+.acceso__form label { display: grid; gap: 6px; }
+.acceso__form label span { font-size: .72rem; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--text-2); }
+.acceso__form input, .perfil__caja input { width: 100%; min-height: 48px; padding: 0 14px; font: 400 1.15rem var(--f-text); color: var(--text); background: var(--bg); border: 1px solid var(--line-2); }
+.acceso__form input:focus, .perfil__caja input:focus { outline: none; border-color: var(--text-2); }
+.acceso__form .boton { margin-top: 6px; }
+.acceso__err { color: #d0806f; font-style: italic; }
+.acceso__nota { color: var(--text-3); font-size: .95rem; font-style: italic; text-align: center; }
+
+.acciones--izq { justify-content: flex-start; margin-top: 10px; }
+.nota-gate { color: #d2cec5; font-style: italic; }
+.perfil__cab { display: flex; gap: 26px; align-items: center; margin-top: 10px; }
+.perfil__meta { display: flex; gap: 14px; align-items: center; margin-top: 10px; color: var(--text-2); font-style: italic; }
+.perfil__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.perfil__caja { display: grid; align-content: start; gap: 14px; padding: 24px; border: 1px solid var(--line); background: var(--bg-2); }
+.perfil__caja--ancha { grid-column: 1 / -1; }
+.perfil__caja .boton { justify-self: start; }
+.perfil__num { font: 400 2.2rem/1 var(--f-title); letter-spacing: .04em; text-transform: uppercase; font-weight: 400; }
+.perfil__num small { font: italic 400 1rem var(--f-text); letter-spacing: 0; text-transform: none; color: var(--text-2); }
+.perfil__marcas { display: grid; }
+.perfil__marcas a { display: grid; grid-template-columns: 36px 1fr; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); text-decoration: none; }
+.perfil__marcas span { font: 400 1rem var(--f-title); color: var(--text-3); }
+.perfil__marcas b { font: 400 1.1rem var(--f-title); letter-spacing: .05em; text-transform: uppercase; font-weight: 400; }
+.avatares { display: flex; flex-wrap: wrap; gap: 10px; }
+.avatares button { border-radius: 50%; padding: 3px; border: 1px solid transparent; }
+.avatares button[aria-pressed="true"] { border-color: var(--text); }
+.avatares button:hover { border-color: var(--text-2); }
+.perfil__msg { color: var(--text-2); font-style: italic; }
+.perfil__pie { grid-template-columns: 1fr auto auto; align-items: center; }
+.perfil__pie p { color: var(--text-2); }
+.perfil__borrar { color: #b06a5e; font-size: .95rem; text-decoration: underline; text-underline-offset: .2em; }
+@media (max-width: 900px) {
+  .cuenta__entrar { padding: 0 12px; font-size: .66rem; letter-spacing: .14em; }
+  .perfil__grid { grid-template-columns: minmax(0, 1fr); }
+  .perfil__cab { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .perfil__pie { grid-template-columns: 1fr; justify-items: start; }
+  .cuenta__menu { position: fixed; top: 64px; right: 8px; }
+}

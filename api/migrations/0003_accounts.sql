@@ -1,0 +1,12 @@
+CREATE TABLE users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  pass TEXT NOT NULL,            -- pbkdf2$iterations$salt$hash
+  avatar TEXT NOT NULL DEFAULT '',
+  member INTEGER NOT NULL DEFAULT 0,
+  created INTEGER NOT NULL
+);
+CREATE TABLE sessions (token TEXT PRIMARY KEY, user INTEGER NOT NULL, created INTEGER NOT NULL, expires INTEGER NOT NULL);
+CREATE INDEX sessions_user ON sessions(user);
+ALTER TABLE comments ADD COLUMN user INTEGER;

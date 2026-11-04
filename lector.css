@@ -193,3 +193,9 @@ html[data-lectura] .boton--quieto { background: transparent; color: var(--r-text
   .reacciones button { min-width: 62px; padding: 10px 6px; }
   .reacciones small { font-size: .7rem; }
 }
+.cform--entrar { padding: 18px; border: 1px solid var(--r-line); background: var(--r-bg); display: grid; gap: 12px; }
+.cform--entrar p { color: var(--r-text2); font-style: italic; }
+.cform__como { display: flex; align-items: center; gap: 10px; color: var(--r-text2); font-size: .98rem; }
+.cform__como b { color: var(--r-text); }
+.com__cab .avatar { width: 30px; height: 30px; }
+.com__miembro { font-size: .66rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #c49a6c; border: 1px solid currentColor; padding: 2px 6px; }

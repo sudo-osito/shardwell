@@ -6,6 +6,7 @@
   "account_id": "5d7a415836e98f7f0afa31fc11cf16a0",
   "compatibility_date": "2026-10-01",
   "observability": { "enabled": true },
+  "kv_namespaces": [{ "binding": "LORE", "id": "a65328af52e6464a85aaca1413dc0f4a" }],
   "d1_databases": [
     { "binding": "DB", "database_name": "shardwell-reader", "database_id": "b9509b0d-da09-4769-8d7d-0023b4dfcc60", "migrations_dir": "migrations" }
   ]

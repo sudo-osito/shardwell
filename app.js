@@ -44,11 +44,11 @@
     return k > 0.95 && nx ? { e: nx, label: `Continue: Chapter ${nx.number}` } : { e: last, label: `Continue Chapter ${last.number} · ${Math.round(k * 100)}%` };
   }
   function home() {
-    const ch = chapters(), cont = progressCta(), game = BY.get("fishing-game");
+    const ch = chapters(), cont = progressCta(), game = { info: D.extras?.["fishing-game"] || BY.get("fishing-game")?.info || [] };
     const words = ch.filter((c) => c.status !== "Draft").reduce((t, c) => t + c.words, 0);
     return `
     <section class="portada portada--novela">
-      ${img("novel", "A lit door in a silent, empty city at noon", "portada__img")}
+      ${img("pozo", "An immense ruined well descending into black water, in the rain", "portada__img")}
       <canvas class="lluvia" aria-hidden="true"></canvas>
       <div class="portada__texto">
         <p class="rotulo portada__pre">A novel</p>
@@ -82,15 +82,6 @@
       </aside>
     </section>
 
-    <section class="bloque">
-      <header class="cabeza cabeza--centro"><p class="rotulo">The world</p><h2 class="titulo">Before you dive</h2>
-        <p class="bajada">You do not need any of this to start reading. It is here when you want it.</p></header>
-      <div class="claves">${START.map((id) => BY.get(id)).filter(Boolean).map((e) => `
-        <a class="clave" href="#/e/${e.id}">${e.image ? img(e.image, "", "clave__img") : '<span class="clave__img clave__img--vacia"></span>'}
-          <span class="clave__cat">${cat(e.section).name}</span><b>${e.title}</b><span class="clave__txt">${e.summary}</span></a>`).join("")}</div>
-      <p class="mas mas--centro"><a href="#/world">Explore the whole world</a></p>
-    </section>
-
     ${membershipBlock()}
 
     <section class="bloque obra obra--juego">
@@ -98,7 +89,7 @@
         <p class="rotulo">Also in Shardwell · the game · ${stamp("Concept")}</p><h2 class="titulo">Abaddon</h2>
         <p class="obra__sinopsis">${GAME_PITCH}</p>
         <dl class="datos">${(game?.info || []).filter(([k]) => k !== "Title").map(([k, v]) => `<div><dt>${k}</dt><dd>${v ?? unwritten()}</dd></div>`).join("")}</dl>
-        <a class="boton boton--quieto" href="#/e/fishing-game">About the game</a>
+        
       </div>
       <div class="obra__img">${img("rig", "Under the Rig: a fishing boat returns on black water")}</div>
     </section>
@@ -114,8 +105,8 @@
     return `<section class="bloque membresia${full ? " membresia--pagina" : ""}">
       <header class="cabeza cabeza--centro"><p class="rotulo">How to read</p><h2 class="titulo">Free to start. Kept alive by readers.</h2></header>
       <div class="planes">
-        <div class="plan"><p class="rotulo">Free</p><b>Chapters 1 to ${FREE()}</b><ul><li>Read every chapter up to ${FREE()}</li><li>Comment on chapters and passages</li><li>Bookmarks and reading settings</li></ul><a class="boton boton--quieto" href="#/e/${chapters()[0].id}">Start reading</a></div>
-        <div class="plan plan--miembro"><p class="rotulo">Membership · coming soon</p><b>Chapter ${FREE() + 1} onward</b><ul><li>Every chapter after ${FREE()}</li><li>Supports the writing of Shardwell</li><li>Price to be announced</li></ul>
+        <div class="plan"><p class="rotulo">Free</p><b>Chapters 1 to ${FREE()}</b><ul><li>Read every chapter up to ${FREE()}</li><li>Comment on chapters and passages (free account)</li><li>Bookmarks and reading settings</li></ul><a class="boton boton--quieto" href="#/e/${chapters()[0].id}">Start reading</a></div>
+        <div class="plan plan--miembro"><p class="rotulo">Membership · coming soon</p><b>Chapter ${FREE() + 1} onward</b><ul><li>Every chapter after ${FREE()}</li><li><b>The Codex</b>: the full lore of Shardwell, its characters, places, powers and gods</li><li>Art and character studies</li><li>Supports the writing of Shardwell</li><li>Price to be announced</li></ul>
           <form class="aviso" data-aviso><input type="email" name="email" placeholder="Your email" required autocomplete="email"><input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"><button class="boton" type="submit">Tell me when it opens</button><p class="aviso__msg" hidden></p></form>
           <p class="plan__nota">We only use your email to tell you when membership opens.</p></div>
       </div>
@@ -235,6 +226,52 @@
       <div class="refs">${REFS.map((r) => `<figure class="ref">${img("ref-" + r.id, r.who)}<figcaption><span class="rotulo">${r.kind}</span><b>${r.who}</b></figcaption></figure>`).join("")}</div></section>`;
   }
 
+  const LORE_ROUTES = ["world", "c", "s", "glossary", "unwritten", "unknowns", "art"];
+  const isMember = () => !!window.Cuenta?.user?.member;
+  function codexGate() {
+    const u = window.Cuenta?.user;
+    return `<header class="pagina pagina--img">${img("pozo", "", "pagina__img")}${crumbs(["Shardwell", "#/"], ["The Codex"])}
+      <p class="rotulo">Members only</p><h1 class="titulo titulo--xl">The Codex</h1>
+      <p class="bajada">The full lore of Shardwell: its characters, places, powers, gods and history. The story reveals it slowly; members can open it all.</p>
+      <div class="acciones acciones--izq">${u ? `<a class="boton" href="#/membership">Become a member</a>` : `<a class="boton" href="#/membership">Become a member</a><button class="boton boton--quieto" type="button" data-entrar>Sign in</button>`}<a class="boton boton--quieto" href="#/novel">Keep reading</a></div>
+      ${u && !u.member ? `<p class="nota-gate">You are signed in as ${u.name}. Your account is not a member yet.</p>` : ""}</header>`;
+  }
+  // ---------- account page ----------
+  function account() {
+    const u = window.Cuenta?.user;
+    if (!u) return `<header class="pagina">${crumbs(["Shardwell", "#/"], ["Account"])}<h1 class="titulo titulo--xl">Your account</h1><p class="bajada">Sign in to comment, keep your bookmarks and become a member.</p><div class="acciones acciones--izq"><button class="boton" type="button" data-entrar>Sign in</button></div></header>`;
+    const pr = window.Lector?.progress() || { done: [], pos: {} }, marks = window.Lector?.store.get("marks", []) || [];
+    const ch = chapters(), done = ch.filter((c) => pr.done.includes(c.id)).length;
+    const cont = progressCta();
+    return `<header class="pagina perfil">${crumbs(["Shardwell", "#/"], ["Account"])}
+      <div class="perfil__cab">${window.Cuenta.avatar(u, "avatar--xl")}<div><h1 class="titulo titulo--xl">${u.name}</h1><p class="perfil__meta"><span class="sello ${u.member ? "sello--canon" : ""}">${u.member ? "Member" : "Free reader"}</span><span>Joined ${new Date(u.created).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</span></p></div></div></header>
+    <section class="bloque bloque--pegado perfil__grid">
+      <div class="perfil__caja"><p class="rotulo">Reading</p><b class="perfil__num">${done}<small> of ${ch.length} chapters</small></b>
+        ${cont ? `<a class="boton" href="#/e/${cont.e.id}">${cont.label}</a>` : `<a class="boton" href="#/e/${ch[0].id}">Start reading</a>`}</div>
+      <div class="perfil__caja"><p class="rotulo">Membership</p><b class="perfil__num">${u.member ? "Member" : "Free"}</b>
+        ${u.member ? `<a class="boton boton--quieto" href="#/world">Open the Codex</a>` : `<a class="boton boton--quieto" href="#/membership">Become a member</a>`}</div>
+      <div class="perfil__caja perfil__caja--ancha" id="marcas"><p class="rotulo">Bookmarks</p>
+        ${marks.length ? `<ul class="perfil__marcas">${marks.map((m) => `<li><a href="#/e/${m.id}"><span>${m.n}</span><b>${m.title}</b></a></li>`).join("")}</ul>` : `<p class="nota">No bookmarks yet. Use ☆ while reading.</p>`}</div>
+      <form class="perfil__caja perfil__caja--ancha" data-perfil="avatar"><p class="rotulo">Picture</p>
+        <div class="avatares">${window.Cuenta.AVATARS.map((a) => `<button type="button" data-avatar="${a}" aria-pressed="${u.avatar === a}" aria-label="${a || "Initial"}">${window.Cuenta.avatar({ ...u, avatar: a }, "avatar--g")}</button>`).join("")}</div></form>
+      <form class="perfil__caja" data-perfil="nombre"><p class="rotulo">Name</p><input name="name" value="${u.name}" maxlength="24" required><p class="perfil__msg" hidden></p><button class="boton boton--quieto" type="submit">Save name</button></form>
+      <form class="perfil__caja" data-perfil="clave"><p class="rotulo">Password</p><input name="oldPassword" type="password" placeholder="Current password" autocomplete="current-password" required><input name="newPassword" type="password" placeholder="New password (8+)" autocomplete="new-password" minlength="8" required><p class="perfil__msg" hidden></p><button class="boton boton--quieto" type="submit">Change password</button></form>
+      <div class="perfil__caja perfil__caja--ancha perfil__pie"><p>${u.email}</p><button class="boton boton--quieto" type="button" data-salir>Sign out</button><button class="perfil__borrar" type="button" data-borrar-cuenta>Delete account</button></div>
+    </section>`;
+  }
+  async function accountEvents() {
+    $$("[data-avatar]", vista).forEach((b) => b.addEventListener("click", async () => { try { await window.Cuenta.update({ avatar: b.dataset.avatar }); route(); } catch (x) { alert(x.message); } }));
+    $$("form[data-perfil=nombre], form[data-perfil=clave]", vista).forEach((f) => f.addEventListener("submit", async (ev) => {
+      ev.preventDefault(); const m = $(".perfil__msg", f), fd = Object.fromEntries(new FormData(f));
+      try { await window.Cuenta.update(fd); m.textContent = "Saved."; m.hidden = false; if (f.dataset.perfil === "nombre") setTimeout(route, 600); else f.reset(); }
+      catch (x) { m.textContent = x.message; m.hidden = false; }
+    }));
+    $("[data-borrar-cuenta]", vista)?.addEventListener("click", async () => {
+      const pw = prompt("This deletes your account and hides your comments. Write your password to confirm."); if (!pw) return;
+      try { await window.Cuenta.remove(pw); location.hash = "#/"; } catch (x) { alert(x.message); }
+    });
+  }
+
   const notFound = () => `<header class="pagina"><h1 class="titulo titulo--xl">Unwritten</h1><p class="bajada">This page does not exist yet. <a href="#/">Back to the start.</a></p></header>`;
 
   // ---------- router ----------
@@ -242,11 +279,12 @@
     const h = location.hash.replace(/^#/, "") || "/";
     if (!h.startsWith("/")) return;
     const [, a, b] = h.split("/");
-    const html = !a ? home() : a === "e" ? article(b) : a === "c" || a === "s" ? category(b) : a === "world" ? world() : a === "novel" ? novel() : a === "glossary" ? glossary() : a === "unwritten" || a === "unknowns" ? unwrittenPage() : a === "art" ? art() : a === "membership" ? membership() : notFound();
+    const gated = LORE_ROUTES.includes(a) || (a === "e" && b && !BY.get(b)?.section?.startsWith("novel") && !isMember());
+    const html = gated && !isMember() ? codexGate() : !a ? home() : a === "account" ? account() : a === "e" ? article(b) : a === "c" || a === "s" ? category(b) : a === "world" ? world() : a === "novel" ? novel() : a === "glossary" ? glossary() : a === "unwritten" || a === "unknowns" ? unwrittenPage() : a === "art" ? art() : a === "membership" ? membership() : notFound();
     window.Lector?.unmount();
     vista.innerHTML = html;
     const e = a === "e" && BY.get(b);
-    const names = { membership: "Membership", world: "World", novel: "The Novel", glossary: "Glossary", unwritten: "Unwritten", art: "Art" };
+    const names = { account: "Account", membership: "Membership", world: "World", novel: "The Novel", glossary: "Glossary", unwritten: "Unwritten", art: "Art" };
     document.title = e ? `${e.title} · Shardwell` : a === "c" ? `${cat(b)?.name || "World"} · Shardwell` : a ? `${names[a] || "Shardwell"} · Shardwell` : "Shardwell";
     document.body.dataset.ruta = a || "home";
     const here = e ? (e.section === "novel" ? "novel" : e.id === "fishing-game" ? "game" : e.section === "characters" ? "characters" : "world") : a === "c" ? (b === "characters" ? "characters" : "world") : a || "";
@@ -254,6 +292,7 @@
     window.scrollTo(0, 0);
     menu(false);
     after();
+    if (a === "account") accountEvents();
   }
 
   function after() {
@@ -350,11 +389,20 @@
   addEventListener("scroll", () => barra.classList.toggle("solida", scrollY > 40), { passive: true });
 
   // ---------- start ----------
-  fetch("data/lore.json").then((r) => r.json()).then((d) => {
+  let PUB = null;
+  async function loadData() {
+    if (!PUB) PUB = await (await fetch("data/novel.json")).json();
+    let d = PUB;
+    if (isMember() && window.Cuenta.token) {
+      try { const r = await fetch("https://shardwell-reader.maxpino.workers.dev/lore", { headers: { authorization: "Bearer " + window.Cuenta.token } }); if (r.ok) { const full = await r.json(); d = { ...full, extras: PUB.extras }; } } catch {}
+    }
     D = d; BY = new Map(d.entries.map((e) => [e.id, e]));
-    $("[data-nav]").innerHTML = [["novel", "#/novel", "Read"], ["game", "#/e/fishing-game", "The Game"], ["world", "#/world", "World"], ["characters", "#/c/characters", "Characters"], ["glossary", "#/glossary", "Glossary"], ["art", "#/art", "Art"]]
+    $("[data-nav]").innerHTML = [["novel", "#/novel", "Read"], ["membership", "#/membership", "Membership"], ["world", "#/world", (isMember() ? "" : "◆ ") + "The Codex"]]
       .map(([k, h, t]) => `<a href="${h}" data-k="${k}">${t}</a>`).join("");
     $("[data-construido]").textContent = new Date(d.built).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
-    addEventListener("hashchange", route); route();
-  }).catch(() => { vista.innerHTML = `<p class="error">The site could not be loaded.</p>`; });
+  }
+  addEventListener("cuenta:cambio", async () => { await loadData(); const h = location.hash.split("/"); if (h[1] === "e" && BY.get(h[2])?.section === "novel") { window.Lector.refreshForms(); } else route(); });
+  window.Cuenta?.on(() => {});
+  loadData().then(async () => { await window.Cuenta?.refresh(); if (isMember() && !D.sections.some((x) => x.id !== "novel")) await loadData(); addEventListener("hashchange", route); route(); })
+    .catch(() => { vista.innerHTML = `<p class="error">The site could not be loaded.</p>`; });
 })();

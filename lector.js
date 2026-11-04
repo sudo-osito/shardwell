@@ -17,7 +17,8 @@
   const REACT = [["heart", "♥", "Loved it"], ["dread", "☾", "Dread"], ["tears", "≋", "Tears"], ["chills", "❄", "Chills"], ["awe", "✶", "Awe"]];
   const ago = (t) => { const s = (Date.now() - t) / 1000; return s < 60 ? "just now" : s < 3600 ? `${Math.floor(s / 60)} min ago` : s < 86400 ? `${Math.floor(s / 3600)} h ago` : s < 2592000 ? `${Math.floor(s / 86400)} d ago` : new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }); };
   const api = async (path, body) => {
-    const r = await fetch(API + path + (body ? "" : (path.includes("?") ? "&" : "?") + "reader=" + reader), body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ reader, ...body }) } : {});
+    const auth = window.Cuenta?.token ? { authorization: "Bearer " + window.Cuenta.token } : {};
+    const r = await fetch(API + path + (body ? "" : (path.includes("?") ? "&" : "?") + "reader=" + reader), body ? { method: "POST", headers: { "content-type": "application/json", ...auth }, body: JSON.stringify({ reader, ...body }) } : { headers: auth });
     const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || "Network error"); return j;
   };
 
@@ -183,15 +184,14 @@
     if (locked) return; // members-only chapters stop here (paywall is in the markup)
 
     // ---------- comments ----------
-    const name = () => store.get("name", "");
-    const formHTML = (para, parent) => `<form class="cform" data-form data-para="${para ?? ""}" data-parent="${parent ?? ""}">
-      <input class="cform__nombre" name="name" maxlength="40" placeholder="Your name" value="${esc(name())}" required autocomplete="nickname">
+    const formHTML = (para, parent) => !window.Cuenta?.user ? `<div class="cform cform--entrar"><p>${parent ? "Sign in to reply." : "Sign in to join the conversation. It is free."}</p><div class="fila"><button class="boton boton--chico" type="button" data-entrar>Sign in</button><button class="boton boton--chico boton--quieto" type="button" data-registrar>Create account</button></div></div>` : `<form class="cform" data-form data-para="${para ?? ""}" data-parent="${parent ?? ""}">
+      <p class="cform__como">${window.Cuenta.avatar(window.Cuenta.user)}<span>Commenting as <b>${esc(window.Cuenta.user.name)}</b></span></p>
       <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
       <textarea name="body" maxlength="2000" rows="${parent ? 2 : 3}" placeholder="${parent ? "Write a reply" : para !== null && para !== undefined ? "Comment on this passage" : "Share your thoughts on this chapter"}" required></textarea>
       <div class="cform__pie"><label class="chk"><input type="checkbox" name="spoiler"> Spoiler</label><span class="cform__n">0/2000</span><button class="boton boton--chico" type="submit">${parent ? "Reply" : "Post"}</button></div>
       <p class="cform__err" hidden></p></form>`;
     const cHTML = (c, replies = []) => `<li class="com${c.spoiler ? " com--spoiler" : ""}" data-c="${c.id}">
-      <div class="com__cab"><span class="com__av" aria-hidden="true">${esc(c.name[0] || "?").toUpperCase()}</span><b>${esc(c.name)}</b><time>${ago(c.created)}</time></div>
+      <div class="com__cab">${window.Cuenta ? window.Cuenta.avatar({ name: c.name, avatar: c.avatar }) : ""}<b>${esc(c.name)}</b>${c.member ? '<span class="com__miembro">Member</span>' : ""}<time>${ago(c.created)}</time></div>
       ${c.spoiler ? '<button class="com__revelar" type="button" data-revelar>Spoiler · show</button>' : ""}
       <p class="com__txt">${esc(c.body).replace(/\n/g, "<br>")}</p>
       <div class="com__acc"><button type="button" data-like="${c.id}" aria-pressed="${c.liked}">♥ <span>${c.likes || ""}</span></button>${c.parent ? "" : `<button type="button" data-responder="${c.id}">Reply</button>`}${c.mine ? `<button type="button" data-borrar="${c.id}">Delete</button>` : ""}</div>
@@ -238,13 +238,12 @@
     on(root, "submit", async (ev) => {
       const f = ev.target.closest("[data-form]"); if (!f) return; ev.preventDefault();
       const fd = new FormData(f), err = $(".cform__err", f), btn = $("button[type=submit]", f);
-      store.set("name", String(fd.get("name") || "").trim());
       btn.disabled = true; err.hidden = true;
       try {
-        await api("/comment", { chapter: e.id, para: f.dataset.para === "" ? null : +f.dataset.para, parent: f.dataset.parent ? +f.dataset.parent : null, name: fd.get("name"), body: fd.get("body"), spoiler: !!fd.get("spoiler"), website: fd.get("website") });
+        await api("/comment", { chapter: e.id, para: f.dataset.para === "" ? null : +f.dataset.para, parent: f.dataset.parent ? +f.dataset.parent : null, body: fd.get("body"), spoiler: !!fd.get("spoiler"), website: fd.get("website") });
         toast("Posted");
         if (f.dataset.para !== "") { await openPara(+f.dataset.para); data.paraCounts[f.dataset.para] = (data.paraCounts[f.dataset.para] || 0) + (f.dataset.parent ? 0 : 1); paintChapter(); }
-        else await loadChapter();
+        else { await loadChapter(); $("[data-form-capitulo]", root).innerHTML = formHTML(null, null); }
       } catch (x) { err.textContent = x.message; err.hidden = false; btn.disabled = false; }
     });
     on(root, "click", async (ev) => {
@@ -259,7 +258,14 @@
       const sp = ev.target.closest("[data-revelar]"); if (sp) { sp.closest(".com").classList.remove("com--spoiler"); sp.remove(); }
     });
     loadChapter();
+    refreshForms = () => {
+      $("[data-form-capitulo]", root).innerHTML = formHTML(null, null);
+      if (paraOpen !== null && !panels.parrafo.hidden) $("[data-form-parrafo]", root).innerHTML = formHTML(paraOpen, null);
+      loadChapter();
+    };
+    on(root, "click", (ev) => { if (ev.target.closest("[data-registrar]")) window.Cuenta?.open("register"); });
   }
+  let refreshForms = () => {};
 
   function unmount() { cleanup.forEach((f) => f()); cleanup = []; delete document.documentElement.dataset.lectura; }
 
@@ -336,5 +342,5 @@
     </article>`;
   }
 
-  window.Lector = { html, mount, unmount, FREE, store, progress: () => ({ last: store.get("last", null), pos: store.get("pos", {}), done: store.get("done", []) }) };
+  window.Lector = { html, mount, unmount, refreshForms: () => refreshForms(), FREE, store, progress: () => ({ last: store.get("last", null), pos: store.get("pos", {}), done: store.get("done", []) }) };
 })();
