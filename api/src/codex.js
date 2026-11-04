@@ -35,8 +35,12 @@ export async function codexRoute(req, env, url, p, me, h) {
         env.DB.prepare("SELECT l.dst, COUNT(*) n FROM wiki_links l LEFT JOIN wiki_pages pg ON pg.slug = l.dst AND pg.hidden = 0 WHERE pg.slug IS NULL GROUP BY l.dst ORDER BY n DESC LIMIT 20").all(),
         env.DB.prepare("SELECT status FROM wiki_apps WHERE user = ? ORDER BY id DESC LIMIT 1").bind(me.id).first(),
       ]);
-      const users = await who(recent.results.map((r) => r.user));
-      return json(req, { pages: count.n, recent: recent.results.map((r) => ({ ...r, user: users[r.user] })), cats: cats.results, wanted: wanted.results, me: { wikiRank: wr, wikiRole: admin ? "author" : me.wiki_role || "", application: apps?.status || "" } });
+      const top = (await env.DB.prepare("SELECT user, COUNT(*) n FROM wiki_revs WHERE created > ? GROUP BY user ORDER BY n DESC LIMIT 8").bind(now() - 30 * 864e5).all()).results;
+      const reads = (await env.DB.prepare("SELECT COUNT(*) n FROM user_reads WHERE user = ?").bind(me.id).first()).n;
+      const queue = wr >= 2 ? (await env.DB.prepare("SELECT (SELECT COUNT(*) FROM wiki_apps WHERE status = 'open') + (SELECT COUNT(*) FROM wiki_suggest WHERE status = 'open') n").first()).n : 0;
+      const users = await who([...recent.results.map((r) => r.user), ...top.map((t) => t.user)]);
+      return json(req, { pages: count.n, recent: recent.results.map((r) => ({ ...r, user: users[r.user] })), cats: cats.results, wanted: wanted.results, top: top.map((t) => ({ user: users[t.user], n: t.n })),
+        me: { wikiRank: wr, wikiRole: admin ? "author" : me.wiki_role || "", application: apps?.status || "", reads, canApply: can(me, APPLY_PLAN) && reads >= APPLY_READS, applyPlan: APPLY_PLAN, applyReads: APPLY_READS, queue } });
     }
     if (p[1] === "p" && p[2]) {
       const slug = slugOf(decodeURIComponent(p[2]));
@@ -136,7 +140,7 @@ export async function codexRoute(req, env, url, p, me, h) {
     const title = clean(b.title || pg?.title || decodeURIComponent(p[2]), 120), body = String(b.body || "").replace(/\r/g, "").slice(0, 60000);
     const type = WIKI_TYPES.includes(b.type) ? b.type : pg?.type || "article";
     const ib = b.infobox && typeof b.infobox === "object" ? b.infobox : JSON.parse(pg?.infobox || "{}");
-    const infobox = JSON.stringify({ image: clean(ib.image, 300), caption: clean(ib.caption, 200), rows: (Array.isArray(ib.rows) ? ib.rows : []).slice(0, 30).map((r) => [clean(r?.[0], 60), clean(r?.[1], 400)]).filter((r) => r[0] && r[1]) });
+    const infobox = JSON.stringify({ image: /^img\/[a-z0-9-]+(\/[a-z0-9-]+)?\.jpg$/.test(String(ib.image || "")) ? ib.image : "", caption: clean(ib.caption, 200), rows: (Array.isArray(ib.rows) ? ib.rows : []).slice(0, 30).map((r) => [clean(r?.[0], 60), clean(r?.[1], 400)]).filter((r) => r[0] && r[1]) });
     const spoiler = b.spoiler === undefined ? pg?.spoiler || 0 : Math.max(0, Math.min(9999, Math.round(+b.spoiler || 0)));
     const summary = clean(b.summary, 200), minor = b.minor ? 1 : 0, cats = catsIn(body);
     if (pg && pg.body === body && pg.title === title && pg.infobox === infobox && pg.spoiler === spoiler && pg.type === type) return json(req, { ok: true, slug, rev: pg.rev, unchanged: true });

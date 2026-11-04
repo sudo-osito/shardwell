@@ -38,22 +38,6 @@
   // ---------- home: the novel's landing page ----------
   const FREE = () => window.Lector?.release?.free || 50;
   const OPENING = "The sun cast uncountable shadows across the ocean, and to him they felt like the bars of a cell.";
-  // The fall: exact lines from Chapter 1 (free chapter), shown one by one as the page scrolls. Beats: roof, fall, lamp.
-  const FALL = [
-    { t: "He had been running for six hours.", b: "techo" },
-    { t: "This was where the running ended.", b: "techo" },
-    { t: "They watched. They only had to wait.", b: "techo" },
-    { t: "The edge was a low lip of concrete, no higher than his shin.", b: "techo" },
-    { t: "He held his breath.", b: "techo" },
-    { t: "Sky.", b: "techo", big: 1 },
-    { t: "Then not sky.", b: "caida", big: 1 },
-    { t: "Glass, a smile, a smile, a smile, too fast to be anything.", b: "caida" },
-    { t: "A bridge. A light. Concrete streaming past like water.", b: "caida" },
-    { t: "He had jumped. He had actually jumped.", b: "caida" },
-    { t: "He remembered a lamp.", b: "lampara" },
-    { t: "<i>You’re late,</i> she had said. <i>I wasn’t waiting. I was studying.</i>", b: "lampara" },
-    { t: "The fall went on.", b: "lampara" },
-  ];
   const TAGS = ["Dark fantasy", "Science fantasy", "Dystopia", "Gods and abyss", "Adult 18+"];
   function progressCta() {
     const pr = window.Lector?.progress(); const last = pr?.last && BY.get(pr.last.id);
@@ -74,25 +58,18 @@
         <p>${PREMISE}</p>
         <div class="acciones">
           ${cont ? `<a class="boton" href="#/e/${cont.e.id}">${cont.label}</a><a class="boton boton--quieto" href="#/e/${ch[0].id}">Start from Chapter 1</a>`
-                 : `<a class="boton" href="#/e/${ch[0].id}">Start reading</a><a class="boton boton--quieto" href="#gancho" data-ancla="gancho">Read the opening</a>`}
+                 : `<a class="boton" href="#/e/${ch[0].id}">Read Chapter 1 free</a><a class="boton boton--quieto" href="#gancho" data-ancla="gancho">Read the first lines</a>`}
         </div>
-        <p class="portada__nota">Free to read · Chapters 1 to ${FREE()} are free</p>
+        <p class="portada__nota">Dark fantasy for adult readers · Chapters 1 to ${FREE()} free, no account needed</p>
       </div>
     </section>
 
-    <section class="caida" id="gancho" data-caida aria-label="Chapter 1, the opening">
-      <div class="caida__escena">
-        ${img("kalfu", "", "caida__techo")}
-        <canvas class="caida__ciudad" aria-hidden="true"></canvas>
-        ${img("hinata", "", "caida__lampara")}
-        <div class="caida__velo"></div>
-        <p class="caida__cap rotulo">Chapter 1 · ${ch[0].title}</p>
-        <div class="caida__lineas">${FALL.map((l, i) => `<p class="caida__l${l.big ? " caida__l--big" : ""}" data-i="${i}">${l.t}</p>`).join("")}
-          <div class="caida__fin" data-i="${FALL.length}"><h2 class="titulo titulo--xl">Something wakes<br>when he falls</h2><a class="boton" href="#/e/${ch[0].id}">Read Chapter 1 · free</a></div></div>
-        <div class="caida__barra" aria-hidden="true"><i></i></div>
-        <a class="caida__saltar" href="#historia" data-ancla="historia">Skip</a>
+    <section class="apertura" id="gancho">
+      <div class="apertura__hoja">
+        <p class="rotulo">Chapter 1 · ${ch[0].title} · ${minutes(ch[0].words)} min read</p>
+        <div class="apertura__txt">${(ch[0].intro || "").split("</p>").slice(0, 4).join("</p>")}</p></div>
+        <div class="apertura__pie"><a class="boton" href="#/e/${ch[0].id}">Keep reading, it is free</a><span>No account needed for chapters 1 to ${FREE()}</span></div>
       </div>
-      <noscript><p>${OPENING}</p></noscript>
     </section>
 
     <section class="bloque sinopsis" id="historia">
@@ -109,6 +86,24 @@
       </aside>
     </section>
 
+    <section class="bloque dos">
+      <header class="cabeza cabeza--centro"><p class="rotulo">At the center</p><h2 class="titulo">A boy on the roof. A lamp left on.</h2></header>
+      <div class="dos__grid">
+        <figure class="dos__p">${img("kalfu", "Kalfu on a rooftop in the rain", "dos__img")}<figcaption><b>Kalfu</b><q>If he was going to die, it would be with his own two hands. His choice.</q><span>Chapter 1</span></figcaption></figure>
+        <figure class="dos__p dos__p--calida">${img("hinata", "A girl reading a tablet under a lamp in a small kitchen", "dos__img")}<figcaption><b>The girl with the lamp</b><q>You’re late, she had said. I wasn’t waiting. I was studying.</q><span>Chapter 1</span></figcaption></figure>
+      </div>
+    </section>
+
+    <section class="bloque leer">
+      <header class="cabeza"><p class="rotulo">Reading here</p><h2 class="titulo">Made for reading, together</h2></header>
+      <ul class="leer__lista">
+        <li><i aria-hidden="true">☾</i><b>Read your way</b><span>Four themes, from night to paper, your size and spacing, and a hands-free scroll.</span></li>
+        <li><i aria-hidden="true">❝</i><b>Talk on every paragraph</b><span>See what other readers felt on the line you just read, and answer them.</span></li>
+        <li><i aria-hidden="true">✒</i><b>The Codex</b><span>The wiki readers write as the story unfolds. Spoilers stay hidden until you reach them.</span></li>
+        <li><i aria-hidden="true">✦</i><b>Streaks, badges and a forum</b><span>Keep your reading streak, earn badges and argue theories with other readers.</span></li>
+      </ul>
+    </section>
+
     ${membershipBlock()}
 
     <section class="cierre">
@@ -120,7 +115,7 @@
 
   const PLANS = [
     { id: "reader", name: "Reader", m: 4.99, y: 49.9, line: "Read the whole novel", perks: [() => `Every chapter after ${FREE()}, one behind the newest`, "Reader badge and two avatar frames"] },
-    { id: "diver", name: "Diver", m: 8.99, y: 89.9, line: "Read, and know the world", perks: ["Everything in Reader", "<b>The newest chapter</b> the day it is out", "<b>The Codex</b>: the full lore of Shardwell", "Art of Shardwell", "One Tithe to give each month", "More frames and a flair under your name"], hot: true },
+    { id: "diver", name: "Diver", m: 8.99, y: 89.9, line: "Read first, and write the world", perks: ["Everything in Reader", "<b>The newest chapter</b> the day it is out", "<b>Write in the Codex</b>: apply to become a Scribe", "One Tithe to give each month", "More frames, the realm banners and a flair under your name"], hot: true },
     { id: "abyssal", name: "Abyssal", m: 14.99, y: 149.9, line: "The deepest dive", perks: ["Everything in Diver", "Vote on side stories", "Your name in the credits", "Five Tithes a month", "Every frame, including the Crown"] },
   ];
   // The patron tier: for readers who want to carry the work. Its one extra is asking the author.
@@ -130,8 +125,8 @@
     return `<section class="bloque membresia">
       <header class="cabeza cabeza--centro"><p class="rotulo">How to read</p><h2 class="titulo">Free to start. Kept alive by readers.</h2></header>
       <div class="planes planes--landing">
-        <div class="plan"><p class="rotulo">Free</p><b>Chapters 1 to ${FREE()}</b><ul><li>Read every chapter up to ${FREE()}</li><li>Comment with a free account</li><li>Bookmarks and reading settings</li></ul><a class="boton" href="#/e/${chapters()[0].id}">Start reading</a></div>
-        <div class="plan plan--miembro"><p class="rotulo">Membership</p><b>From ${usd(PLANS[0].m)} a month</b><ul><li>Every chapter after ${FREE()}</li><li>Three plans, cancel anytime</li></ul><a class="boton boton--quieto" href="#/membership">See the plans</a></div>
+        <div class="plan"><p class="rotulo">Free</p><b>Chapters 1 to ${FREE()}</b><ul><li>Read every chapter up to ${FREE()}</li><li>Comment, join the forum and read the Codex with a free account</li><li>Bookmarks and reading settings</li></ul><a class="boton" href="#/e/${chapters()[0].id}">Start reading</a></div>
+        <div class="plan plan--miembro"><p class="rotulo">Membership</p><b>From ${usd(PLANS[0].m)} a month</b><ul><li>Every chapter after ${FREE()}</li><li>Write in the Codex, Tithes, frames and more</li><li>Cancel anytime</li></ul><a class="boton boton--quieto" href="#/membership">See the plans</a></div>
       </div>
     </section>`;
   }
@@ -139,7 +134,7 @@
   async function checkoutLinks() { if (CHECKOUT) return CHECKOUT; try { CHECKOUT = (await (await fetch("https://shardwell-reader.maxpino.workers.dev/plans")).json()).checkout || {}; } catch { CHECKOUT = {}; } return CHECKOUT; }
   function membership() {
     const u = window.Cuenta?.user, r = window.Cuenta?.rank(u) || 0;
-    const ROWS = [["Chapters 1 to " + FREE(), 1, 1, 1, 1, 1], [`Chapters after ${FREE()}`, 0, 1, 1, 1, 1], ["The newest chapter, the day it is out", 0, 0, 1, 1, 1], ["Comments, forum, streaks and badges", 1, 1, 1, 1, 1], ["The Codex (lore)", 0, 0, 1, 1, 1], ["Art of Shardwell", 0, 0, 1, 1, 1], ["Tithes to give each month", "—", "—", "1", "5", "5"], ["Avatar frames", "—", "2", "6", "All 8", "All 8"], ["Flair under your name", 0, 0, 1, 1, 1], ["Ask the Author", 0, 0, 0, 0, 1], ["Vote on side stories", 0, 0, 0, 1, 1], ["Name in the credits", 0, 0, 0, 1, 1]];
+    const ROWS = [["Chapters 1 to " + FREE(), 1, 1, 1, 1, 1], [`Chapters after ${FREE()}`, 0, 1, 1, 1, 1], ["The newest chapter, the day it is out", 0, 0, 1, 1, 1], ["Comments, forum, streaks and badges (free account)", 1, 1, 1, 1, 1], ["Read the Codex, the readers' wiki", 1, 1, 1, 1, 1], ["Write in the Codex (apply as a Scribe)", 0, 0, 1, 1, 1], ["Tithes to give each month", "—", "—", "1", "5", "5"], ["Avatar frames", "—", "2", "6", "All 8", "All 8"], ["Flair under your name", 0, 0, 1, 1, 1], ["Ask the Author", 0, 0, 0, 0, 1], ["Vote on side stories", 0, 0, 0, 1, 1], ["Name in the credits", 0, 0, 0, 1, 1]];
     const cell = (v) => v === 1 ? '<span class="si">●</span>' : v === 0 ? '<span class="no">—</span>' : v;
     return `<header class="pagina pagina--img">${img("borde", "", "pagina__img")}${crumbs(["Shardwell", "#/"], ["Membership"])}<h1 class="titulo titulo--xl">Membership</h1><p class="bajada">Chapters 1 to ${FREE()} are free. After that, readers keep Shardwell going.</p></header>
     <section class="bloque bloque--pegado">
@@ -163,7 +158,7 @@
     <section class="bloque"><header class="cabeza"><p class="rotulo">Compare</p><h2 class="titulo">What each plan opens</h2></header>
       <div class="tabla tabla--planes"><table><thead><tr><th></th><th>Free</th>${[...PLANS, SOVEREIGN].map((p) => `<th>${p.name}</th>`).join("")}</tr></thead><tbody>${ROWS.map(([t, ...v]) => `<tr><td>${t}</td>${v.map((x) => `<td>${cell(x)}</td>`).join("")}</tr>`).join("")}</tbody></table></div></section>
     <section class="bloque faq"><header class="cabeza"><p class="rotulo">Questions</p><h2 class="titulo">Before you choose</h2></header>
-      ${[["Can I cancel?", "Yes, anytime, from the link in your account. You keep your plan until the end of the period you paid."], ["Which chapters does each plan read?", `Chapters 1 to ${FREE()} are free for everyone. Reader reads every chapter after that except the newest one, which opens for Reader when the next comes out. Diver, Abyssal and Sovereign read the newest chapter the day it is out.`], ["What is Sovereign?", "The patron tier, for readers who want to support the work more. It has everything in Abyssal, and it is the only way to ask the author your own questions: the author answers them in the Ask the Author board, which everyone can read."], ["What are Tithes?", "Awards you give to posts and comments you value in the forum. In Shardwell, a Tithe is an offering."], ["Who handles the payment?", "Lemon Squeezy, our payment partner. It handles cards, taxes and receipts. We never see your card."], ["Is it for adults?", "Shardwell is written for adult readers (18+)."]].map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}
+      ${[["Can I cancel?", "Yes, anytime, from the link in your account. You keep your plan until the end of the period you paid."], ["Which chapters does each plan read?", `Chapters 1 to ${FREE()} are free for everyone. Reader reads every chapter after that except the newest one, which opens for Reader when the next comes out. Diver, Abyssal and Sovereign read the newest chapter the day it is out.`], ["What is the Codex?", "The wiki of Shardwell, written by its readers as the story unfolds. Anyone with a free account can read it; spoilers stay hidden until you reach them. Diver members and above can apply to write in it as Scribes."], ["What is Sovereign?", "The patron tier, for readers who want to support the work more. It has everything in Abyssal, and it is the only way to ask the author your own questions: the author answers them in the Ask the Author board, which everyone can read."], ["What are Tithes?", "Awards you give to posts and comments you value in the forum. In Shardwell, a Tithe is an offering."], ["Who handles the payment?", "Lemon Squeezy, our payment partner. It handles cards, taxes and receipts. We never see your card."], ["Is it for adults?", "Shardwell is written for adult readers (18+)."]].map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}
     </section>
     <section class="bloque creditos" data-creditos></section>`;
   }
@@ -307,14 +302,7 @@
   const LORE_ROUTES = ["world", "c", "s", "glossary", "unwritten", "unknowns", "art"];
   const AUTHOR_ROUTES = ["unwritten", "unknowns"];
   const isMember = () => (window.Cuenta?.rank(window.Cuenta?.user) || 0) >= 2;
-  function codexGate() {
-    const u = window.Cuenta?.user;
-    return `<header class="pagina pagina--img">${img("pozo", "", "pagina__img")}${crumbs(["Shardwell", "#/"], ["The Codex"])}
-      <p class="rotulo">Diver and Abyssal members</p><h1 class="titulo titulo--xl">The Codex</h1>
-      <p class="bajada">The full lore of Shardwell: its characters, places, powers, gods and history. The story reveals it slowly; members can open it all.</p>
-      <div class="acciones acciones--izq">${u ? `<a class="boton" href="#/membership">See the plans</a>` : `<a class="boton" href="#/membership">Become a member</a><button class="boton boton--quieto" type="button" data-entrar>Sign in</button>`}<a class="boton boton--quieto" href="#/novel">Keep reading</a></div>
-      ${u && !isMember() ? `<p class="nota-gate">You are signed in as ${u.name} (${window.Cuenta.planName(u)}). The Codex opens with Diver or Abyssal.</p>` : ""}</header>`;
-  }
+
   // ---------- account page ----------
   const BANNERS = [["", "free"], ["pozo", "free"], ["borde", "free"], ["corazon", "free"], ["catedral", "free"], ["mar", "free"], ["chrona", "diver"], ["vast", "diver"], ["axion", "diver"], ["nyther", "diver"], ["anastasis", "diver"], ["leviathan", "diver"], ["echoforms", "diver"], ["first-drowning", "diver"], ["rig", "diver"], ["mar-ahogado", "abyssal"], ["black-veil", "abyssal"], ["sea-before-time", "abyssal"], ["endro", "abyssal"], ["tithes", "abyssal"]];
   const FRAMES = [["", "free", "None"], ["iron", "reader", "Iron"], ["ash", "reader", "Ash"], ["silver", "diver", "Silver"], ["endro", "diver", "Endro"], ["godblood", "diver", "Godblood"], ["bone", "diver", "Bone"], ["abyssal", "abyssal", "Abyssal"], ["crown", "abyssal", "Crown"]];
@@ -338,6 +326,7 @@
     <section class="bloque bloque--pegado perfil__grid">
       <div class="perfil__caja"><p class="rotulo">Reading</p>${cont ? `<a class="boton" href="#/e/${cont.e.id}">${cont.label}</a>` : `<a class="boton" href="#/e/${ch[0].id}">Start reading</a>`}</div>
       <div class="perfil__caja"><p class="rotulo">Plan</p><b class="perfil__num">${C.planName(u)}</b>${u.portal ? `<a class="boton boton--quieto" href="${u.portal}" target="_blank" rel="noopener">Manage subscription</a>` : `<a class="boton boton--quieto" href="#/membership">${r ? "Change plan" : "See the plans"}</a>`}</div>
+      <div class="perfil__caja"><p class="rotulo">The Codex</p><b class="perfil__num">${u.role === "admin" ? "The Author" : { scribe: "Scribe", archivist: "Archivist" }[u.wiki_role] || "Reader"}</b><p class="nota">${s.codexEdits || 0} edits · ${s.codexPages || 0} pages started</p>${u.wiki_role || u.role === "admin" ? `<a class="boton boton--quieto" href="#/codex/user/${encodeURIComponent(u.name)}">Your contributions</a>` : `<a class="boton boton--quieto" href="#/codex/apply">Apply to write</a>`}</div>
       <div class="perfil__caja perfil__caja--ancha"><p class="rotulo">Badges</p>${window.Foro.badgeGrid(s.badges)}</div>
       <div class="perfil__caja perfil__caja--ancha" id="marcas"><p class="rotulo">Bookmarks</p>
         ${marks.length ? `<ul class="perfil__marcas">${marks.map((m) => `<li><a href="#/e/${m.id}"><span>${m.n}</span><b>${m.title}</b></a></li>`).join("")}</ul>` : `<p class="nota">No bookmarks yet. Use ☆ while reading.</p>`}</div>
@@ -451,16 +440,17 @@
     const h = location.hash.replace(/^#/, "") || "/";
     if (!h.startsWith("/")) return;
     const [, a, b] = h.split("?")[0].split("/");
-    const gated = LORE_ROUTES.includes(a) || (a === "e" && b && !BY.get(b)?.section?.startsWith("novel") && !isMember());
-    const isForum = a === "forum" || a === "u";
-    const html = AUTHOR_ROUTES.includes(a) && !isAuthor() ? notFound() : isForum ? '<div data-foro-raiz><p class="cargando cargando--pagina">Loading…</p></div>' : gated && !isMember() ? codexGate() : !a ? home() : a === "account" ? account() : a === "look" ? look() : a === "e" ? article(b) : a === "c" || a === "s" ? category(b) : a === "world" ? world() : a === "novel" ? novel() : a === "glossary" ? glossary() : a === "unwritten" || a === "unknowns" ? unwrittenPage() : a === "art" ? art() : a === "membership" ? membership() : notFound();
+    // the vault lore is the author's Codex: only the author sees it. The public Codex is the readers' wiki (#/codex).
+    const gated = LORE_ROUTES.includes(a) || (a === "e" && b && !BY.get(b)?.section?.startsWith("novel") && !isAuthor());
+    const isForum = a === "forum" || a === "u", isCodex = a === "codex";
+    const html = AUTHOR_ROUTES.includes(a) && !isAuthor() ? notFound() : isForum ? '<div data-foro-raiz><p class="cargando cargando--pagina">Loading…</p></div>' : isCodex ? '<div data-codex-raiz><p class="cargando cargando--pagina">Opening the Codex…</p></div>' : gated && !isAuthor() ? notFound() : !a ? home() : a === "account" ? account() : a === "look" ? look() : a === "e" ? article(b) : a === "c" || a === "s" ? category(b) : a === "world" ? world() : a === "novel" ? novel() : a === "glossary" ? glossary() : a === "unwritten" || a === "unknowns" ? unwrittenPage() : a === "art" ? art() : a === "membership" ? membership() : notFound();
     window.Lector?.unmount();
     vista.innerHTML = html;
     const e = a === "e" && BY.get(b);
-    const names = { look: "Your look", forum: "Forum", u: "Profile", account: "Account", membership: "Membership", world: "World", novel: "The Novel", glossary: "Glossary", unwritten: "Unwritten", art: "Art" };
+    const names = { codex: "The Codex", look: "Your look", forum: "Forum", u: "Profile", account: "Account", membership: "Membership", world: "World", novel: "The Novel", glossary: "Glossary", unwritten: "Unwritten", art: "Art" };
     document.title = e ? `${e.title} · Shardwell` : a === "c" ? `${cat(b)?.name || "World"} · Shardwell` : a ? `${names[a] || "Shardwell"} · Shardwell` : "Shardwell";
     document.body.dataset.ruta = a || "home";
-    const here = isForum ? "forum" : e ? (e.section === "novel" ? "novel" : e.id === "fishing-game" ? "game" : e.section === "characters" ? "characters" : "world") : a === "c" ? (b === "characters" ? "characters" : "world") : a || "";
+    const here = isCodex ? "codex" : isForum ? "forum" : e ? (e.section === "novel" ? "novel" : e.id === "fishing-game" ? "game" : e.section === "characters" ? "characters" : "world") : a === "c" ? (b === "characters" ? "characters" : "world") : a || "";
     $$("a", $("[data-nav]")).forEach((x) => x.setAttribute("aria-current", String(x.dataset.k === here)));
     window.scrollTo(0, 0);
     menu(false);
@@ -468,6 +458,7 @@
     if (a === "account") accountEvents();
     if (a === "look") lookEvents();
     if (a === "membership") membershipEvents();
+    if (isCodex) window.Codex.mount($("[data-codex-raiz]", vista), { crumbs, chapters: chapters().map((c) => ({ id: c.id, number: c.number, title: c.title })), after: () => after() });
     if (isForum) window.Foro.mount($("[data-foro-raiz]", vista), { crumbs, chapters: chapters().map((c) => ({ id: c.id, number: c.number, title: c.title })), boards: { announcements: "Announcements", chapters: "Chapters", theories: "Theories", art: "Fan Art", general: "General", ask: "Ask the Author", stories: "Side Stories" }, after: () => after() });
   }
 
@@ -484,67 +475,9 @@
     }
     $$(".articulo section[id] > h2", vista).forEach((h) => { h.tabIndex = 0; h.setAttribute("role", "button"); h.setAttribute("aria-expanded", "true"); const t = () => { const p = h.parentElement.classList.toggle("plegada"); h.setAttribute("aria-expanded", String(!p)); }; h.addEventListener("click", t); h.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); t(); } }); });
     rain($(".lluvia", vista));
-    fall($("[data-caida]", vista));
     const re = document.body.dataset.ruta === "e" && BY.get(location.hash.split("/")[2]);
     if (re && re.section === "novel") window.Lector.mount(vista, re, readerCtx(re));
     $("[data-aviso]", vista)?.addEventListener("submit", notify);
-  }
-
-  // ---------- the fall: the opening of Chapter 1 told by the scroll ----------
-  let stopFall = null;
-  function fall(sec) {
-    stopFall?.(); stopFall = null;
-    if (!sec) return;
-    const lines = $$("[data-i]", sec), n = FALL.length, cv = $(".caida__ciudad", sec), ctx = cv.getContext("2d"), bar = $(".caida__barra i", sec);
-    // beat of each line: where the scene is when it shows
-    const beatAt = (i) => (i >= n ? "fin" : FALL[i].b);
-    let p = 0, cur = -1, on = false, raf = 0, t0 = performance.now(), speed = 0, towers = [];
-    const dpr = Math.min(2, devicePixelRatio || 1);
-    function size() {
-      cv.width = cv.clientWidth * dpr; cv.height = cv.clientHeight * dpr;
-      const W = cv.width; towers = []; let x = -20 * dpr;
-      while (x < W) { const w = (60 + Math.random() * 150) * dpr, z = 0.35 + Math.random() * 0.65; towers.push({ x, w, z, gap: 6 + Math.random() * 10, seed: Math.random() * 1000, screen: Math.random() < 0.22 }); x += w + (8 + Math.random() * 40) * dpr; }
-      towers.sort((a, b) => a.z - b.z);
-    }
-    const rnd = (k) => { const v = Math.sin(k * 12.9898) * 43758.5453; return v - Math.floor(v); };
-    function draw(now) {
-      const W = cv.width, H = cv.height, t = (now - t0) / 1000;
-      ctx.fillStyle = "#0d0e10"; ctx.fillRect(0, 0, W, H);
-      for (const tw of towers) {
-        const off = (t * speed * 900 * tw.z * dpr) % (H * 4), fl = 18 * dpr * (0.6 + tw.z);
-        const c = Math.round(26 + tw.z * 30); ctx.fillStyle = `rgb(${c},${c + 1},${c + 4})`; ctx.fillRect(tw.x, 0, tw.w, H);
-        // windows: rows scroll upward, a few lit
-        const rows = Math.ceil(H / fl) + 2, base = Math.floor(off / fl), shift = off % fl;
-        for (let r = 0; r < rows; r++) {
-          const k = base + r, y = H - (r * fl - shift) - fl;
-          if (tw.screen && rnd(tw.seed + Math.floor(k / 14)) < 0.18 && k % 14 < 6) { ctx.fillStyle = `rgba(206,214,222,${0.10 + tw.z * 0.12})`; ctx.fillRect(tw.x + 6 * dpr, y, tw.w - 12 * dpr, fl * 0.9); continue; }
-          for (let cx = tw.x + 5 * dpr; cx < tw.x + tw.w - 8 * dpr; cx += tw.gap * dpr) {
-            const lit = rnd(tw.seed + k * 31.7 + cx) ; if (lit > 0.86) { ctx.fillStyle = lit > 0.97 ? `rgba(240,200,140,${0.35 + tw.z * 0.4})` : `rgba(170,180,195,${0.10 + tw.z * 0.18})`; ctx.fillRect(cx, y + fl * 0.25, tw.gap * dpr * 0.45, fl * 0.42); }
-          }
-        }
-      }
-      // bridges, thin as threads, crossing the canyon as he passes them
-      for (let b = 0; b < 3; b++) { const y = ((t * speed * 700 * dpr + b * H * 0.47 + rnd(b) * H) % (H * 1.4)); const yy = H * 1.2 - y; ctx.fillStyle = "rgba(18,19,22,.95)"; ctx.fillRect(0, yy, W, (5 + b * 3) * dpr); ctx.fillStyle = "rgba(240,200,140,.25)"; for (let x = rnd(b * 9) * 60 * dpr; x < W; x += 140 * dpr) ctx.fillRect(x, yy + 1 * dpr, 3 * dpr, 2 * dpr); }
-      // the canyon has no bottom: it goes dark downward
-      const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "rgba(40,36,44,.35)"); g.addColorStop(.55, "rgba(10,10,12,0)"); g.addColorStop(1, "rgba(5,5,6,.92)"); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-      // speed: streaks of wind
-      if (speed > 0.15) { ctx.strokeStyle = `rgba(220,225,232,${0.05 + speed * 0.08})`; ctx.lineWidth = dpr; for (let i = 0; i < 40; i++) { const x = rnd(i * 7.1) * W, y = ((rnd(i * 3.3) * H) - t * 2600 * speed * dpr) % H; const yy = y < 0 ? y + H : y; ctx.beginPath(); ctx.moveTo(x, yy); ctx.lineTo(x, yy + 90 * dpr * speed); ctx.stroke(); } }
-    }
-    function loop(now) { raf = 0; if (!on) return; draw(now); if (!reduce) raf = requestAnimationFrame(loop); }
-    function update() {
-      const r = sec.getBoundingClientRect(), total = sec.offsetHeight - innerHeight;
-      p = Math.min(1, Math.max(0, -r.top / total));
-      const i = Math.min(n, Math.floor(p * (n + 1.4)));
-      sec.style.setProperty("--p", p.toFixed(4)); bar.style.transform = `scaleY(${p})`;
-      if (i !== cur) { cur = i; lines.forEach((l) => l.classList.toggle("ver", +l.dataset.i === i)); sec.dataset.beat = beatAt(i); }
-      speed = sec.dataset.beat === "caida" ? 1 : sec.dataset.beat === "lampara" ? 0.12 : 0;
-    }
-    const io = new IntersectionObserver(([x]) => { on = x.isIntersecting; if (on) { size(); if (!raf) raf = requestAnimationFrame(loop); } }, { threshold: 0 });
-    io.observe(sec);
-    const onScroll = () => update(), onResize = () => { size(); update(); };
-    addEventListener("scroll", onScroll, { passive: true }); addEventListener("resize", onResize);
-    update();
-    stopFall = () => { on = false; cancelAnimationFrame(raf); io.disconnect(); removeEventListener("scroll", onScroll); removeEventListener("resize", onResize); };
   }
 
   // ---------- rain ----------
@@ -627,15 +560,15 @@
   async function loadData() {
     if (!PUB) PUB = await (await fetch("data/novel.json")).json();
     let d = PUB;
-    if (isMember() && window.Cuenta.token) {
+    if (isAuthor() && window.Cuenta.token) {
       try { const r = await fetch("https://shardwell-reader.maxpino.workers.dev/lore", { headers: { authorization: "Bearer " + window.Cuenta.token } }); if (r.ok) { const full = await r.json(); d = { ...full, extras: PUB.extras }; } } catch {}
     }
     D = d; BY = new Map(d.entries.map((e) => [e.id, e])); window.Lector?.setRelease(PUB.release);
-    $("[data-nav]").innerHTML = [["novel", "#/novel", "Read"], ["forum", "#/forum", "Forum"], ["membership", "#/membership", "Membership"], ["world", "#/world", (isMember() ? "" : "◆ ") + "The Codex"]]
+    $("[data-nav]").innerHTML = [["novel", "#/novel", "Read"], ["codex", "#/codex", "The Codex"], ["forum", "#/forum", "Forum"], ["membership", "#/membership", "Membership"], ...(isAuthor() ? [["world", "#/world", "◆ Author's Codex"]] : [])]
       .map(([k, h, t]) => `<a href="${h}" data-k="${k}">${t}</a>`).join("");
   }
   addEventListener("cuenta:cambio", async () => { await loadData(); const h = location.hash.split("/"); if (h[1] === "e" && BY.get(h[2])?.section === "novel") { window.Lector.refreshForms(); } else route(); });
   window.Cuenta?.on(() => {});
-  loadData().then(async () => { await window.Cuenta?.refresh(); if (isMember() && !D.sections.some((x) => x.id !== "novel")) await loadData(); addEventListener("hashchange", route); route(); })
+  loadData().then(async () => { await window.Cuenta?.refresh(); if (isAuthor() && !D.sections.some((x) => x.id !== "novel")) await loadData(); addEventListener("hashchange", route); route(); })
     .catch(() => { vista.innerHTML = `<p class="error">The site could not be loaded.</p>`; });
 })();

@@ -5,7 +5,7 @@ import COS from "../../data/cosmetics.json"; // one catalog for the site and the
 //            POST /comment · /like · /react · /read · /delete · /notify
 // Accounts:  POST /auth/register · /auth/login · /auth/logout · GET/POST /me · POST /me/delete · GET /u/:name
 // Plans:     GET /plans · POST /ls/webhook (Lemon Squeezy) · GET /credits
-// Codex:     GET /lore (Diver or Abyssal)
+// Codex:     GET /lore (the author's Codex, author only) · /codex/* (community wiki, see codex.js)
 // Forum:     GET /forum · GET /forum/b/:board · GET /forum/p/:id · POST /forum/post · /forum/comment · /forum/vote · /forum/poll · /forum/tithe · /forum/report · /forum/edit · /forum/delete
 // Admin:     POST /admin/plan · /admin/role · /admin/hide · /admin/post (pin, lock, hide) — header x-admin, or a signed-in admin
 const ORIGINS = ["https://sudo-osito.github.io", "http://127.0.0.1:4815", "http://localhost:4815"];
@@ -103,7 +103,7 @@ function streaks(days, tz) {
 }
 async function stats(env, u, tz = 0) {
   const id = u.id;
-  const [acts, posts, fcom, ccom, lp, lf, lc, tr, tg, rd, theo] = await env.DB.batch([
+  const [acts, posts, fcom, ccom, lp, lf, lc, tr, tg, rd, theo, wk, wn] = await env.DB.batch([
     env.DB.prepare("SELECT day, kind FROM activity WHERE user = ? ORDER BY day DESC LIMIT 800").bind(id),
     env.DB.prepare("SELECT COUNT(*) n FROM posts WHERE user = ? AND hidden = 0").bind(id),
     env.DB.prepare("SELECT COUNT(*) n FROM fcomments WHERE user = ? AND hidden = 0").bind(id),
@@ -115,6 +115,8 @@ async function stats(env, u, tz = 0) {
     env.DB.prepare("SELECT COUNT(*) n, SUM(CASE WHEN created >= ? THEN 1 ELSE 0 END) month FROM tithes WHERE giver = ?").bind(monthStart(), id),
     env.DB.prepare("SELECT COUNT(*) n FROM user_reads WHERE user = ?").bind(id),
     env.DB.prepare("SELECT MAX(score) n FROM posts WHERE user = ? AND board = 'theories' AND hidden = 0").bind(id),
+    env.DB.prepare("SELECT COUNT(*) n FROM wiki_revs WHERE user = ?").bind(id),
+    env.DB.prepare("SELECT COUNT(*) n FROM wiki_revs r WHERE r.user = ? AND r.id = (SELECT MIN(id) FROM wiki_revs x WHERE x.slug = r.slug)").bind(id),
   ]);
   const days = (k) => acts.results.filter((a) => a.kind === k).map((a) => a.day);
   const read = streaks(days("read"), tz), write = streaks(days("post"), tz);
@@ -123,7 +125,7 @@ async function stats(env, u, tz = 0) {
   const s = {
     reads: n(rd), posts: n(posts), comments: n(fcom) + n(ccom), likes: n(lp) + n(lf) + n(lc),
     tithesReceived: tr.results.reduce((t, r) => t + r.n, 0), tithesIn, tithesGiven: n(tg), tithesMonth: tg.results[0]?.month || 0,
-    theory: n(theo), readStreak: read, writeStreak: write,
+    theory: n(theo), readStreak: read, writeStreak: write, codexEdits: n(wk), codexPages: n(wn),
   };
   s.tithesLeft = Math.max(0, (ALLOWANCE[u.role === "admin" ? "abyssal" : u.plan] || 0) + (read.current >= 7 ? 1 : 0) - s.tithesMonth);
   s.badges = badges(u, s);
@@ -152,6 +154,12 @@ function badges(u, s) {
     B("offered", "Offered", "Receive a Tithe", "◈", "Recognition", s.tithesReceived, 1),
     B("revered", "Revered", "Receive 10 Tithes", "✧", "Recognition", s.tithesReceived, 10),
     B("generous", "Generous", "Give a Tithe", "⟡", "Recognition", s.tithesGiven, 1),
+    B("codex-first", "First Entry", "Make your first edit in the Codex", "✒", "Codex", s.codexEdits, 1),
+    B("codex-pages", "Cartographer", "Start 5 pages in the Codex", "⌗", "Codex", s.codexPages, 5),
+    B("codex-chronicler", "Chronicler", "Make 50 edits in the Codex", "❡", "Codex", s.codexEdits, 50),
+    B("codex-keeper", "Keeper of Pages", "Make 500 edits in the Codex", "✵", "Codex", s.codexEdits, 500),
+    B("codex-scribe", "Scribe", "Be accepted to write in the Codex", "✑", "Codex", u.wiki_role || u.role === "admin" ? 1 : 0, 1),
+    B("codex-archivist", "Archivist", "Be named an Archivist of the Codex", "❦", "Codex", u.wiki_role === "archivist" || u.role === "admin" ? 1 : 0, 1),
     B("founding", "Founding Reader", "One of the first 500 accounts", "⌂", "Special", u.id <= 500 ? 1 : 0, 1),
   ];
   if (rank(u) >= 1) list.push(B("plan-" + (u.role === "admin" ? "author" : u.plan), u.role === "admin" ? "The Author" : PLAN_NAME[u.plan], u.role === "admin" ? "Writes Shardwell" : "Member of Shardwell", u.plan === "abyssal" || u.plan === "sovereign" || u.role === "admin" ? "♛" : u.plan === "diver" ? "▼" : "▽", "Special", 1, 1));
@@ -241,9 +249,9 @@ export default {
           return json(req, { user: { ...userPub(u), created: u.created }, stats: { reads: s.reads, posts: s.posts, comments: s.comments, likes: s.likes, tithesReceived: s.tithesReceived, tithesIn: s.tithesIn, readStreak: s.readStreak, writeStreak: s.writeStreak, badges: s.badges }, posts: recent });
         }
         if (p[0] === "lore") {
-          const key = req.headers.get("x-member"), keyOk = typeof key === "string" && key.length >= 12 && String(env.MEMBER_KEYS || "").split(",").map((x) => x.trim()).includes(key);
-          if (!can(me, "diver") && !keyOk) return bad(req, "Diver or Abyssal members only", 401);
-          return new Response((await env.LORE.get(me?.role === "admin" ? "lore-admin" : "lore")) || "{}", { headers: { "content-type": "application/json", "cache-control": "private, no-store", ...cors(req) } });
+          // the vault lore is the author's Codex: only the author reads it (the public Codex is the community wiki, /codex)
+          if (me?.role !== "admin") return bad(req, "Only the author reads this.", 403);
+          return new Response((await env.LORE.get("lore-admin")) || "{}", { headers: { "content-type": "application/json", "cache-control": "private, no-store", ...cors(req) } });
         }
         if (p[0] === "chapter-text" && okId(p[1])) {
           const all = parseJSON(await env.LORE.get("chapters"), {}), ch = all[p[1]];
