@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en" data-theme="kayaba">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shardwell · Visual Script</title>
+<meta name="description" content="The visual language of the Shardwell lore site: colour, type, materials, motion, navigation and components, built from the Writing Bible.">
+<meta name="theme-color" content="#07080a">
+<link rel="preload" href="fuentes/big-shoulders-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fuentes/newsreader-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="guion.css?v=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2307080a'/%3E%3Cpath d='M4 17h24' stroke='%23e2672b' stroke-width='1.5'/%3E%3Cpath d='M16 3l3 13h-6z' fill='%23ece8df'/%3E%3Cpath d='M13 18h6l-3 11z' fill='%23ece8df' opacity='.35'/%3E%3C/svg%3E">
+</head>
+<body>
+<a class="saltar" href="#feeling">Skip to content</a>
+
+<!-- The eye chip: a pale line at the edge of sight. In the Trial it shows nothing. -->
+<div class="chip" aria-hidden="true"><span class="chip__linea"></span><span class="chip__lectura" data-chip>SURFACE</span></div>
+
+<!-- Water that rises floor by floor when the theme changes -->
+<div class="subida" aria-hidden="true"></div>
+
+<nav class="dock" aria-label="Chapters" data-dock>
+  <span class="dock__nivel" aria-hidden="true"></span>
+  <ol data-dock-lista></ol>
+</nav>
+
+<header class="firma" data-firma>
+  <canvas aria-hidden="true"></canvas>
+  <span class="shard" aria-hidden="true"></span>
+  <h1 class="sr-only">Shardwell</h1>
+  <p class="firma__meta mono">Visual script · v1 · 2026-11-04</p>
+  <div class="firma__pie">
+    <p class="firma__linea">Mortals carry the shattered bodies of gods inside them, and the deeper they dive the less of themselves remains, in a world that monetizes the very feelings that power it. <span class="sello sello--proposed">Proposed</span></p>
+    <div class="firma__controles">
+      <button class="boton boton--quieto" type="button" data-replay>Replay the fall</button>
+      <button class="boton boton--quieto" type="button" data-tema aria-pressed="false"><span data-tema-txt>The Trial</span></button>
+    </div>
+  </div>
+  <a class="firma__bajar mono" href="#feeling" aria-label="Descend">Descend</a>
+</header>
+
+<main>
+
+<!-- 01 · FEELING ------------------------------------------------------------>
+<section class="cap" id="feeling" data-cap="01" data-nombre="Feeling">
+  <div class="cap__cabeza">
+    <p class="cap__num mono">01 · Feeling</p>
+    <h2 class="titulo" data-surface>Dread that is beautiful.</h2>
+    <p class="cap__bajada">Oppression is the baseline. Awe and epic power are punctuation, rare and expensive. Melancholy lives in the quiet moments between. Every page of the site keeps this balance.</p>
+  </div>
+  <figure class="partitura" data-partitura>
+    <svg viewBox="0 0 1200 220" preserveAspectRatio="none" role="img" aria-label="Tone score: a heavy baseline of oppression, two rare peaks of awe and epic power, small waves of melancholy between">
+      <rect class="p-base" x="0" y="150" width="1200" height="34"/>
+      <path class="p-melan" d="M60 150 q20 -16 40 0 t40 0 M330 150 q20 -12 40 0 t40 0 t40 0 M690 150 q20 -14 40 0 t40 0 M960 150 q20 -10 40 0 t40 0 t40 0"/>
+      <path class="p-awe" d="M250 150 L262 18 L274 150"/>
+      <path class="p-epic" d="M560 150 L568 54 L576 150 M846 150 L852 92 L858 150"/>
+    </svg>
+    <figcaption class="partitura__leyenda">
+      <button type="button" data-tono="base"><b>1</b> Dark and oppressive <i>dominant</i></button>
+      <button type="button" data-tono="awe"><b>2</b> Awe and vastness <i>punctuation</i></button>
+      <button type="button" data-tono="melan"><b>3</b> Melancholic and human <i>between</i></button>
+      <button type="button" data-tono="epic"><b>4</b> Epic and powerful <i>rare, costly</i></button>
+    </figcaption>
+  </figure>
+  <dl class="sentidos">
+    <div><dt class="mono">Visual</dt><dd>Orange dusk against glass towers, black ink water, purple haze, sodium lights in fog.</dd></div>
+    <div><dt class="mono">Sound</dt><dd>Wind, siren silence, hum of machinery, hushed crowds.</dd></div>
+    <div><dt class="mono">Feel</dt><dd>Thin air, pressure, cold, weight in the limbs.</dd></div>
+  </dl>
+  <p class="fuente mono">From Identity and Vibe · Writing Bible</p>
+</section>
+
+<!-- 02 · COLOUR ------------------------------------------------------------->
+<section class="cap" id="colour" data-cap="02" data-nombre="Colour">
+  <div class="cap__cabeza">
+    <p class="cap__num mono">02 · Colour</p>
+    <h2 class="titulo" data-surface>Matter, not swatches.</h2>
+    <p class="cap__bajada">Every colour is a thing in the world. Two light conditions: <b>Kayaba</b> at dusk, the default, and <b>the Trial</b> at noon, the clean, empty city of the first dive. Contrast is measured live against the page.</p>
+  </div>
+  <div class="materia" data-materia>
+    <article class="muestra" data-token="--godblood"><div class="muestra__cuerpo m-godblood"></div><h3>Godblood</h3><p>The ink everything sits in. Page base.</p><code data-hex></code></article>
+    <article class="muestra" data-token="--concrete"><div class="muestra__cuerpo m-concrete"></div><h3>Kayaba concrete</h3><p>Surfaces, seams, the grid of the city.</p><code data-hex></code></article>
+    <article class="muestra" data-token="--sea"><div class="muestra__cuerpo m-sea"></div><h3>Sea Before Time</h3><p>Text. Pale, unshaped, before every law.</p><code data-hex></code><span class="contraste mono" data-contraste></span></article>
+    <article class="muestra" data-token="--fog"><div class="muestra__cuerpo m-fog"></div><h3>Fog</h3><p>Secondary text, the haze that takes the far city.</p><code data-hex></code><span class="contraste mono" data-contraste></span></article>
+    <article class="muestra" data-token="--sodium"><div class="muestra__cuerpo m-sodium"></div><h3>Sodium</h3><p>What you can touch: links, focus, the lit window.</p><code data-hex></code><span class="contraste mono" data-contraste></span></article>
+    <article class="muestra" data-token="--dusk"><div class="muestra__cuerpo m-dusk"></div><h3>Dusk</h3><p>Rare emphasis. The fracture, the waterline.</p><code data-hex></code><span class="contraste mono" data-contraste></span></article>
+    <article class="muestra" data-token="--endro"><div class="muestra__cuerpo m-endro"></div><h3>Endro</h3><p>The power system, and every idea that is not canon yet.</p><code data-hex></code><span class="contraste mono" data-contraste></span></article>
+  </div>
+  <p class="nota">The Trial swaps the light, not the system: <b>noon concrete</b> becomes the page, <b>Trial ink</b> the text, <b>Trial blue</b> takes Sodium's job. Dusk does not exist there (the boy jumped at dusk; it was noon inside). Endro stays purple. Switch with the button in the signature or the dock.</p>
+</section>
+
+<!-- 03 · TYPE --------------------------------------------------------------->
+<section class="cap" id="type" data-cap="03" data-nombre="Type">
+  <div class="cap__cabeza">
+    <p class="cap__num mono">03 · Type</p>
+    <h2 class="titulo" data-surface>Names ten floors tall.</h2>
+    <p class="cap__bajada">Three voices. Tower lettering for names and titles, a book face for prose, and the chip's mono for data. Nothing else.</p>
+  </div>
+  <div class="tipos">
+    <div class="torre" aria-hidden="true"><span>KAYABA</span></div>
+    <div class="probador" data-probador>
+      <p class="probador__muestra" contenteditable="true" spellcheck="false" data-muestra>The First Drowning</p>
+      <div class="probador__controles">
+        <div class="segmentado" role="radiogroup" aria-label="Display face">
+          <button type="button" role="radio" aria-checked="true" data-fam="shoulders">Big Shoulders</button>
+          <button type="button" role="radio" aria-checked="false" data-fam="archivo">Archivo</button>
+        </div>
+        <label class="deslizador"><span class="mono">Weight <output data-out="peso">800</output></span><input type="range" min="300" max="900" step="10" value="800" data-eje="peso"></label>
+        <label class="deslizador" data-solo-archivo hidden><span class="mono">Width <output data-out="ancho">70</output></span><input type="range" min="62" max="125" step="1" value="70" data-eje="ancho"></label>
+        <label class="deslizador"><span class="mono">Size <output data-out="tam">96</output></span><input type="range" min="32" max="200" step="2" value="96" data-eje="tam"></label>
+      </div>
+      <p class="mono fuente">Type in the sample to try any name.</p>
+    </div>
+  </div>
+  <div class="prosa">
+    <div class="prosa__texto lectura">
+      <p>He pressed a hand to his eye, out of habit. The chip behind it showed him nothing. No hour. No signal. No pale line at the edge of his sight that had been there since he was six. For the first time in his life, the only thing inside his head was him.</p>
+      <p class="pensamiento">This is not the city.</p>
+      <p class="fuente mono">Chapter 2 · Still Water · Newsreader. Thoughts in italics, on their own line, no quotation marks.</p>
+    </div>
+    <ul class="escala">
+      <li><span class="mono">Display</span><b class="e-display">Abaddon</b></li>
+      <li><span class="mono">Title</span><b class="e-titulo">Godblood Zones</b></li>
+      <li><span class="mono">Lead</span><b class="e-bajada">Fragments of god realms.</b></li>
+      <li><span class="mono">Body</span><b class="e-cuerpo">Endro floats around beings with emotions and physically exists.</b></li>
+      <li><span class="mono">Chip</span><b class="e-mono mono">Level 03 · Undertow · Undertaken</b></li>
+    </ul>
+  </div>
+</section>
+
+<!-- 04 · MATERIALS ---------------------------------------------------------->
+<section class="cap" id="materials" data-cap="04" data-nombre="Materials">
+  <div class="cap__cabeza">
+    <p class="cap__num mono">04 · Materials</p>
+    <h2 class="titulo" data-surface>Concrete, ink, haze, glass.</h2>
+    <p class="cap__bajada">Four materials, each kept to the pieces that earn it. Texture never covers a whole page. Play with them.</p>
+  </div>
+  <div class="materiales">
+    <figure class="mat" data-mat="ink">
+      <div class="mat__lienzo mat-ink"></div>
+      <figcaption><h3>Godblood ink</h3><p>Black, thick, shifting like a curtain. The water below the waterline; large empty fields.</p>
+        <label class="deslizador"><span class="mono">Sheen <output>40</output></span><input type="range" min="0" max="100" value="40" data-var="--brillo"></label></figcaption>
+    </figure>
+    <figure class="mat" data-mat="concrete">
+      <div class="mat__lienzo mat-concrete"></div>
+      <figcaption><h3>Board-formed concrete</h3><p>Seams and tie holes. Only on headers of places and on the dock, never behind text.</p>
+        <label class="deslizador"><span class="mono">Weathering <output>35</output></span><input type="range" min="0" max="100" value="35" data-var="--mancha"></label></figcaption>
+    </figure>
+    <figure class="mat" data-mat="haze">
+      <div class="mat__lienzo mat-haze"><i></i><i></i><i></i></div>
+      <figcaption><h3>Endro haze</h3><p>Purple, slow, denser near the Godblood Zones. Marks the power system and the zones.</p>
+        <label class="deslizador"><span class="mono">Density <output>55</output></span><input type="range" min="0" max="100" value="55" data-var="--densidad"></label></figcaption>
+    </figure>
+    <figure class="mat" data-mat="glass">
+      <div class="mat__lienzo mat-glass"><i></i></div>
+      <figcaption><h3>Tower glass</h3><p>Dusk caught in a facade. Small pieces only: the search field, previews.</p>
+        <label class="deslizador"><span class="mono">Dusk <output>60</output></span><input type="range" min="0" max="100" value="60" data-var="--ocaso"></label></figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 05 · MOTION ------------------------------------------------------------->
+<section class="cap" id="motion" data-cap="05" data-nombre="Motion">
+  <div class="cap__cabeza">
+    <p class="cap__num mono">05 · Motion</p>
+    <h2 class="titulo" data-surface>Slow, heavy, with a reason.</h2>
+    <p class="cap__bajada">Six named gestures. Nothing else moves. Each has one job.</p>
+  </div>
+  <ol class="gestos">
+    <li class="gesto" data-gesto="fracture">
+      <div class="gesto__escena"><span class="marca-fracturada" data-marca><span>SHARDWELL</span><span aria-hidden="true">SHARDWELL</span></span></div>
+      <div class="gesto__datos"><h3>Fracture</h3><p>The wordmark breaks along one line. On load and when canon changes.</p><p class="mono">520 ms · cubic-bezier(.33,1,.68,1)</p><button class="boton boton--quieto" type="button" data-repetir>Repeat</button></div>
+    </li>
+    <li class="gesto" data-gesto="surface">
+      <div class="gesto__escena"><span class="g-surface"><span>Leviathan</span></span></div>
+      <div class="gesto__datos"><h3>Surface</h3><p>A title rises through a waterline. Every chapter and entry title.</p><p class="mono">700 ms · cubic-bezier(.2,.7,.2,1)</p><button class="boton boton--quieto" type="button" data-repetir>Repeat</button></div>
+    </li>
+    <li class="gesto" data-gesto="descend">
+      <div class="gesto__escena"><div class="g-descend"><span>Ripple</span><span>Current</span><span>Undertow</span></div></div>
+      <div class="gesto__datos"><h3>Descend</h3><p>Going deeper: the page sinks under pressure, slower at the end. Moving between entries.</p><p class="mono">900 ms · cubic-bezier(.6,.05,.25,1)</p><button class="boton boton--quieto" type="button" data-repetir>Repeat</button></div>
+    </li>
+    <li class="gesto" data-gesto="unwrite">
+      <div class="gesto__escena"><span class="g-unwrite" data-unwrite>The Primarch's intention</span></div>
+      <div class="gesto__datos"><h3>Unwrite</h3><p>The Black Veil's way: a line is unwritten. Everything the author has not decided.</p><p class="mono">1400 ms · steps per letter</p><button class="boton boton--quieto" type="button" data-repetir>Repeat</button></div>
+    </li>
+    <li class="gesto" data-gesto="chip">
+      <div class="gesto__escena"><div class="g-chip"><span class="g-chip__linea"></span><span class="mono">Godblood · core · World</span></div></div>
+      <div class="gesto__datos"><h3>Chip line</h3><p>A pale line draws at the edge and carries a readout. Previews and metadata.</p><p class="mono">600 ms · linear, then 200 ms fade</p><button class="boton boton--quieto" type="button" data-repetir>Repeat</button></div>
+    </li>
+    <li class="gesto" data-gesto="rise">
+      <div class="gesto__escena"><div class="g-rise"><i></i></div></div>
+      <div class="gesto__datos"><h3>Rising water</h3><p>The water climbs floor by floor, never as a flood. Only when the light changes (Kayaba ↔ the Trial).</p><p class="mono">1100 ms · steps(14)</p><button class="boton boton--quieto" type="button" data-repetir>Repeat</button></div>
+    </li>
+  </ol>
+</section>
+
+<!-- 06 · THE DESCENT -------------------------------------------------------->
+<section class="cap" id="descent" data-cap="06" data-nombre="The Descent">
+  <div class="cap__cabeza">
+    <p class="cap__num mono">06 · Navigation</p>
+    <h2 class="titulo" data-surface>The site is a dive.</h2>
+    <p class="cap__bajada">The nine levels of the Diving Index are the spine of the site. The world sits near the surface, the gods at the bottom, and the last level cannot be reached. <span class="sello sello--proposed">Proposed</span></p>
+  </div>
+  <div class="descenso">
+    <ol class="indice" data-indice role="listbox" aria-label="Diving Index"></ol>
+    <div class="indice__ficha" data-indice-ficha aria-live="polite"></div>
+  </div>
+  <ol class="mapa">
+    <li><span class="mono">Surface</span><b>Atlas</b><i>Kayaba, the Godblood Zones, Abaddon, the Rig</i></li>
+    <li><span class="mono">Surface</span><b>People</b><i>Kalfu, Hinata, everyone added later</i></li>
+    <li><span class="mono">Ripple – Current</span><b>Power</b><i>Shardwell, Endro, Dominion and Edicts, Tithes</i></li>
+    <li><span class="mono">Undertow – Descent</span><b>Bestiary · Chronicle</b><i>Echoforms, the Timeline</i></li>
+    <li><span class="mono">Abyssal – Hadal</span><b>Cosmology</b><i>Five Sovereigns, First Drowning, Black Veil</i></li>
+    <li><span class="mono">Primarch's Breath</span><b>Unknowns</b><i>What is undecided on purpose</i></li>
+  </ol>
+  <p class="nota">The Manuscript and the Glossary are tools, not depths: they live in the header and open from anywhere.</p>
+</section>
+
+<!-- 07 · KIT ---------------------------------------------------------------->
+<section class="cap" id="kit" data-cap="07" data-nombre="Kit">
+  <div class="cap__cabeza">
+    <p class="cap__num mono">07 · Kit</p>
+    <h2 class="titulo" data-surface>Every piece says what is true.</h2>
+    <p class="cap__bajada">Canon status is part of the interface. A reader always knows whether a line is law, a draft, an idea, or nothing yet.</p>
+  </div>
+  <div class="kit">
+    <div class="pieza">
+      <h3 class="mono">Status</h3>
+      <ul class="sellos">
+        <li><span class="sello sello--core">Core</span> Stated in the source. Law.</li>
+        <li><span class="sello sello--draft">Draft</span> Written, under review.</li>
+        <li><span class="sello sello--concept">Concept</span> Brainstorm. Not canon.</li>
+        <li><span class="sello sello--proposed">Proposed</span> Inferred by Claude. Accept or delete.</li>
+        <li><span class="sello sello--unknown">Unknown</span> Undecided on purpose.</li>
+      </ul>
+    </div>
+    <div class="pieza">
+      <h3 class="mono">Link with preview</h3>
+      <p class="lectura">The waters were black and thick like ink, called <a class="enlace" href="#kit" data-vista="godblood">Godblood</a>. The places it left behind are the <a class="enlace" href="#kit" data-vista="zones">Godblood Zones</a>.</p>
+      <p class="fuente mono">Hover or focus a link.</p>
+    </div>
+    <div class="pieza">
+      <h3 class="mono">Unwritten field</h3>
+      <dl class="ficha-mini">
+        <div><dt class="mono">Sovereign</dt><dd><span class="desescrito" title="Unwritten. The author has not decided.">Vast or Nyther</span></dd></div>
+        <div><dt class="mono">Home</dt><dd>Kobe</dd></div>
+        <div><dt class="mono">Eyes</dt><dd><span class="desescrito">not decided</span></dd></div>
+      </dl>
+    </div>
+    <div class="pieza">
+      <h3 class="mono">Search</h3>
+      <button class="buscador" type="button" data-abrir-buscar><span>Search the vault</span><kbd class="mono">⌘K</kbd></button>
+      <p class="fuente mono">Every title is a real note in the vault.</p>
+    </div>
+    <div class="pieza">
+      <h3 class="mono">Actions</h3>
+      <div class="fila"><button class="boton" type="button">Open entry</button><button class="boton boton--quieto" type="button">Read chapter</button></div>
+    </div>
+    <div class="pieza">
+      <h3 class="mono">Glossary term</h3>
+      <p class="lectura">A shard gives a <abbr class="termino" tabindex="0" data-def="Portion of a Sovereign's law over a concept the bearer chooses.">Dominion</abbr>; its uses are <abbr class="termino" tabindex="0" data-def="Uses of a Dominion that the bearer invents. Each costs Endro.">Edicts</abbr>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 08 · PATTERNS ----------------------------------------------------------->
+<section class="cap" id="patterns" data-cap="08" data-nombre="Patterns">
+  <div class="cap__cabeza">
+    <p class="cap__num mono">08 · Patterns</p>
+    <h2 class="titulo" data-surface>Built from the vault.</h2>
+    <p class="cap__bajada">Real notes, laid out the way the site will show them.</p>
+  </div>
+
+  <article class="entrada">
+    <header class="entrada__cabeza">
+      <p class="mono entrada__ruta">Power · Core</p>
+      <h3 class="entrada__titulo">Endro</h3>
+      <p class="entrada__resumen">The heart of the power system. Energy and food for the Shardwell and anything connected to it.</p>
+    </header>
+    <div class="entrada__cuerpo lectura">
+      <p>Chemical residue from reactions in the brain when feeling emotions. It floats around beings with emotions and physically exists. Inert in ordinary places; near the <a class="enlace" href="#patterns" data-vista="zones">Godblood Zones</a> it clusters into cell-like structures, visible as purple essence.</p>
+      <ul class="hechos">
+        <li><span class="sello sello--core">Core</span> Any being with emotions produces it, by intensity. Each emotion gives a different flavor.</li>
+        <li><span class="sello sello--core">Core</span> Spent Endro transforms into the effect: heat, motion, force. Nothing is lost.</li>
+        <li><span class="sello sello--core">Core</span> Stable forever in storage.</li>
+        <li><span class="sello sello--unknown">Unknown</span> <span class="desescrito">What each emotion's Endro does differently</span></li>
+        <li><span class="sello sello--unknown">Unknown</span> <span class="desescrito">The Endro-to-energy scale</span></li>
+      </ul>
+    </div>
+    <aside class="entrada__lado">
+      <h4 class="mono">Connections</h4>
+      <ul class="mono"><li>Shardwell</li><li>Edicts</li><li>Tithes</li><li>Godblood Zones</li><li>Fishing Game</li></ul>
+    </aside>
+  </article>
+
+  <div class="dos">
+    <article class="dossier">
+      <p class="mono entrada__ruta">People · Protagonist · Draft</p>
+      <h3 class="entrada__titulo">Kalfu</h3>
+      <dl class="ficha-mini">
+        <div><dt class="mono">Age</dt><dd>17</dd></div>
+        <div><dt class="mono">Home</dt><dd>Kobe</dd></div>
+        <div><dt class="mono">Moves by</dt><dd>Parkour</dd></div>
+        <div><dt class="mono">Fears</dt><dd>That Hinata is left alone. That his life never mattered. Water and falling.</dd></div>
+        <div><dt class="mono">Cannot</dt><dd>Swim. Nobody in his district can.</dd></div>
+        <div><dt class="mono">Sovereign</dt><dd><span class="desescrito">Vast or Nyther</span></dd></div>
+        <div><dt class="mono">Dominion</dt><dd><span class="desescrito">his concept</span></dd></div>
+        <div><dt class="mono">Father</dt><dd>An important person, unknown to both. <span class="desescrito">Who he is</span></dd></div>
+      </dl>
+      <p class="fuente mono">Established in Chapters 1 and 2</p>
+    </article>
+    <figure class="pentagono" data-pentagono>
+      <svg viewBox="-160 -160 320 320" role="img" aria-label="Pentagon of opposition: each Sovereign opposes its two neighbours; the Black Veil opposes all five">
+        <circle class="pg-velo" r="148"/>
+        <g data-pg-lineas></g>
+        <g data-pg-nodos></g>
+      </svg>
+      <figcaption><p class="mono">The pentagon of opposition · Core</p><p data-pg-texto>Each Sovereign opposes the two beside it. Choose one.</p></figcaption>
+    </figure>
+  </div>
+
+  <div class="dos">
+    <ol class="cronica" aria-label="Timeline">
+      <li><span class="mono">Before the universe</span>Sea Before Time, the Primarch, the Five Sovereigns.</li>
+      <li><span class="mono">Age Before Tides</span>War against the Black Veil.</li>
+      <li><span class="mono">Classical Antiquity</span>The Fracturing. The shards fall into mortal souls.</li>
+      <li><span class="mono">Rome era</span>The First Drowning. The Godblood Zones are born.</li>
+      <li class="cronica__hueco"><span class="mono">Medieval to modern</span><span class="desescrito">Clans, institutions, how the world developed</span></li>
+      <li><span class="mono">Date unknown</span>The Singularity reshapes Japan into Kayaba.</li>
+      <li class="cronica__hoy"><span class="mono">2190</span>The present. About 1–2% of humans hold a Shardwell.</li>
+    </ol>
+    <article class="lector">
+      <p class="mono entrada__ruta">Manuscript · Chapter 2 · Official</p>
+      <h3 class="lector__titulo">Still Water</h3>
+      <div class="lectura lector__texto">
+        <p>Water.</p>
+        <p>It hit him from every side at once. No sky, no wall, no down. Cold in his mouth, in his eyes, in the gaps of his clothes. He kicked, and nothing pushed back. He did not know which way the air was.</p>
+        <p>He had never learned to swim.</p>
+        <p class="pensamiento">Up. Which way is up.</p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- 09 · PHONE -------------------------------------------------------------->
+<section class="cap" id="phone" data-cap="09" data-nombre="Phone">
+  <div class="cap__cabeza">
+    <p class="cap__num mono">09 · Phone</p>
+    <h2 class="titulo" data-surface>Different pieces, not smaller ones.</h2>
+    <p class="cap__bajada">On a phone the gauge moves to the bottom edge and becomes a depth meter; the chip line runs along the top; previews open as sheets from below.</p>
+  </div>
+  <div class="telefonos">
+    <div class="telefono">
+      <div class="telefono__pantalla">
+        <div class="tel-chip mono">Atlas · Core</div>
+        <p class="mono tel-ruta">Atlas</p>
+        <p class="tel-titulo">The Rig</p>
+        <p class="tel-texto">The biggest man-made, oil-rig-like megastructure; the only outpost in Abaddon. Surrounded by an invisible force field.</p>
+        <div class="tel-medidor"><span class="mono">Surface</span><i style="--p:.12"></i><span class="mono">01/09</span></div>
+      </div>
+    </div>
+    <div class="telefono">
+      <div class="telefono__pantalla">
+        <div class="tel-chip mono">Power · Core</div>
+        <p class="mono tel-ruta">Power</p>
+        <p class="tel-titulo">Edicts</p>
+        <p class="tel-texto">An Edict is a use of a Dominion that the person invents themselves.</p>
+        <div class="tel-hoja"><span class="tel-hoja__asa"></span><p class="mono">Preview · Core</p><b>Dominion</b><p>Portion of a Sovereign's law over a concept the bearer chooses.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 · IMAGES ------------------------------------------------------------->
+<section class="cap" id="images" data-cap="10" data-nombre="Images">
+  <div class="cap__cabeza">
+    <p class="cap__num mono">10 · Images</p>
+    <h2 class="titulo" data-surface>Scale first, people small.</h2>
+    <p class="cap__bajada">Rules for every piece of concept art. Generated in the next phase, stored in the vault, linked to its note.</p>
+  </div>
+  <ul class="reglas">
+    <li><b>Scale.</b> Kayaba is a continuous, layered mass. Five hundred floors; sixty is nothing. People are small against it.</li>
+    <li><b>Two lights.</b> Kayaba at dusk (orange on glass, sodium in fog) or the Trial at noon (small white sun, perfect blue, clean concrete, blank white screens).</li>
+    <li><b>Water.</b> Godblood is black ink with a sheen. Trial water is clear as glass, with the city still under it.</li>
+    <li><b>Endro.</b> Purple haze, denser near the zones. Never sparks, never lightning.</li>
+    <li><b>Never.</b> Neon, holograms, gadget sci-fi, friendly gods, homage to Dark Souls or Berserk.</li>
+  </ul>
+  <ol class="planos">
+    <li><span class="mono">Shot 01 · Atlas</span>Kayaba at dusk, from a roof at the last floor. The ocean to the east, the shadows of the towers like bars.</li>
+    <li><span class="mono">Shot 02 · Manuscript</span>The Trial at noon. Ribbons of water falling sideways across the sky.</li>
+    <li><span class="mono">Shot 03 · Atlas</span>Abaddon. The Rig's legs in ink-black water; Kayaba far away.</li>
+    <li><span class="mono">Shot 04 · Bestiary</span>An Echoform of purple haze, Endro/Telekinesis type.</li>
+  </ol>
+</section>
+
+</main>
+
+<footer class="pie">
+  <p class="pie__marca"><span class="marca-fracturada marca-fracturada--quieta"><span>SHARDWELL</span><span aria-hidden="true">SHARDWELL</span></span></p>
+  <p class="mono">Visual script v1 · built from the Shardwell vault (Writing Bible, Chapters 1–2) · 4 Nov 2026</p>
+  <button class="boton boton--quieto" type="button" data-tema aria-pressed="false"><span data-tema-txt>The Trial</span></button>
+</footer>
+
+<!-- Search -->
+<dialog class="buscar" data-buscar aria-label="Search the vault">
+  <div class="buscar__caja">
+    <input class="buscar__campo" type="search" placeholder="Search the vault" autocomplete="off" data-buscar-campo aria-controls="resultados">
+    <ul class="buscar__lista" id="resultados" role="listbox" data-buscar-lista></ul>
+    <p class="mono buscar__pie">↑ ↓ to move · Enter to open · Esc to close</p>
+  </div>
+</dialog>
+
+<!-- Preview -->
+<div class="vista" role="tooltip" data-vista-caja hidden><span class="vista__linea"></span><p class="mono" data-vista-meta></p><p data-vista-texto></p></div>
+
+<script src="firma.js?v=1" defer></script>
+<script src="guion.js?v=1" defer></script>
+</body>
+</html>
