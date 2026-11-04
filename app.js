@@ -84,16 +84,6 @@
 
     ${membershipBlock()}
 
-    <section class="bloque obra obra--juego">
-      <div class="obra__texto">
-        <p class="rotulo">Also in Shardwell · the game · ${stamp("Concept")}</p><h2 class="titulo">Abaddon</h2>
-        <p class="obra__sinopsis">${GAME_PITCH}</p>
-        <dl class="datos">${(game?.info || []).filter(([k]) => k !== "Title").map(([k, v]) => `<div><dt>${k}</dt><dd>${v ?? unwritten()}</dd></div>`).join("")}</dl>
-        
-      </div>
-      <div class="obra__img">${img("rig", "Under the Rig: a fishing boat returns on black water")}</div>
-    </section>
-
     <section class="cierre">
       ${img("corazon", "", "cierre__img")}
       <div><h2 class="titulo titulo--xl">The first dive is free</h2><p class="bajada">Some never finish. Begin with the boy on the roof.</p>
