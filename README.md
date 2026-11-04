@@ -1,6 +1,7 @@
 # Shardwell · lore site
 
-Public site of the Shardwell universe, built from the private vault `sudo-osito/shardwell-vault`.
+The public lore of Shardwell, built from the private vault `sudo-osito/shardwell-vault`.
 
-- `guion/`: visual script v1 (colour, type, materials, motion, navigation, kit, patterns). Static, no build.
-- Fonts: Big Shoulders, Archivo, Newsreader, Martian Mono (SIL Open Font License).
+- `index.html`, `app.js`, `app.css`: static site, no dependencies, hash routing.
+- `data/lore.json`: generated from the vault with `node build/build.mjs [vaultPath]`. Only world notes are public (World, People, Power, Creatures, Cosmology, Manuscript, Works, Concepts); author notes (confirmations, dates, open-question links) are stripped and open items become "Unwritten".
+- `img/`: approved art. `fonts/`: see `fonts/README.md`.

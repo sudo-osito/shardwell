@@ -1,4 +1,42 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Shardwell</title><meta http-equiv="refresh" content="0; url=guion/"><style>body{background:#07080a;color:#ece8df;font:16px/1.5 Georgia,serif;display:grid;place-items:center;min-height:100vh;margin:0}a{color:#f3a73c}</style></head>
-<body><p>The lore site is being built. Meanwhile: <a href="guion/">the visual script</a>.</p></body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shardwell</title>
+<meta name="description" content="The lore of Shardwell: a dystopian world in 2190 where mortals carry the shattered bodies of dead gods inside them.">
+<meta name="theme-color" content="#0b0b0b">
+<link rel="preload" href="fonts/anglodavek.otf" as="font" type="font/otf" crossorigin>
+<link rel="preload" href="data/lore.json" as="fetch" crossorigin>
+<link rel="stylesheet" href="app.css?v=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b0b0b'/%3E%3Cpath d='M16 4l4 14h-8z' fill='%23d9d5cc'/%3E%3Cpath d='M12 20h8l-4 9z' fill='%23d9d5cc' opacity='.35'/%3E%3C/svg%3E">
+</head>
+<body>
+<a class="saltar" href="#contenido">Skip to content</a>
+
+<header class="barra" data-barra>
+  <a class="barra__marca" href="#/">Shardwell</a>
+  <nav class="barra__nav" aria-label="Sections" data-nav></nav>
+  <button class="barra__buscar" type="button" data-abrir-buscar aria-label="Search the lore"><span>Search</span><kbd>⌘K</kbd></button>
+  <button class="barra__menu" type="button" data-menu aria-expanded="false" aria-label="Menu"><i></i><i></i></button>
+</header>
+
+<main id="contenido" data-vista tabindex="-1"></main>
+
+<footer class="pie">
+  <p class="pie__marca">Shardwell</p>
+  <p>Built from the Shardwell vault · <span data-construido></span></p>
+  <p class="pie__leyenda"><span class="sello sello--canon">Canon</span> established · <span class="sello sello--draft">Draft</span> under review · <span class="sello sello--concept">Concept</span> an idea, not canon · <span class="desescrito">Unwritten</span> not decided yet</p>
+</footer>
+
+<dialog class="buscar" data-buscar aria-label="Search the lore">
+  <input class="buscar__campo" type="search" placeholder="Search the lore" autocomplete="off" data-buscar-campo>
+  <ul class="buscar__lista" role="listbox" data-buscar-lista></ul>
+  <p class="buscar__pie">↑ ↓ to move · Enter to open · Esc to close</p>
+</dialog>
+
+<div class="vista-previa" role="tooltip" hidden data-previa></div>
+
+<script src="app.js?v=1" defer></script>
+</body>
+</html>
