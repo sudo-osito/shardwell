@@ -4,6 +4,8 @@
 // Only world notes are public; the Writing Bible, the hub and the plans stay private.
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
+const edited = (rel) => { try { return execFileSync("git", ["-C", VAULT, "log", "-1", "--format=%cs", "--", rel], { encoding: "utf8" }).trim() || null; } catch { return null; } };
 
 const VAULT = process.argv[2] || path.join(process.env.HOME, "Documents/Shardwell");
 const OUT = path.join(path.dirname(new URL(import.meta.url).pathname), "..", "data", "lore.json");
@@ -19,7 +21,51 @@ const SECTIONS = [
   { id: "works", name: "Works", line: "The novel and the game", files: ["05 Projects/Shardwell Novel.md", "05 Projects/Fishing Game.md"] },
   { id: "concepts", name: "Concepts", line: "Ideas, not canon", folders: ["06 Brainstorm"] },
 ];
-const CHRONICLE = "Timeline"; // gets its own section
+const CHRONICLE = "Timeline";
+// wiki categories, by the note's frontmatter type (reader order)
+const CATS = [
+  { id: "characters", name: "Characters", line: "The people of the story", types: ["character"] },
+  { id: "places", name: "Places", line: "Cities, Godblood Zones and outposts", types: ["location"] },
+  { id: "powers", name: "Powers", line: "Shardwells, Endro, diving and what it gives", types: ["power-system"] },
+  { id: "creatures", name: "Creatures", line: "What came out of the Sea", types: ["creature"] },
+  { id: "gods", name: "Gods & Cosmology", line: "The Sea, the Primarch and the five dead Sovereigns", types: ["cosmology", "concept"] },
+  { id: "history", name: "History", line: "From the shattering of the gods to 2190", types: ["event", "history", "timeline"] },
+  { id: "society", name: "Society", line: "Clans, classes, money and control", types: ["society"] },
+  { id: "works", name: "Works", line: "The novel and the game", types: ["project"] },
+  { id: "ideas", name: "Ideas", line: "Brainstorms. Not canon", types: ["brainstorm"] },
+];
+// one-line summaries where the note's first sentence is weak (all from canon)
+const SUMMARY = {
+  "Kayaba Nationwide City": "A megacity that covers all of Japan and part of the ocean around it: 12.53 billion people in towers of five hundred floors and more.",
+  "Endro": "Energy made from emotion. It powers every Shardwell, Edict and Tithe, and near the Godblood Zones it can be seen as purple haze.",
+  "Godblood Zones": "Fragments of the dead gods' realms, left behind by the First Drowning, where Endro is so dense it can be seen.",
+  "Five Sovereigns": "The five gods that held up reality: Chrona, Vast, Axion, Nyther and Anastasis. They shattered themselves, and they are dead.",
+  "Diving": "Going down through a Shardwell toward the drowned heart of its Sovereign. The body stays behind, unconscious.",
+};
+// infobox rows (canon facts from the notes); "?" = not decided yet
+const INFO = {
+  "Kalfu": [["Age", "17"], ["Home", "Kobe, Kayaba"], ["Family", "Hinata (sister); mother (dead); father (unknown to him)"], ["Work", "Jobs for criminal syndicates"], ["Moves by", "Parkour"], ["Fears", "Water and falling; that Hinata is left alone"], ["Cannot", "Swim"], ["Shardwell", "Woke in Chapter 1"], ["Sovereign", "?"], ["Dominion", "?"], ["Appearance", "?"]],
+  "Hinata": [["Age", "10 to 13"], ["Family", "Kalfu (brother); mother (dead); father (unknown)"], ["Personality", "Luminous, stubborn, tender; very intelligent"], ["Name means", "A sunny place"], ["Shardwell", "?"], ["Appearance", "?"]],
+  "Kayaba Nationwide City": [["Type", "Megacity"], ["Covers", "All of Japan and about 30% of the surrounding ocean"], ["Population", "12.53 billion (2190)"], ["Buildings", "500 floors and more"], ["Ruled by", "The clans"], ["Neighbours", "Abaddon, Leviathan"]],
+  "Abaddon": [["Type", "Godblood Zone"], ["Rank", "Third most terrible on Earth"], ["Outpost", "The Rig"], ["Border", "Sirens that have never sounded"]],
+  "Leviathan (Godblood Zone)": [["Type", "Godblood Zone"], ["Known for", "Colossi that change the weather"], ["Outposts", "?"]],
+  "The Rig": [["Type", "Megastructure outpost"], ["Location", "Abaddon"], ["Seen from outside", "Invisible (force field)"], ["Built by", "A corporation of the Singularity era"], ["Population", "Fishers, fugitives, corporate staff"], ["Factions", "?"]],
+  "Godblood Zones": [["Type", "Fragments of god realms"], ["Origin", "The First Drowning"], ["Largest", "Abaddon, Leviathan"], ["Stable", "Yes, since the First Drowning"]],
+  "Godblood": [["Type", "Black fluid"], ["Origin", "The First Drowning"], ["Looks like", "Thick black ink"]],
+  "Endro": [["Type", "Emotion-derived energy"], ["Produced by", "Any being with emotions"], ["Visible as", "Purple haze near Godblood Zones"], ["Stored", "Stable forever"], ["Used for", "Edicts, Tithes, activating a Shardwell"]],
+  "Shardwell": [["Type", "Abyss inside a soul"], ["Formed by", "A shard of a dead Sovereign"], ["Holders", "About 1 to 2% of humanity (2190)"], ["Fuel", "Endro"], ["Leads to", "The drowned heart of its Sovereign"]],
+  "Diving Index": [["Levels", "9"], ["First", "Ripple"], ["Last", "The Primarch's Breath (unreachable)"], ["Immortality from", "Abyssal Crown (6)"]],
+  "Five Sovereigns": [["Members", "Chrona, Vast, Axion, Nyther, Anastasis"], ["Domains", "Time, space, order, void, life"], ["Status", "Dead; only echoes remain"], ["Enemy", "The Black Veil"]],
+  "Black Veil": [["Type", "Force of erasure"], ["Origin", "Beyond the Sea Before Time"], ["Known to", "Only the deepest divers"], ["Where now", "?"]],
+  "First Drowning": [["When", "Early humanity, the age of Rome"], ["Cause", "The Sea overflowed by the Primarch's will"], ["Left behind", "Godblood and the Godblood Zones"]],
+  "The Primarch": [["Type", "Singularity in the Sea Before Time"], ["Will", "Real and hidden"], ["Intention", "?"]],
+  "Echoforms": [["Type", "Creatures from the Sovereigns' realms"], ["Arrived", "The First Drowning"], ["Found in", "Godblood Zones"]],
+  "Tithes": [["Type", "Divine objects"], ["Obtained", "While diving"], ["Needs", "Endro"]],
+  "Edicts": [["Type", "Uses of a Dominion"], ["Invented by", "The bearer"], ["Costs", "Endro"]],
+  "The Singularity": [["Type", "Era of AGI"], ["Led by", "Corporations owned by the clans"], ["When", "?"]],
+  "Fishing Game": [["Title", "Abaddon"], ["Genre", "Fishing, isolation"], ["Players", "Single-player, co-op, up to 24"], ["Platforms", "PC, Steam Deck"], ["You play", "A Rippleborn fisher on the Rig"]],
+  "Shardwell Novel": [["Title", "Shardwell"], ["Protagonist", "Kalfu"], ["Written", "Chapters 1 and 2; Chapter 3 in draft"]],
+};
 const STATUS = { core: "Canon", canon: "Official", draft: "Draft", concept: "Concept", unfinished: "Unfinished", stub: "Unfinished", living: "Canon" };
 
 // headings whose content is author/process notes, not world
@@ -43,7 +89,11 @@ function listNotes() {
     for (const f of s.folders || []) for (const n of fs.readdirSync(path.join(VAULT, f)).filter((x) => x.endsWith(".md")).sort()) all.push({ ...readNote(path.join(f, n)), section: s.id });
     for (const f of s.files || []) all.push({ ...readNote(f), section: s.id });
   }
-  for (const n of all) if (n.title === CHRONICLE) n.section = "chronicle";
+  for (const n of all) {
+    if (n.section === "manuscript") { n.section = "novel"; continue; }
+    const t = n.fm.type || "";
+    n.section = (CATS.find((c) => c.types.includes(t)) || { id: "places" }).id;
+  }
   return all;
 }
 
@@ -162,10 +212,12 @@ const plain = (html) => html.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").repl
 
 // ---------- images (approved art, mapped by the author's direction) ----------
 const ART = {
-  "Five Sovereigns": "corazon", "Sea Before Time": "corazon", "The Fracturing of the Sovereigns": "corazon",
-  "Shardwell": "catedral", "Diving": "vast", "Diving Index": "vast", "Hierarchy Levels": "vast",
-  "Sovereignty and Domains": "axion", "Abaddon": "mar", "Godblood Zones": "mar", "Godblood": "mar", "The Rig": "rig",
-  "Initial Displacement": "catedral", "Body and Mind Changes": "anastasis",
+  "Five Sovereigns": "corazon", "The Fracturing of the Sovereigns": "corazon", "Shardwells in History": "catedral",
+  "Sea Before Time": "sea-before-time", "The Primarch": "sea-before-time", "Black Veil": "black-veil", "First Drowning": "first-drowning", "Timeline": "first-drowning",
+  "Shardwell": "catedral", "Diving": "vast", "Diving Index": "vast", "Hierarchy Levels": "vast", "Initial Displacement": "novel",
+  "Sovereignty and Domains": "axion", "Body and Mind Changes": "anastasis", "Endro": "endro", "Shardwell Activation": "endro", "Tithes": "tithes", "Edicts": "tithes", "Inheritance": "chrona",
+  "Abaddon": "mar", "Godblood Zones": "mar", "Godblood": "mar", "The Rig": "rig", "Leviathan (Godblood Zone)": "leviathan",
+  "Echoforms": "echoforms", "Fishing Game": "rig", "Shardwell Novel": "novel",
 };
 
 // ---------- build ----------
@@ -174,7 +226,7 @@ PUBLIC = new Map(notes.map((n) => [n.title, n]));
 const entries = [];
 for (const n of notes) {
   const links = new Set();
-  const isChapter = n.section === "manuscript";
+  const isChapter = n.section === "novel";
   let body = n.body;
   if (isChapter) body = body.split(/\n---\s*\n\s*## (?:What this chapter means|Notes on this draft)/)[0];
   body = clean(body);
@@ -182,18 +234,20 @@ for (const n of notes) {
   let leadClean = lead.replace(/^#\s+.*\n?/m, "");
   if (isChapter) leadClean = leadClean.replace(/^\*Written from[^\n]*\n?/m, "").replace(/^\s*---\s*$/m, "");
   const leadHtml = md(leadClean.trim(), links, { prose: isChapter });
-  const sectionsHtml = kept.map((s) => `<section><h2>${inline(s.head, links)}</h2>${md(s.content.trim(), links, { prose: isChapter })}</section>`).join("\n");
+  const toc = kept.map((s) => ({ id: "s-" + slug(s.head), head: plain(inline(s.head)) }));
+  const sectionsHtml = kept.map((s, k) => `<section id="${toc[k].id}"><h2>${inline(s.head, links)}</h2><div class="sec__cuerpo">${md(s.content.trim(), links, { prose: isChapter })}</div></section>`).join("\n");
   const titleLine = (n.body.match(/^#\s+(.*)$/m) || [])[1] || n.title;
   let title = n.title, subtitle = "";
   if (isChapter) { const m = titleLine.match(/^(Chapter \d+)\s*\/\s*([^(]+)/); if (m) { title = m[2].trim(); subtitle = m[1]; } }
   if (n.title === "Fishing Game") { title = "Abaddon"; subtitle = "The game"; }
   if (n.title.startsWith("Brainstorm - ")) title = n.title.replace("Brainstorm - ", "");
   const firstText = plain(leadHtml) || plain(md(kept.map((k) => k.content).join("\n"), null));
-  const summary = firstText.split(/(?<=\.)\s/)[0].slice(0, 220);
+  const summary = SUMMARY[n.title] || firstText.split(/(?<=\.)\s/)[0].slice(0, 220);
   entries.push({
     id: slug(n.title), title, subtitle, vault: n.title, section: n.section,
     status: STATUS[n.fm.status] || "Canon", type: n.fm.type || "",
-    summary, html: leadHtml + "\n" + sectionsHtml,
+    summary, intro: leadHtml, html: sectionsHtml, toc, edited: edited(n.rel),
+    info: (INFO[n.title] || []).map(([k, v]) => [k, v === "?" ? null : v]), number: isChapter ? +((subtitle.match(/\d+/) || [0])[0]) : null,
     unknowns: unknowns.map((u) => plain(inline(clean(u)))).filter((u) => u.length > 3),
     links: [...links].map(slug), image: ART[n.title] || null,
     words: plain(leadHtml + sectionsHtml).split(" ").length,
@@ -204,7 +258,7 @@ const byId = new Map(entries.map((e) => [e.id, e]));
 for (const e of entries) e.backlinks = entries.filter((o) => o.links.includes(e.id) && o.id !== e.id).map((o) => o.id);
 // chapter order
 const chNum = (e) => +((e.subtitle.match(/\d+/) || [99])[0]);
-entries.sort((a, b) => (a.section === "manuscript" && b.section === "manuscript" ? chNum(a) - chNum(b) : 0));
+entries.sort((a, b) => (a.section === "novel" && b.section === "novel" ? chNum(a) - chNum(b) : 0));
 
 // glossary from the Writing Bible (only the table of fixed terms)
 const lang = readNote("08 Writing Bible/Language and Naming.md").body;
@@ -221,11 +275,8 @@ const glossary = gl.split("\n").filter((l) => /^\|/.test(l) && !/^\|\s*-/.test(l
 const oq = readNote("00 Hub/Open Questions.md").body;
 const openItems = oq.split("\n").filter((l) => /^- \[ \]/.test(l)).map((l) => plain(inline(clean(l.replace(/^- \[ \]\s*/, "")))));
 
-const sections = [
-  ...SECTIONS.slice(0, 4).map(({ id, name, line }) => ({ id, name, line })),
-  { id: "chronicle", name: "Chronicle", line: "From before time to 2190" },
-  ...SECTIONS.slice(4).map(({ id, name, line }) => ({ id, name, line })),
-].filter((s) => entries.some((e) => e.section === s.id));
+const sections = [...CATS.map(({ id, name, line }) => ({ id, name, line })), { id: "novel", name: "The Novel", line: "Shardwell, chapter by chapter" }]
+  .filter((s) => entries.some((e) => e.section === s.id));
 
 const data = { built: new Date().toISOString(), sections, entries, glossary, unknowns: openItems };
 fs.mkdirSync(path.dirname(OUT), { recursive: true });

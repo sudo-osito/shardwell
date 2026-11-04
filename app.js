@@ -1,4 +1,4 @@
-/* Shardwell lore site. Static, no dependencies. Reads data/lore.json (built from the vault). */
+/* Shardwell · official site and wiki. Static, no dependencies. Reads data/lore.json (built from the vault). */
 (() => {
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -6,172 +6,230 @@
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   let D, BY;
 
-  // section art and the five realms (proposed images inside the wells)
-  const SECTION_ART = { atlas: "mar", power: "catedral", cosmology: "corazon", works: "rig" };
+  // ---------- copy (all from canon) ----------
+  const PREMISE = "The gods shattered themselves into shards, and the shards fell into human souls. Each one is a well. Some people dive.";
+  const NOVEL_SYNOPSIS = "Kalfu is seventeen. He runs jobs for people who use him and throw him away, and this time he has stolen something a corporation wants back. Cornered on the last floor of a tower, with nowhere left to run, he jumps. Something he never knew he carried wakes up.";
+  const GAME_PITCH = "You are alone, and you have one of the worst jobs in the world: fishing the black waters of Abaddon from the Rig, an outpost no one can see from outside. Ride out, catch what you can, sell it, and try to come back.";
+  const START = ["shardwell", "endro", "five-sovereigns", "diving", "godblood-zones", "kayaba-nationwide-city"];
   const REALMS = [
-    { id: "chrona", name: "Chrona", law: "Time", title: "The Stopped Sea", line: "A wave taller than towers, frozen mid-break. The rain hangs in the air." },
-    { id: "vast", name: "Vast", law: "Space", title: "The Long Stair", line: "A stair into a white void. Islands of rock at impossible distances." },
-    { id: "axion", name: "Axion", law: "Order", title: "The Repeating Halls", line: "Identical halls to infinity, doubled in still water." },
-    { id: "nyther", name: "Nyther", law: "Void", title: "The Unmaking", line: "A city coming apart into dust. Holes of pure black in the sky." },
-    { id: "anastasis", name: "Anastasis", law: "Life", title: "The Bone Garden", line: "The ribs of a dead god, grown over by pale flowers." },
+    { id: "chrona", name: "Chrona", law: "Time", title: "The Stopped Sea" }, { id: "vast", name: "Vast", law: "Space", title: "The Long Stair" },
+    { id: "axion", name: "Axion", law: "Order", title: "The Repeating Halls" }, { id: "nyther", name: "Nyther", law: "Void", title: "The Unmaking" },
+    { id: "anastasis", name: "Anastasis", law: "Life", title: "The Bone Garden" },
   ];
   const REFS = [
-    { id: "w1", who: "Undocumented courier", kind: "Human" }, { id: "m1", who: "Street worker", kind: "Human" },
-    { id: "w2", who: "Endro booth worker", kind: "Rippleborn" },
+    { id: "w1", who: "Undocumented courier", kind: "Human" }, { id: "m1", who: "Street worker", kind: "Human" }, { id: "w2", who: "Endro booth worker", kind: "Rippleborn" },
     { id: "m2", who: "Fisherman of the Rig", kind: "Rippleborn" }, { id: "w3", who: "Clan holder", kind: "Inhuman" }, { id: "m3", who: "Deep holder", kind: "Inhuman" },
   ];
-  const IDENTITY = "Mortals carry the shattered bodies of gods inside them, and the deeper they dive the less of themselves remains, in a world that monetizes the very feelings that power it.";
 
-  const sec = (id) => D.sections.find((s) => s.id === id);
-  const inSec = (id) => D.entries.filter((e) => e.section === id);
+  // ---------- helpers ----------
+  const cat = (id) => D.sections.find((s) => s.id === id);
+  const inCat = (id) => D.entries.filter((e) => e.section === id);
+  const chapters = () => inCat("novel");
   const stamp = (s) => `<span class="sello sello--${s.toLowerCase()}">${s}</span>`;
-  const img = (k, alt = "", cls = "") => `<img class="${cls}" src="img/${k}.jpg" alt="${alt}" loading="lazy" decoding="async">`;
+  const img = (k, alt = "", cls = "") => `<img class="${cls}" src="img/${k}.jpg" alt="${alt}" loading="lazy" decoding="async" onerror="this.remove()">`;
+  const fecha = (d) => d ? new Date(d + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
+  const minutes = (w) => Math.max(1, Math.round(w / 230));
+  const crumbs = (...xs) => `<nav class="migas" aria-label="Breadcrumb">${xs.map(([t, h]) => (h ? `<a href="${h}">${t}</a>` : `<span>${t}</span>`)).join('<i aria-hidden="true">/</i>')}</nav>`;
+  const unwritten = (t = "Unwritten") => `<span class="desescrito">${t}</span>`;
+  const chList = (cls = "") => `<ol class="capitulos ${cls}">${chapters().map((c) => `<li><a href="#/e/${c.id}"><span class="capitulos__n">${c.number}</span><b>${c.title}</b><span>${c.status === "Draft" ? "In progress" : minutes(c.words) + " min read"}</span></a></li>`).join("")}</ol>`;
 
-  // ---------- views ----------
+  // ---------- home ----------
   function home() {
-    const order = D.sections;
+    const ch = chapters(), game = BY.get("fishing-game");
     return `
     <section class="portada">
       ${img("corazon", "The drowned heart of a dead god, half-sunk in a still pale sea", "portada__img")}
       <canvas class="lluvia" aria-hidden="true"></canvas>
       <div class="portada__texto">
         <h1 class="logo">Shardwell</h1>
-        <p>${IDENTITY}</p>
+        <p>${PREMISE}</p>
+        <div class="acciones"><a class="boton" href="#/e/${ch[0].id}">Read the novel</a><a class="boton boton--quieto" href="#/world">Explore the world</a></div>
       </div>
-      <a class="portada__bajar" href="#descenso" data-ancla aria-label="Descend"></a>
     </section>
-    <section class="descenso" id="descenso">
-      <header class="cabeza"><p class="rotulo">The descent</p><h2 class="titulo">Year 2190</h2>
-        <p class="bajada">The gods shattered themselves into shards that live inside human souls. Each shard is a well you can dive into. Kayaba, a city that covers all of Japan, stands between two seas of their blood.</p></header>
-      <ol class="capas">
-        ${order.map((s, i) => {
-          const es = inSec(s.id), art = SECTION_ART[s.id];
-          return `<li class="capa${art ? " capa--img" : ""}" style="--k:${i / (order.length - 1)}">
-            <a href="#/s/${s.id}"${art ? ` style="--img:url(img/${art}.jpg)"` : ""}>
-              <span class="capa__num">${String(i + 1).padStart(2, "0")}</span>
-              <span class="capa__nombre">${s.name}</span>
-              <span class="capa__linea">${s.line}</span>
-              <span class="capa__cuenta">${es.length} ${es.length === 1 ? "entry" : "entries"}</span>
-            </a></li>`;
-        }).join("")}
-        <li class="capa capa--fondo" style="--k:1"><a href="#/unknowns"><span class="capa__num">∞</span><span class="capa__nombre">Unwritten</span><span class="capa__linea">What is not decided yet</span><span class="capa__cuenta">${D.unknowns.length} questions</span></a></li>
-      </ol>
-    </section>
-    ${realmsBlock()}
-    <section class="franja">
-      <a class="franja__item" href="#/glossary"><span class="rotulo">Glossary</span><b>${D.glossary.length} fixed terms</b><i>Endro, Edicts, Godblood, Tithes…</i></a>
-      <a class="franja__item" href="#/s/manuscript"><span class="rotulo">Manuscript</span><b>Read the novel</b><i>${inSec("manuscript").map((e) => e.title).join(" · ")}</i></a>
-      <a class="franja__item" href="#/art"><span class="rotulo">Art</span><b>Visual references</b><i>Realms and character studies</i></a>
-    </section>`;
-  }
 
-  function realmsBlock() {
-    return `<section class="reinos">
-      <header class="cabeza"><p class="rotulo">Inside the Shardwells ${stamp("Concept")}</p><h2 class="titulo">Five dead gods</h2>
-        <p class="bajada">Every Shardwell leads to the drowned heart of its Sovereign. What lies at the bottom carries the dead god's imprint.</p></header>
-      <div class="reinos__pista" data-pista>
-        ${REALMS.map((r) => `<figure class="reino">${img(r.id, r.title)}<figcaption><span class="rotulo">${r.name} · ${r.law}</span><b>${r.title}</b><i>${r.line}</i></figcaption></figure>`).join("")}
+    <section class="bloque obra">
+      <div class="obra__img">${img("novel", "A lit door in a silent, empty city at noon")}</div>
+      <div class="obra__texto">
+        <p class="rotulo">The novel</p><h2 class="titulo">Shardwell</h2>
+        <p class="obra__sinopsis">${NOVEL_SYNOPSIS}</p>
+        ${chList()}
+        <a class="boton" href="#/e/${ch[0].id}">Start with Chapter 1</a>
       </div>
+    </section>
+
+    <section class="bloque obra obra--juego">
+      <div class="obra__texto">
+        <p class="rotulo">The game · ${stamp("Concept")}</p><h2 class="titulo">Abaddon</h2>
+        <p class="obra__sinopsis">${GAME_PITCH}</p>
+        <dl class="datos">${(game?.info || []).filter(([k]) => k !== "Title").map(([k, v]) => `<div><dt>${k}</dt><dd>${v ?? unwritten()}</dd></div>`).join("")}</dl>
+        <a class="boton boton--quieto" href="#/e/fishing-game">About the game</a>
+      </div>
+      <div class="obra__img">${img("rig", "Under the Rig: a fishing boat returns on black water")}</div>
+    </section>
+
+    <section class="bloque">
+      <header class="cabeza"><p class="rotulo">Start here</p><h2 class="titulo">Six things to know</h2></header>
+      <div class="claves">${START.map((id) => BY.get(id)).filter(Boolean).map((e) => `
+        <a class="clave" href="#/e/${e.id}">${e.image ? img(e.image, "", "clave__img") : '<span class="clave__img clave__img--vacia"></span>'}
+          <span class="clave__cat">${cat(e.section).name}</span><b>${e.title}</b><span class="clave__txt">${e.summary}</span></a>`).join("")}</div>
+    </section>
+
+    <section class="bloque">
+      <header class="cabeza"><p class="rotulo">The wiki</p><h2 class="titulo">Explore the world</h2></header>
+      ${categoryGrid()}
+      <p class="mas"><a href="#/world">All ${D.entries.filter((e) => e.section !== "novel").length} articles</a> · <a href="#/glossary">Glossary</a> · <a href="#/unwritten">Unwritten</a></p>
     </section>`;
   }
 
-  function section(id) {
-    const s = sec(id); if (!s) return notFound();
-    const es = inSec(id), art = SECTION_ART[id];
-    const isMs = id === "manuscript";
-    return `
-    <header class="banda${art ? " banda--img" : ""}">${art ? img(art, "", "banda__img") : ""}
-      <div class="banda__texto"><p class="rotulo"><a href="#/">Shardwell</a> · ${String(D.sections.indexOf(s) + 1).padStart(2, "0")}</p><h1 class="titulo titulo--xl">${s.name}</h1><p class="bajada">${s.line}</p></div>
-    </header>
-    <section class="lista${isMs ? " lista--ms" : ""}">
-      ${es.map((e) => `<a class="tarjeta" href="#/e/${e.id}">
-        ${e.image ? img(e.image, "", "tarjeta__img") : ""}
-        <span class="tarjeta__meta">${e.subtitle ? e.subtitle + " · " : ""}${stamp(e.status)}</span>
-        <b class="tarjeta__titulo">${e.title}</b>
-        <span class="tarjeta__resumen">${isMs ? e.words + " words" : e.summary}</span></a>`).join("")}
-    </section>`;
+  function categoryGrid() {
+    return `<div class="categorias">${D.sections.filter((s) => s.id !== "novel").map((s) => {
+      const es = inCat(s.id), cover = es.find((e) => e.image);
+      return `<a class="categoria" href="#/c/${s.id}">${cover ? img(cover.image, "", "categoria__img") : ""}
+        <span class="categoria__n">${es.length}</span><b>${s.name}</b><span class="categoria__linea">${s.line}</span>
+        <ul>${es.slice(0, 4).map((e) => `<li>${e.title}</li>`).join("")}${es.length > 4 ? `<li>+ ${es.length - 4} more</li>` : ""}</ul></a>`;
+    }).join("")}</div>`;
   }
 
-  function entry(id) {
+  // ---------- world portal ----------
+  function world() {
+    const all = D.entries.filter((e) => e.section !== "novel").sort((a, b) => a.title.localeCompare(b.title));
+    const letters = [...new Set(all.map((e) => e.title[0].toUpperCase()))];
+    return `<header class="pagina">${crumbs(["Shardwell", "#/"], ["World"])}<h1 class="titulo titulo--xl">The world</h1>
+      <p class="bajada">${PREMISE}</p></header>
+      <section class="bloque bloque--pegado">${categoryGrid()}</section>
+      <section class="bloque"><header class="cabeza"><p class="rotulo">Every article</p><h2 class="titulo">A to Z</h2></header>
+        <div class="az">${letters.map((l) => `<div class="az__grupo"><span class="az__letra">${l}</span><ul>${all.filter((e) => e.title[0].toUpperCase() === l).map((e) => `<li><a href="#/e/${e.id}" data-link="${e.id}">${e.title}</a> <small>${cat(e.section).name}</small></li>`).join("")}</ul></div>`).join("")}</div>
+      </section>`;
+  }
+
+  // ---------- category ----------
+  function category(id) {
+    if (id === "novel") return novel();
+    const c = cat(id); if (!c) return notFound();
+    const es = inCat(id);
+    return `<header class="pagina">${crumbs(["Shardwell", "#/"], ["World", "#/world"], [c.name])}<h1 class="titulo titulo--xl">${c.name}</h1><p class="bajada">${c.line}</p></header>
+      <section class="bloque bloque--pegado"><div class="filas">${es.map((e) => `
+        <a class="fila" href="#/e/${e.id}">${e.image ? img(e.image, "", "fila__img") : '<span class="fila__img fila__img--vacia"></span>'}
+          <span class="fila__texto"><b>${e.title}</b><span>${e.summary}</span></span>
+          <span class="fila__meta">${stamp(e.status)}${e.info.length ? `<small>${e.info.slice(0, 2).map(([k, v]) => `${k}: ${v ?? "unwritten"}`).join(" · ")}</small>` : ""}</span></a>`).join("")}</div></section>`;
+  }
+
+  function novel() {
+    const n = BY.get("shardwell-novel");
+    return `<header class="pagina pagina--img">${img("novel", "", "pagina__img")}${crumbs(["Shardwell", "#/"], ["The Novel"])}<h1 class="titulo titulo--xl">Shardwell</h1><p class="bajada">${NOVEL_SYNOPSIS}</p></header>
+      <section class="bloque bloque--pegado">${chList("capitulos--grande")}
+      ${n ? `<p class="mas"><a href="#/e/${n.id}">About the novel</a></p>` : ""}</section>`;
+  }
+
+  // ---------- article ----------
+  function article(id) {
     const e = BY.get(id); if (!e) return notFound();
-    const s = sec(e.section), list = inSec(e.section), i = list.indexOf(e);
-    const prev = list[i - 1], next = list[i + 1];
-    const conn = [...new Set([...e.links, ...e.backlinks])].map((x) => BY.get(x)).filter(Boolean);
-    const isMs = e.section === "manuscript";
-    const realmGallery = ["five-sovereigns", "sovereignty-and-domains"].includes(e.id) ? realmsBlock() : "";
-    return `
-    <article class="entrada${isMs ? " entrada--ms" : ""}">
-      <header class="banda${e.image ? " banda--img" : ""}">${e.image ? img(e.image, "", "banda__img") : ""}
-        <div class="banda__texto"><p class="rotulo"><a href="#/s/${s.id}">${s.name}</a>${e.subtitle ? " · " + e.subtitle : ""} · ${stamp(e.status)}</p>
-          <h1 class="titulo titulo--xl">${e.title}</h1>${!isMs && e.summary ? `<p class="bajada">${e.summary}</p>` : ""}</div>
-      </header>
-      <div class="entrada__cuerpo">
-        <div class="texto${isMs ? " texto--prosa" : ""}">${e.html}</div>
-        ${isMs ? "" : `<aside class="lado">
-          ${e.unknowns.length ? `<div class="lado__bloque"><h2 class="rotulo">Unwritten</h2><ul class="desescritos">${e.unknowns.map((u) => `<li><span class="desescrito">${u}</span></li>`).join("")}</ul></div>` : ""}
-          ${conn.length ? `<div class="lado__bloque"><h2 class="rotulo">Connections</h2><ul class="conexiones">${conn.map((c) => `<li><a href="#/e/${c.id}" data-link="${c.id}">${c.title}</a><span>${sec(c.section).name}</span></li>`).join("")}</ul></div>` : ""}
-        </aside>`}
+    if (e.section === "novel") return reader(e);
+    const c = cat(e.section);
+    const related = [...new Set([...e.links, ...e.backlinks])].map((x) => BY.get(x)).filter((x) => x && x.section !== "novel" && x.id !== e.id);
+    const groups = D.sections.map((s) => [s, related.filter((r) => r.section === s.id)]).filter(([, rs]) => rs.length);
+    const infobox = `<aside class="ficha">
+      <p class="ficha__titulo">${e.title}</p>
+      ${e.image ? `<figure>${img(e.image, e.title)}</figure>` : e.section === "characters" ? `<figure class="ficha__vacia"><span>Appearance not decided yet</span></figure>` : ""}
+      <dl>${[["Category", `<a href="#/c/${c.id}">${c.name}</a>`], ["Status", stamp(e.status)], ...e.info].map(([k, v]) => `<div><dt>${k}</dt><dd>${v ?? unwritten()}</dd></div>`).join("")}</dl>
+    </aside>`;
+    const tocItems = [...e.toc, ...(e.unknowns.length ? [{ id: "s-unwritten", head: "Unwritten" }] : [])];
+    const toc = tocItems.length > 2 ? `<nav class="indice" aria-label="Contents"><p class="rotulo">Contents</p><ol>${tocItems.map((t, i) => `<li><a href="#/e/${e.id}" data-ir="${t.id}"><span>${i + 1}</span>${t.head}</a></li>`).join("")}</ol></nav>` : "";
+    return `<article class="articulo">
+      <header class="articulo__cabeza">${crumbs(["Shardwell", "#/"], ["World", "#/world"], [c.name, "#/c/" + c.id])}
+        <h1 class="titulo titulo--xl">${e.title}</h1>
+        <p class="articulo__meta">${stamp(e.status)}${e.edited ? `<span>Edited ${fecha(e.edited)}</span>` : ""}</p></header>
+      <div class="articulo__grid${toc ? "" : " articulo__grid--sin"}">
+        ${toc ? `<div class="articulo__indice">${toc}</div>` : ""}
+        <div class="articulo__cuerpo">
+          ${infobox}
+          <div class="texto intro">${e.intro}</div>
+          <div class="texto secciones">${e.html}</div>
+          ${e.unknowns.length ? `<div class="texto"><section id="s-unwritten"><h2>Unwritten</h2><div class="sec__cuerpo"><p class="nota">Not decided yet. Some of it is open on purpose.</p><ul class="desescritos">${e.unknowns.map((u) => `<li>${unwritten(u)}</li>`).join("")}</ul></div></section></div>` : ""}
+          ${["five-sovereigns", "sovereignty-and-domains"].includes(e.id) ? realms() : ""}
+          ${groups.length ? `<section class="relacionados"><h2 class="rotulo">Related</h2>${groups.map(([s, rs]) => `<div><span>${s.name}</span><p>${rs.map((r) => `<a href="#/e/${r.id}" data-link="${r.id}">${r.title}</a>`).join("")}</p></div>`).join("")}</section>` : ""}
+        </div>
       </div>
-      ${realmGallery}
-      <nav class="pasos" aria-label="More in ${s.name}">
-        ${prev ? `<a href="#/e/${prev.id}"><span class="rotulo">Previous</span><b>${prev.title}</b></a>` : "<span></span>"}
-        ${next ? `<a class="pasos__sig" href="#/e/${next.id}"><span class="rotulo">Next</span><b>${next.title}</b></a>` : "<span></span>"}
+    </article>`;
+  }
+
+  function reader(e) {
+    const ch = chapters(), i = ch.indexOf(e), prev = ch[i - 1], next = ch[i + 1];
+    return `<article class="lector">
+      <div class="progreso" aria-hidden="true"><i data-progreso></i></div>
+      <header class="lector__cabeza">${crumbs(["Shardwell", "#/"], ["The Novel", "#/novel"], ["Chapter " + e.number])}
+        <p class="rotulo">Chapter ${e.number}${e.status === "Draft" ? " · " + stamp("Draft") : ""}</p><h1 class="titulo titulo--xl">${e.title}</h1>
+        <p class="lector__min">${minutes(e.words)} min read</p></header>
+      <div class="texto texto--prosa">${e.intro}${e.html}</div>
+      <nav class="pasos" aria-label="Chapters">
+        ${prev ? `<a href="#/e/${prev.id}"><span class="rotulo">Previous chapter</span><b>${prev.title}</b></a>` : "<span></span>"}
+        ${next ? `<a class="pasos__sig" href="#/e/${next.id}"><span class="rotulo">Next chapter</span><b>${next.title}</b></a>` : `<a class="pasos__sig" href="#/novel"><span class="rotulo">The novel</span><b>All chapters</b></a>`}
       </nav>
     </article>`;
   }
 
-  function glossary() {
-    return `<header class="banda"><div class="banda__texto"><p class="rotulo"><a href="#/">Shardwell</a></p><h1 class="titulo titulo--xl">Glossary</h1><p class="bajada">Canon terms are fixed: never translated, renamed or respelled.</p></div></header>
-    <dl class="glosario">${D.glossary.map((g) => `<div><dt>${g.id ? `<a href="#/e/${g.id}" data-link="${g.id}">${g.term}</a>` : g.term}</dt><dd>${g.meaning}${g.note ? `<small>${g.note}</small>` : ""}</dd></div>`).join("")}</dl>`;
+  function realms() {
+    return `<section class="reinos"><h2 class="rotulo">Inside the Shardwells · ${stamp("Concept")}</h2>
+      <div class="reinos__pista">${REALMS.map((r) => `<figure class="reino">${img(r.id, r.title)}<figcaption><span class="rotulo">${r.name} · ${r.law}</span><b>${r.title}</b></figcaption></figure>`).join("")}</div></section>`;
   }
 
-  function unknowns() {
-    return `<header class="banda"><div class="banda__texto"><p class="rotulo"><a href="#/">Shardwell</a></p><h1 class="titulo titulo--xl">Unwritten</h1><p class="bajada">What the world has not decided yet. Some of it is left open on purpose.</p></div></header>
-    <ol class="incognitas">${D.unknowns.map((u) => `<li><span class="desescrito">${u}</span></li>`).join("")}</ol>`;
+  function glossary() {
+    return `<header class="pagina">${crumbs(["Shardwell", "#/"], ["Glossary"])}<h1 class="titulo titulo--xl">Glossary</h1><p class="bajada">The fixed terms of Shardwell. They are never translated or respelled.</p></header>
+    <section class="bloque bloque--pegado"><dl class="glosario">${D.glossary.map((g) => `<div><dt>${g.id ? `<a href="#/e/${g.id}" data-link="${g.id}">${g.term}</a>` : g.term}</dt><dd>${g.meaning}${g.note ? `<small>${g.note}</small>` : ""}</dd></div>`).join("")}</dl></section>`;
+  }
+
+  function unwrittenPage() {
+    return `<header class="pagina">${crumbs(["Shardwell", "#/"], ["Unwritten"])}<h1 class="titulo titulo--xl">Unwritten</h1><p class="bajada">What the world has not decided yet. Some of it is left open on purpose.</p></header>
+    <section class="bloque bloque--pegado"><ol class="incognitas">${D.unknowns.map((u) => `<li>${unwritten(u)}</li>`).join("")}</ol></section>`;
   }
 
   function art() {
-    return `<header class="banda banda--img">${img("chrona", "", "banda__img")}<div class="banda__texto"><p class="rotulo"><a href="#/">Shardwell</a></p><h1 class="titulo titulo--xl">Art</h1><p class="bajada">The world is painted and realistic. People are painted anime.</p></div></header>
-    ${realmsBlock()}
-    <section class="refs"><header class="cabeza"><p class="rotulo">Character studies ${stamp("Concept")}</p><h2 class="titulo">People of 2190</h2>
-      <p class="bajada">Style references, not canon characters: who people are in Kayaba and on the Rig, from the street to the clans. Same clothes from every angle.</p></header>
-      ${REFS.map((r) => `<figure class="ref">${img("ref-" + r.id, r.who)}<figcaption><span class="rotulo">${r.kind}</span><b>${r.who}</b></figcaption></figure>`).join("")}
-    </section>
-    <section class="reinos"><header class="cabeza"><p class="rotulo">The world</p><h2 class="titulo">Places</h2></header>
-      <div class="reinos__pista">${[["mar", "The silent sirens", "Abaddon's edge: grey sea on one side, Godblood on the other."], ["rig", "The Rig", "Inside the outpost no one can see from outside."], ["catedral", "A drowned nave", "A realm at the bottom of a well."], ["corazon", "The drowned heart", "Something that held up the world, and fell."]]
-        .map(([k, t, l]) => `<figure class="reino">${img(k, t)}<figcaption><b>${t}</b><i>${l}</i></figcaption></figure>`).join("")}</div>
-    </section>`;
+    return `<header class="pagina pagina--img">${img("chrona", "", "pagina__img")}${crumbs(["Shardwell", "#/"], ["Art"])}<h1 class="titulo titulo--xl">Art</h1><p class="bajada">The world is painted and realistic. People are painted anime.</p></header>
+    <section class="bloque bloque--pegado">${realms()}</section>
+    <section class="bloque"><header class="cabeza"><p class="rotulo">Character studies · ${stamp("Concept")}</p><h2 class="titulo">People of 2190</h2>
+      <p class="bajada">Style references, not canon characters.</p></header>
+      <div class="refs">${REFS.map((r) => `<figure class="ref">${img("ref-" + r.id, r.who)}<figcaption><span class="rotulo">${r.kind}</span><b>${r.who}</b></figcaption></figure>`).join("")}</div></section>`;
   }
 
-  const notFound = () => `<header class="banda"><div class="banda__texto"><h1 class="titulo titulo--xl">Unwritten</h1><p class="bajada">This page does not exist, or has not been written yet. <a href="#/">Return to the surface.</a></p></div></header>`;
+  const notFound = () => `<header class="pagina"><h1 class="titulo titulo--xl">Unwritten</h1><p class="bajada">This page does not exist yet. <a href="#/">Back to the start.</a></p></header>`;
 
   // ---------- router ----------
   function route() {
     const h = location.hash.replace(/^#/, "") || "/";
-    if (!h.startsWith("/")) return; // in-page anchor
+    if (!h.startsWith("/")) return;
     const [, a, b] = h.split("/");
-    const html = !a ? home() : a === "s" ? section(b) : a === "e" ? entry(b) : a === "glossary" ? glossary() : a === "unknowns" ? unknowns() : a === "art" ? art() : notFound();
+    const html = !a ? home() : a === "e" ? article(b) : a === "c" || a === "s" ? category(b) : a === "world" ? world() : a === "novel" ? novel() : a === "glossary" ? glossary() : a === "unwritten" || a === "unknowns" ? unwrittenPage() : a === "art" ? art() : notFound();
     vista.innerHTML = html;
-    const e = a === "e" && BY.get(b), s = a === "s" && sec(b);
-    document.title = e ? `${e.title} · Shardwell` : s ? `${s.name} · Shardwell` : a ? `${a[0].toUpperCase() + a.slice(1)} · Shardwell` : "Shardwell";
+    const e = a === "e" && BY.get(b);
+    const names = { world: "World", novel: "The Novel", glossary: "Glossary", unwritten: "Unwritten", art: "Art" };
+    document.title = e ? `${e.title} · Shardwell` : a === "c" ? `${cat(b)?.name || "World"} · Shardwell` : a ? `${names[a] || "Shardwell"} · Shardwell` : "Shardwell";
     document.body.dataset.ruta = a || "home";
-    $$("a", $("[data-nav]")).forEach((x) => x.setAttribute("aria-current", String(x.dataset.sec === (s ? s.id : e ? e.section : ""))));
+    const here = e ? (e.section === "novel" ? "novel" : e.id === "fishing-game" ? "game" : e.section === "characters" ? "characters" : "world") : a === "c" ? (b === "characters" ? "characters" : "world") : a || "";
+    $$("a", $("[data-nav]")).forEach((x) => x.setAttribute("aria-current", String(x.dataset.k === here)));
     window.scrollTo(0, 0);
     menu(false);
-    afterRender();
+    after();
   }
 
-  function afterRender() {
-    // images fade in once decoded
+  let stopProgress = null;
+  function after() {
     $$("img", vista).forEach((im) => { const on = () => im.classList.add("cargada"); im.complete ? on() : im.addEventListener("load", on, { once: true }); });
-    // titles surface
-    const io = new IntersectionObserver((es) => es.forEach((x) => { if (x.isIntersecting) { x.target.classList.add("visto"); io.unobserve(x.target); } }), { threshold: 0.15 });
-    $$(".titulo, .capa, .tarjeta, .reino, .ref, .texto > *, .texto section > *", vista).forEach((x) => io.observe(x));
-    $("[data-ancla]")?.addEventListener("click", (ev) => { ev.preventDefault(); $("#descenso").scrollIntoView({ behavior: reduce ? "auto" : "smooth" }); });
+    const io = new IntersectionObserver((es) => es.forEach((x) => { if (x.isIntersecting) { x.target.classList.add("visto"); io.unobserve(x.target); } }), { threshold: 0.12 });
+    $$(".clave, .categoria, .fila, .reino, .ref", vista).forEach((x) => io.observe(x));
+    $$("[data-ir]", vista).forEach((l) => l.addEventListener("click", (ev) => { ev.preventDefault(); const t = document.getElementById(l.dataset.ir); t?.classList.remove("plegada"); t?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" }); }));
+    const secs = $$(".articulo section[id]", vista);
+    if (secs.length) {
+      const io2 = new IntersectionObserver((es) => es.forEach((x) => { if (x.isIntersecting) $$("[data-ir]", vista).forEach((l) => l.classList.toggle("activo", l.dataset.ir === x.target.id)); }), { rootMargin: "-20% 0px -70% 0px" });
+      secs.forEach((s) => io2.observe(s));
+    }
+    $$(".articulo section[id] > h2", vista).forEach((h) => { h.tabIndex = 0; h.setAttribute("role", "button"); h.setAttribute("aria-expanded", "true"); const t = () => { const p = h.parentElement.classList.toggle("plegada"); h.setAttribute("aria-expanded", String(!p)); }; h.addEventListener("click", t); h.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); t(); } }); });
+    stopProgress?.(); stopProgress = null;
+    const bar = $("[data-progreso]", vista);
+    if (bar) { const p = () => { const r = vista.getBoundingClientRect(); bar.style.transform = `scaleX(${Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - innerHeight)))})`; }; addEventListener("scroll", p, { passive: true }); p(); stopProgress = () => removeEventListener("scroll", p); }
     rain($(".lluvia", vista));
   }
 
-  // ---------- rain (random drops in three depths, drifting wind) ----------
+  // ---------- rain ----------
   let stopRain = null;
   function rain(cv) {
     stopRain?.(); stopRain = null;
@@ -208,7 +266,7 @@
   const prev = $("[data-previa]");
   function showPrev(a) {
     const e = BY.get(a.dataset.link); if (!e || matchMedia("(hover: none)").matches) return;
-    prev.innerHTML = `<p class="rotulo">${sec(e.section).name} · ${stamp(e.status)}</p><b>${e.title}</b><p>${e.summary}</p>`;
+    prev.innerHTML = `${e.image ? `<img class="cargada" src="img/${e.image}.jpg" alt="">` : ""}<div><p class="rotulo">${cat(e.section).name} · ${stamp(e.status)}</p><b>${e.title}</b><p>${e.summary}</p></div>`;
     prev.hidden = false;
     const b = a.getBoundingClientRect(), w = prev.offsetWidth, h = prev.offsetHeight;
     prev.style.left = Math.min(Math.max(16, b.left), innerWidth - w - 16) + "px";
@@ -216,7 +274,6 @@
   }
   document.addEventListener("mouseover", (ev) => { const a = ev.target.closest("a[data-link]"); if (a) showPrev(a); });
   document.addEventListener("mouseout", (ev) => { if (ev.target.closest("a[data-link]")) prev.hidden = true; });
-  document.addEventListener("focusin", (ev) => { const a = ev.target.closest("a[data-link]"); a ? showPrev(a) : (prev.hidden = true); });
   addEventListener("scroll", () => (prev.hidden = true), { passive: true });
 
   // ---------- search ----------
@@ -225,11 +282,11 @@
   const norm = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   function search() {
     const q = norm(campo.value.trim());
-    const pool = [...D.entries.map((e) => ({ t: e.title, s: sec(e.section).name, h: "#/e/" + e.id, x: e.summary, st: e.status })),
+    const pool = [...D.entries.map((e) => ({ t: e.section === "novel" ? `Chapter ${e.number}: ${e.title}` : e.title, s: cat(e.section).name, h: "#/e/" + e.id, x: e.summary })),
       ...D.glossary.filter((g) => !g.id).map((g) => ({ t: g.term, s: "Glossary", h: "#/glossary", x: g.meaning }))];
     res = (q ? pool.map((p) => ({ p, sc: norm(p.t).startsWith(q) ? 3 : norm(p.t).includes(q) ? 2 : norm(p.x || "").includes(q) ? 1 : 0 })).filter((x) => x.sc).sort((a, b) => b.sc - a.sc).map((x) => x.p) : pool).slice(0, 30);
     sel = 0;
-    lista.innerHTML = res.length ? res.map((r, i) => `<li role="option" aria-selected="${i === 0}" data-h="${r.h}"><b>${r.t}</b><span>${r.s}</span></li>`).join("") : `<li class="vacio">Nothing in the lore matches.</li>`;
+    lista.innerHTML = res.length ? res.map((r, i) => `<li role="option" aria-selected="${i === 0}" data-h="${r.h}"><b>${r.t}</b><span>${r.s}</span></li>`).join("") : `<li class="vacio">Nothing matches.</li>`;
   }
   const move = (d) => { if (!res.length) return; sel = (sel + d + res.length) % res.length; $$("li", lista).forEach((li, i) => li.setAttribute("aria-selected", String(i === sel))); $$("li", lista)[sel].scrollIntoView({ block: "nearest" }); };
   const go = (h) => { dlg.close(); location.hash = h; };
@@ -241,7 +298,7 @@
   lista.addEventListener("click", (ev) => { const li = ev.target.closest("li[data-h]"); if (li) go(li.dataset.h); });
   dlg.addEventListener("click", (ev) => { if (ev.target === dlg) dlg.close(); });
 
-  // ---------- menu (phone) ----------
+  // ---------- menu ----------
   const btn = $("[data-menu]"), barra = $("[data-barra]");
   function menu(on) { barra.classList.toggle("abierta", on); btn.setAttribute("aria-expanded", String(on)); }
   btn.addEventListener("click", () => menu(!barra.classList.contains("abierta")));
@@ -250,8 +307,9 @@
   // ---------- start ----------
   fetch("data/lore.json").then((r) => r.json()).then((d) => {
     D = d; BY = new Map(d.entries.map((e) => [e.id, e]));
-    $("[data-nav]").innerHTML = d.sections.filter((s) => !["works", "concepts", "chronicle"].includes(s.id)).map((s) => `<a href="#/s/${s.id}" data-sec="${s.id}">${s.name}</a>`).join("") + `<a href="#/glossary">Glossary</a><a href="#/art">Art</a>`;
+    $("[data-nav]").innerHTML = [["novel", "#/novel", "The Novel"], ["game", "#/e/fishing-game", "The Game"], ["world", "#/world", "World"], ["characters", "#/c/characters", "Characters"], ["glossary", "#/glossary", "Glossary"], ["art", "#/art", "Art"]]
+      .map(([k, h, t]) => `<a href="${h}" data-k="${k}">${t}</a>`).join("");
     $("[data-construido]").textContent = new Date(d.built).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
     addEventListener("hashchange", route); route();
-  }).catch(() => { vista.innerHTML = `<p class="error">The lore could not be loaded.</p>`; });
+  }).catch(() => { vista.innerHTML = `<p class="error">The site could not be loaded.</p>`; });
 })();
