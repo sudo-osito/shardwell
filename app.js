@@ -33,33 +33,69 @@
   const unwritten = (t = "Unwritten") => `<span class="desescrito">${t}</span>`;
   const chList = (cls = "") => `<ol class="capitulos ${cls}">${chapters().map((c) => `<li><a href="#/e/${c.id}"><span class="capitulos__n">${c.number}</span><b>${c.title}</b><span>${c.status === "Draft" ? "In progress" : minutes(c.words) + " min read"}</span></a></li>`).join("")}</ol>`;
 
-  // ---------- home ----------
+  // ---------- home: the novel's landing page ----------
+  const FREE = () => window.Lector?.FREE || 50;
+  const OPENING = "The sun cast uncountable shadows across the ocean, and to him they felt like the bars of a cell.";
+  const TAGS = ["Dark fantasy", "Science fantasy", "Dystopia", "Gods and abyss", "Adult 18+"];
+  function progressCta() {
+    const pr = window.Lector?.progress(); const last = pr?.last && BY.get(pr.last.id);
+    if (!last) return null;
+    const k = pr.pos[last.id]?.k || 0, ch = chapters(), nx = ch[ch.indexOf(last) + 1];
+    return k > 0.95 && nx ? { e: nx, label: `Continue: Chapter ${nx.number}` } : { e: last, label: `Continue Chapter ${last.number} · ${Math.round(k * 100)}%` };
+  }
   function home() {
-    const ch = chapters(), game = BY.get("fishing-game");
+    const ch = chapters(), cont = progressCta(), game = BY.get("fishing-game");
+    const words = ch.filter((c) => c.status !== "Draft").reduce((t, c) => t + c.words, 0);
     return `
-    <section class="portada">
-      ${img("corazon", "The drowned heart of a dead god, half-sunk in a still pale sea", "portada__img")}
+    <section class="portada portada--novela">
+      ${img("novel", "A lit door in a silent, empty city at noon", "portada__img")}
       <canvas class="lluvia" aria-hidden="true"></canvas>
       <div class="portada__texto">
+        <p class="rotulo portada__pre">A novel</p>
         <h1 class="logo">Shardwell</h1>
         <p>${PREMISE}</p>
-        <div class="acciones"><a class="boton" href="#/e/${ch[0].id}">Read the novel</a><a class="boton boton--quieto" href="#/world">Explore the world</a></div>
+        <div class="acciones">
+          ${cont ? `<a class="boton" href="#/e/${cont.e.id}">${cont.label}</a><a class="boton boton--quieto" href="#/e/${ch[0].id}">Start from Chapter 1</a>`
+                 : `<a class="boton" href="#/e/${ch[0].id}">Start reading</a><a class="boton boton--quieto" href="#gancho" data-ancla="gancho">Read the opening</a>`}
+        </div>
+        <p class="portada__nota">Free to read · Chapters 1 to ${FREE()} are free</p>
       </div>
     </section>
 
-    <section class="bloque obra">
-      <div class="obra__img">${img("novel", "A lit door in a silent, empty city at noon")}</div>
-      <div class="obra__texto">
-        <p class="rotulo">The novel</p><h2 class="titulo">Shardwell</h2>
-        <p class="obra__sinopsis">${NOVEL_SYNOPSIS}</p>
-        ${chList()}
-        <a class="boton" href="#/e/${ch[0].id}">Start with Chapter 1</a>
-      </div>
+    <section class="gancho" id="gancho">
+      <p class="gancho__cap rotulo">Chapter 1 · ${ch[0].title}</p>
+      <blockquote class="gancho__txt">${OPENING}</blockquote>
+      <a class="boton" href="#/e/${ch[0].id}">Keep reading</a>
     </section>
+
+    <section class="bloque sinopsis">
+      <div class="sinopsis__texto">
+        <p class="rotulo">The story</p><h2 class="titulo">Something wakes when he falls</h2>
+        <p class="obra__sinopsis">${NOVEL_SYNOPSIS}</p>
+        <ul class="etiquetas">${TAGS.map((t) => `<li>${t}</li>`).join("")}</ul>
+        <dl class="cifras"><div><dt>Chapters</dt><dd>${ch.filter((c) => c.status !== "Draft").length}</dd></div><div><dt>Reading time</dt><dd>${minutes(words)} min</dd></div><div><dt>Language</dt><dd>English</dd></div><div><dt>Free</dt><dd>1 to ${FREE()}</dd></div></dl>
+      </div>
+      <aside class="sinopsis__caps">
+        <p class="rotulo">Chapters</p>
+        ${chList()}
+        <a class="mas-link" href="#/novel">All chapters →</a>
+      </aside>
+    </section>
+
+    <section class="bloque">
+      <header class="cabeza cabeza--centro"><p class="rotulo">The world</p><h2 class="titulo">Before you dive</h2>
+        <p class="bajada">You do not need any of this to start reading. It is here when you want it.</p></header>
+      <div class="claves">${START.map((id) => BY.get(id)).filter(Boolean).map((e) => `
+        <a class="clave" href="#/e/${e.id}">${e.image ? img(e.image, "", "clave__img") : '<span class="clave__img clave__img--vacia"></span>'}
+          <span class="clave__cat">${cat(e.section).name}</span><b>${e.title}</b><span class="clave__txt">${e.summary}</span></a>`).join("")}</div>
+      <p class="mas mas--centro"><a href="#/world">Explore the whole world</a></p>
+    </section>
+
+    ${membershipBlock()}
 
     <section class="bloque obra obra--juego">
       <div class="obra__texto">
-        <p class="rotulo">The game · ${stamp("Concept")}</p><h2 class="titulo">Abaddon</h2>
+        <p class="rotulo">Also in Shardwell · the game · ${stamp("Concept")}</p><h2 class="titulo">Abaddon</h2>
         <p class="obra__sinopsis">${GAME_PITCH}</p>
         <dl class="datos">${(game?.info || []).filter(([k]) => k !== "Title").map(([k, v]) => `<div><dt>${k}</dt><dd>${v ?? unwritten()}</dd></div>`).join("")}</dl>
         <a class="boton boton--quieto" href="#/e/fishing-game">About the game</a>
@@ -67,18 +103,35 @@
       <div class="obra__img">${img("rig", "Under the Rig: a fishing boat returns on black water")}</div>
     </section>
 
-    <section class="bloque">
-      <header class="cabeza"><p class="rotulo">Start here</p><h2 class="titulo">Six things to know</h2></header>
-      <div class="claves">${START.map((id) => BY.get(id)).filter(Boolean).map((e) => `
-        <a class="clave" href="#/e/${e.id}">${e.image ? img(e.image, "", "clave__img") : '<span class="clave__img clave__img--vacia"></span>'}
-          <span class="clave__cat">${cat(e.section).name}</span><b>${e.title}</b><span class="clave__txt">${e.summary}</span></a>`).join("")}</div>
-    </section>
-
-    <section class="bloque">
-      <header class="cabeza"><p class="rotulo">The wiki</p><h2 class="titulo">Explore the world</h2></header>
-      ${categoryGrid()}
-      <p class="mas"><a href="#/world">All ${D.entries.filter((e) => e.section !== "novel").length} articles</a> · <a href="#/glossary">Glossary</a> · <a href="#/unwritten">Unwritten</a></p>
+    <section class="cierre">
+      ${img("corazon", "", "cierre__img")}
+      <div><h2 class="titulo titulo--xl">The first dive is free</h2><p class="bajada">Some never finish. Begin with the boy on the roof.</p>
+      <a class="boton" href="#/e/${(cont?.e || ch[0]).id}">${cont ? cont.label : "Start reading Chapter 1"}</a></div>
     </section>`;
+  }
+
+  function membershipBlock(full) {
+    return `<section class="bloque membresia${full ? " membresia--pagina" : ""}">
+      <header class="cabeza cabeza--centro"><p class="rotulo">How to read</p><h2 class="titulo">Free to start. Kept alive by readers.</h2></header>
+      <div class="planes">
+        <div class="plan"><p class="rotulo">Free</p><b>Chapters 1 to ${FREE()}</b><ul><li>Read every chapter up to ${FREE()}</li><li>Comment on chapters and passages</li><li>Bookmarks and reading settings</li></ul><a class="boton boton--quieto" href="#/e/${chapters()[0].id}">Start reading</a></div>
+        <div class="plan plan--miembro"><p class="rotulo">Membership · coming soon</p><b>Chapter ${FREE() + 1} onward</b><ul><li>Every chapter after ${FREE()}</li><li>Supports the writing of Shardwell</li><li>Price to be announced</li></ul>
+          <form class="aviso" data-aviso><input type="email" name="email" placeholder="Your email" required autocomplete="email"><input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"><button class="boton" type="submit">Tell me when it opens</button><p class="aviso__msg" hidden></p></form>
+          <p class="plan__nota">We only use your email to tell you when membership opens.</p></div>
+      </div>
+    </section>`;
+  }
+  async function notify(ev) {
+    ev.preventDefault(); const f = ev.target, msg = $(".aviso__msg", f), fd = new FormData(f);
+    try {
+      const r = await fetch("https://shardwell-reader.maxpino.workers.dev/notify", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: fd.get("email"), website: fd.get("website") }) });
+      const j = await r.json(); if (!r.ok) throw new Error(j.error);
+      msg.textContent = "Done. We will write when membership opens."; f.reset();
+    } catch (x) { msg.textContent = x.message || "Something failed. Try again."; }
+    msg.hidden = false;
+  }
+  function membership() {
+    return `<header class="pagina">${crumbs(["Shardwell", "#/"], ["Membership"])}<h1 class="titulo titulo--xl">Membership</h1><p class="bajada">Shardwell is free up to chapter ${FREE()}. After that, readers keep it going.</p></header>${membershipBlock(true)}`;
   }
 
   function categoryGrid() {
@@ -153,20 +206,11 @@
     </article>`;
   }
 
-  function reader(e) {
-    const ch = chapters(), i = ch.indexOf(e), prev = ch[i - 1], next = ch[i + 1];
-    return `<article class="lector">
-      <div class="progreso" aria-hidden="true"><i data-progreso></i></div>
-      <header class="lector__cabeza">${crumbs(["Shardwell", "#/"], ["The Novel", "#/novel"], ["Chapter " + e.number])}
-        <p class="rotulo">Chapter ${e.number}${e.status === "Draft" ? " · " + stamp("Draft") : ""}</p><h1 class="titulo titulo--xl">${e.title}</h1>
-        <p class="lector__min">${minutes(e.words)} min read</p></header>
-      <div class="texto texto--prosa">${e.intro}${e.html}</div>
-      <nav class="pasos" aria-label="Chapters">
-        ${prev ? `<a href="#/e/${prev.id}"><span class="rotulo">Previous chapter</span><b>${prev.title}</b></a>` : "<span></span>"}
-        ${next ? `<a class="pasos__sig" href="#/e/${next.id}"><span class="rotulo">Next chapter</span><b>${next.title}</b></a>` : `<a class="pasos__sig" href="#/novel"><span class="rotulo">The novel</span><b>All chapters</b></a>`}
-      </nav>
-    </article>`;
+  function readerCtx(e) {
+    const ch = chapters(), i = ch.indexOf(e);
+    return { chapters: ch.map((c) => ({ id: c.id, number: c.number, title: c.title, status: c.status })), prev: ch[i - 1], next: ch[i + 1], minutes: minutes(e.words) };
   }
+  function reader(e) { return window.Lector.html(e, readerCtx(e)); }
 
   function realms() {
     return `<section class="reinos"><h2 class="rotulo">Inside the Shardwells · ${stamp("Concept")}</h2>
@@ -198,10 +242,11 @@
     const h = location.hash.replace(/^#/, "") || "/";
     if (!h.startsWith("/")) return;
     const [, a, b] = h.split("/");
-    const html = !a ? home() : a === "e" ? article(b) : a === "c" || a === "s" ? category(b) : a === "world" ? world() : a === "novel" ? novel() : a === "glossary" ? glossary() : a === "unwritten" || a === "unknowns" ? unwrittenPage() : a === "art" ? art() : notFound();
+    const html = !a ? home() : a === "e" ? article(b) : a === "c" || a === "s" ? category(b) : a === "world" ? world() : a === "novel" ? novel() : a === "glossary" ? glossary() : a === "unwritten" || a === "unknowns" ? unwrittenPage() : a === "art" ? art() : a === "membership" ? membership() : notFound();
+    window.Lector?.unmount();
     vista.innerHTML = html;
     const e = a === "e" && BY.get(b);
-    const names = { world: "World", novel: "The Novel", glossary: "Glossary", unwritten: "Unwritten", art: "Art" };
+    const names = { membership: "Membership", world: "World", novel: "The Novel", glossary: "Glossary", unwritten: "Unwritten", art: "Art" };
     document.title = e ? `${e.title} · Shardwell` : a === "c" ? `${cat(b)?.name || "World"} · Shardwell` : a ? `${names[a] || "Shardwell"} · Shardwell` : "Shardwell";
     document.body.dataset.ruta = a || "home";
     const here = e ? (e.section === "novel" ? "novel" : e.id === "fishing-game" ? "game" : e.section === "characters" ? "characters" : "world") : a === "c" ? (b === "characters" ? "characters" : "world") : a || "";
@@ -211,11 +256,11 @@
     after();
   }
 
-  let stopProgress = null;
   function after() {
     $$("img", vista).forEach((im) => { const on = () => im.classList.add("cargada"); im.complete ? on() : im.addEventListener("load", on, { once: true }); });
     const io = new IntersectionObserver((es) => es.forEach((x) => { if (x.isIntersecting) { x.target.classList.add("visto"); io.unobserve(x.target); } }), { threshold: 0.12 });
     $$(".clave, .categoria, .fila, .reino, .ref", vista).forEach((x) => io.observe(x));
+    $$("[data-ancla]", vista).forEach((a) => a.addEventListener("click", (ev) => { ev.preventDefault(); document.getElementById(a.dataset.ancla)?.scrollIntoView({ behavior: reduce ? "auto" : "smooth" }); }));
     $$("[data-ir]", vista).forEach((l) => l.addEventListener("click", (ev) => { ev.preventDefault(); const t = document.getElementById(l.dataset.ir); t?.classList.remove("plegada"); t?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" }); }));
     const secs = $$(".articulo section[id]", vista);
     if (secs.length) {
@@ -223,10 +268,10 @@
       secs.forEach((s) => io2.observe(s));
     }
     $$(".articulo section[id] > h2", vista).forEach((h) => { h.tabIndex = 0; h.setAttribute("role", "button"); h.setAttribute("aria-expanded", "true"); const t = () => { const p = h.parentElement.classList.toggle("plegada"); h.setAttribute("aria-expanded", String(!p)); }; h.addEventListener("click", t); h.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); t(); } }); });
-    stopProgress?.(); stopProgress = null;
-    const bar = $("[data-progreso]", vista);
-    if (bar) { const p = () => { const r = vista.getBoundingClientRect(); bar.style.transform = `scaleX(${Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - innerHeight)))})`; }; addEventListener("scroll", p, { passive: true }); p(); stopProgress = () => removeEventListener("scroll", p); }
     rain($(".lluvia", vista));
+    const re = document.body.dataset.ruta === "e" && BY.get(location.hash.split("/")[2]);
+    if (re && re.section === "novel") window.Lector.mount(vista, re, readerCtx(re));
+    $("[data-aviso]", vista)?.addEventListener("submit", notify);
   }
 
   // ---------- rain ----------
@@ -307,7 +352,7 @@
   // ---------- start ----------
   fetch("data/lore.json").then((r) => r.json()).then((d) => {
     D = d; BY = new Map(d.entries.map((e) => [e.id, e]));
-    $("[data-nav]").innerHTML = [["novel", "#/novel", "The Novel"], ["game", "#/e/fishing-game", "The Game"], ["world", "#/world", "World"], ["characters", "#/c/characters", "Characters"], ["glossary", "#/glossary", "Glossary"], ["art", "#/art", "Art"]]
+    $("[data-nav]").innerHTML = [["novel", "#/novel", "Read"], ["game", "#/e/fishing-game", "The Game"], ["world", "#/world", "World"], ["characters", "#/c/characters", "Characters"], ["glossary", "#/glossary", "Glossary"], ["art", "#/art", "Art"]]
       .map(([k, h, t]) => `<a href="${h}" data-k="${k}">${t}</a>`).join("");
     $("[data-construido]").textContent = new Date(d.built).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
     addEventListener("hashchange", route); route();

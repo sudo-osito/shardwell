@@ -1,0 +1,1 @@
+CREATE TABLE waitlist (email TEXT PRIMARY KEY, created INTEGER NOT NULL);
