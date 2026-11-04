@@ -199,3 +199,9 @@ html[data-lectura] .boton--quieto { background: transparent; color: var(--r-text
 .cform__como b { color: var(--r-text); }
 .com__cab .avatar { width: 30px; height: 30px; }
 .com__miembro { font-size: .66rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #c49a6c; border: 1px solid currentColor; padding: 2px 6px; }
+.com__nombre { font-weight: 600; text-decoration: none; color: var(--r-text); }
+.com__nombre:hover { text-decoration: underline; text-underline-offset: .2em; }
+.fin__racha { min-height: 1em; }
+.racha { display: inline-flex; gap: 8px; align-items: baseline; padding: 8px 16px; border: 1px solid var(--r-line); color: var(--r-text2); font-style: italic; }
+.racha i { font-style: normal; color: var(--r-text); } .racha b { font-style: normal; color: var(--r-text); font-size: 1.15rem; }
+.racha--entrar { cursor: pointer; } .racha--entrar:hover { color: var(--r-text); border-color: var(--r-text2); }

@@ -247,7 +247,7 @@ for (const n of notes) {
     id: slug(n.title), title, subtitle, vault: n.title, section: n.section,
     status: STATUS[n.fm.status] || "Canon", type: n.fm.type || "",
     summary, intro: leadHtml, html: sectionsHtml, toc, edited: edited(n.rel),
-    info: (INFO[n.title] || []).map(([k, v]) => [k, v === "?" ? null : v]), number: isChapter ? +((subtitle.match(/\d+/) || [0])[0]) : null,
+    info: (INFO[n.title] || []).map(([k, v]) => [k, v === "?" ? null : v]), membersUntil: n.fm.members_until || null, number: isChapter ? +((subtitle.match(/\d+/) || [0])[0]) : null,
     unknowns: unknowns.map((u) => plain(inline(clean(u)))).filter((u) => u.length > 3),
     links: [...links].map(slug), image: ART[n.title] || null,
     words: plain(leadHtml + sectionsHtml).split(" ").length,
@@ -282,8 +282,14 @@ const data = { built: new Date().toISOString(), sections, entries, glossary, unk
 // public data: only the free chapters (no lore)
 const FREE = 50;
 const pubSections = sections.filter((x) => x.id === "novel");
-const pubEntries = entries.filter((e) => e.section === "novel" && e.number <= FREE).map((e) => ({ ...e, links: [], backlinks: [] }));
-const locked = entries.filter((e) => e.section === "novel" && e.number > FREE).map((e) => ({ id: e.id, title: e.title, number: e.number, section: "novel", status: e.status, words: e.words, locked: true }));
+// a chapter is members-only after chapter 50, or while its frontmatter says members_until: YYYY-MM-DD (early access)
+fs.mkdirSync(path.join(path.dirname(new URL(import.meta.url).pathname), "out"), { recursive: true });
+const today = new Date().toISOString().slice(0, 10);
+const isLocked = (e) => e.number > FREE || (e.membersUntil && e.membersUntil > today);
+const novelEntries = entries.filter((e) => e.section === "novel");
+const pubEntries = novelEntries.filter((e) => !isLocked(e)).map((e) => ({ ...e, links: [], backlinks: [] }));
+const locked = novelEntries.filter(isLocked).map((e) => ({ id: e.id, title: e.title, number: e.number, section: "novel", status: e.status, words: e.words, locked: true, membersUntil: e.membersUntil || null, early: e.number <= FREE }));
+fs.writeFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "out", "chapters.json"), JSON.stringify(Object.fromEntries(novelEntries.filter(isLocked).map((e) => [e.id, { intro: e.intro, html: e.html }]))));
 const extras = { "fishing-game": entries.find((e) => e.id === "fishing-game")?.info || [] };
 fs.writeFileSync(path.join(path.dirname(OUT), "novel.json"), JSON.stringify({ built: data.built, sections: pubSections, entries: [...pubEntries, ...locked], extras }));
 const PRIV = path.join(path.dirname(new URL(import.meta.url).pathname), "out", "lore.json");

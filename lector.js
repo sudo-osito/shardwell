@@ -17,7 +17,7 @@
   const REACT = [["heart", "♥", "Loved it"], ["dread", "☾", "Dread"], ["tears", "≋", "Tears"], ["chills", "❄", "Chills"], ["awe", "✶", "Awe"]];
   const ago = (t) => { const s = (Date.now() - t) / 1000; return s < 60 ? "just now" : s < 3600 ? `${Math.floor(s / 60)} min ago` : s < 86400 ? `${Math.floor(s / 3600)} h ago` : s < 2592000 ? `${Math.floor(s / 86400)} d ago` : new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }); };
   const api = async (path, body) => {
-    const auth = window.Cuenta?.token ? { authorization: "Bearer " + window.Cuenta.token } : {};
+    const auth = { "x-tz": String(new Date().getTimezoneOffset()), ...(window.Cuenta?.token ? { authorization: "Bearer " + window.Cuenta.token } : {}) };
     const r = await fetch(API + path + (body ? "" : (path.includes("?") ? "&" : "?") + "reader=" + reader), body ? { method: "POST", headers: { "content-type": "application/json", ...auth }, body: JSON.stringify({ reader, ...body }) } : { headers: auth });
     const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || "Network error"); return j;
   };
@@ -31,7 +31,7 @@
     const art = $(".lector", root), prosa = $(".texto--prosa", root);
     const paras = $$(":scope > p", prosa);
     paras.forEach((p, i) => { p.dataset.p = i; });
-    const locked = e.number > FREE;
+    const locked = !!e.locked && !e.unlocked;
 
     // ---------- apply settings ----------
     function apply() {
@@ -86,7 +86,7 @@
       // remember the paragraph at the top of the screen
       const top = paras.find((p) => p.getBoundingClientRect().bottom > 90);
       if (top) { const pos = store.get("pos", {}); pos[e.id] = { p: +top.dataset.p, k, t: Date.now() }; store.set("pos", pos); store.set("last", { id: e.id, t: Date.now() }); }
-      if (k > 0.9 && !counted) { counted = true; api("/read", { chapter: e.id }).catch(() => {}); const done = store.get("done", []); if (!done.includes(e.id)) { done.push(e.id); store.set("done", done); } }
+      if (k > 0.9 && !counted) { counted = true; api("/read", { chapter: e.id }).then((r) => { if (r.user) { window.Cuenta?.setUser(r.user); paintStreak(r.user); } }).catch(() => {}); const done = store.get("done", []); if (!done.includes(e.id)) { done.push(e.id); store.set("done", done); } }
     }
     let counted = false;
     on(window, "scroll", onScroll, { passive: true });
@@ -179,6 +179,13 @@
 
     // ---------- toast ----------
     const tst = $(".tostada", root); let tt;
+    function paintStreak(u) {
+      const box = $("[data-racha]", root); if (!box || !u?.stats) return;
+      const s = u.stats.readStreak;
+      box.innerHTML = `<span class="racha"><i>☾</i><b>${s.current}</b> day reading streak${s.current >= 7 ? "" : ` · ${7 - s.current} more for a free Tithe`}</span>`;
+    }
+    if (window.Cuenta?.user) paintStreak(window.Cuenta.user);
+    else { const box = $("[data-racha]", root); if (box) box.innerHTML = `<button class="racha racha--entrar" type="button" data-entrar>Sign in to keep a reading streak</button>`; }
     function toast(m) { tst.textContent = m; tst.hidden = false; clearTimeout(tt); tt = setTimeout(() => (tst.hidden = true), 1800); }
 
     if (locked) return; // members-only chapters stop here (paywall is in the markup)
@@ -191,7 +198,7 @@
       <div class="cform__pie"><label class="chk"><input type="checkbox" name="spoiler"> Spoiler</label><span class="cform__n">0/2000</span><button class="boton boton--chico" type="submit">${parent ? "Reply" : "Post"}</button></div>
       <p class="cform__err" hidden></p></form>`;
     const cHTML = (c, replies = []) => `<li class="com${c.spoiler ? " com--spoiler" : ""}" data-c="${c.id}">
-      <div class="com__cab">${window.Cuenta ? window.Cuenta.avatar({ name: c.name, avatar: c.avatar }) : ""}<b>${esc(c.name)}</b>${c.member ? '<span class="com__miembro">Member</span>' : ""}<time>${ago(c.created)}</time></div>
+      <div class="com__cab">${window.Cuenta ? window.Cuenta.avatar({ name: c.name, avatar: c.avatar, frame: c.frame }) : ""}<a class="com__nombre" href="#/u/${encodeURIComponent(c.name)}">${esc(c.name)}</a>${window.Cuenta ? window.Cuenta.planTag({ plan: c.plan, role: c.role }) : ""}<time>${ago(c.created)}</time></div>
       ${c.spoiler ? '<button class="com__revelar" type="button" data-revelar>Spoiler · show</button>' : ""}
       <p class="com__txt">${esc(c.body).replace(/\n/g, "<br>")}</p>
       <div class="com__acc"><button type="button" data-like="${c.id}" aria-pressed="${c.liked}">♥ <span>${c.likes || ""}</span></button>${c.parent ? "" : `<button type="button" data-responder="${c.id}">Reply</button>`}${c.mine ? `<button type="button" data-borrar="${c.id}">Delete</button>` : ""}</div>
@@ -271,7 +278,7 @@
 
   // ---------- markup ----------
   function html(e, ctx) {
-    const locked = e.number > FREE;
+    const locked = !!e.locked && !e.unlocked;
     const settings = `<div class="panel" data-panel="ajustes" hidden role="dialog" aria-label="Reading settings">
       <div class="panel__cab"><b>Reading settings</b><button class="panel__cerrar" type="button" data-cerrar aria-label="Close">×</button></div>
       <div class="ajuste"><span>Theme</span><div class="temas">${Object.entries(THEMES).map(([k, t]) => `<button type="button" class="tema tema--${k}" data-set="theme" data-val="${k}">${t}</button>`).join("")}</div></div>
@@ -298,14 +305,14 @@
     const end = locked ? "" : `<section class="fin">
       <p class="rotulo">End of chapter ${e.number}</p>
       <div class="reacciones" data-reacciones></div>
-      <p class="fin__lecturas" data-lecturas></p>
+      <p class="fin__lecturas" data-lecturas></p><div class="fin__racha" data-racha></div>
       <div class="fin__sig">${ctx.next ? `<a class="boton" href="#/e/${ctx.next.id}">${ctx.next.number > FREE ? "Unlock" : "Next"}: Chapter ${ctx.next.number} · ${esc(ctx.next.title)}</a>` : `<p class="fin__nada">You have reached the latest chapter. New chapters are on the way.</p><a class="boton boton--quieto" href="#/novel">All chapters</a>`}</div>
       <div class="coms-cap"><div class="coms-cap__cab"><h2 class="titulo">Comments <span data-n-com>0</span></h2>
         <div class="seg seg--chico"><button type="button" data-orden="new" aria-pressed="true">Newest</button><button type="button" data-orden="top" aria-pressed="false">Top</button><button type="button" data-orden="old" aria-pressed="false">Oldest</button></div></div>
         <div data-form-capitulo></div><p class="estado" data-estado hidden></p><ul class="coms" data-comentarios></ul></div>
     </section>`;
-    const paywall = locked ? `<div class="muro"><p class="rotulo">Chapter ${e.number} · Members</p><h2 class="titulo">The story continues for members</h2>
-      <p>Chapters 1 to ${FREE} are free for everyone. From chapter ${FREE + 1} on, Shardwell is supported by its readers.</p>
+    const paywall = locked ? `<div class="muro"><p class="rotulo">Chapter ${e.number} · ${e.early ? "Early access" : "Members"}</p><h2 class="titulo">${e.early ? "Members are reading this one first" : "The story continues for members"}</h2>
+      <p>${e.early ? `This chapter is early access${e.membersUntil ? ` until ${new Date(e.membersUntil + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long" })}` : ""}. Then it opens to everyone.` : `Chapters 1 to ${FREE} are free for everyone. From chapter ${FREE + 1} on, Shardwell is supported by its readers.`}</p>
       <a class="boton" href="#/membership">See membership</a><a class="boton boton--quieto" href="#/novel">Back to the chapters</a></div>` : "";
     return `<article class="lector">
       <div class="progreso" aria-hidden="true"><i data-progreso></i></div>
@@ -330,7 +337,7 @@
       <div class="reanudar" hidden><span>Continue where you left off?</span><button type="button" class="boton boton--chico" data-reanudar>Continue</button><button type="button" class="lbar__btn" data-desde-inicio aria-label="Start from the top">×</button></div>
       <header class="lector__cabeza"><p class="rotulo">Chapter ${e.number}${e.status === "Draft" ? " · Draft" : ""}</p><h1 class="titulo titulo--xl">${esc(e.title)}</h1>
         <p class="lector__min">${ctx.minutes} min read</p></header>
-      <div class="texto texto--prosa${locked ? " texto--muro" : ""}">${locked ? e.intro.split("</p>").slice(0, 4).join("</p>") + "</p>" : e.intro + e.html}</div>
+      <div class="texto texto--prosa${locked ? " texto--muro" : ""}">${locked ? (e.intro ? e.intro.split("</p>").slice(0, 4).join("</p>") + "</p>" : "<p>…</p>") : e.intro + e.html}</div>
       ${paywall}${end}
       <nav class="pasos" aria-label="Chapters">
         ${ctx.prev ? `<a href="#/e/${ctx.prev.id}"><span class="rotulo">Previous chapter</span><b>${esc(ctx.prev.title)}</b></a>` : "<span></span>"}

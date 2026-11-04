@@ -91,16 +91,61 @@
     </section>`;
   }
 
-  function membershipBlock(full) {
-    return `<section class="bloque membresia${full ? " membresia--pagina" : ""}">
+  const PLANS = [
+    { id: "reader", name: "Reader", m: 4.99, y: 49.9, line: "For those who just want to keep reading", perks: ["Every chapter after " + 50, "Early access to new chapters", "Reader badge and two avatar frames"] },
+    { id: "diver", name: "Diver", m: 8.99, y: 89.9, line: "Read, and know the world", perks: ["Everything in Reader", "<b>The Codex</b>: the full lore of Shardwell", "Art and character studies", "One Tithe to give each month", "More frames and a flair under your name"], hot: true },
+    { id: "abyssal", name: "Abyssal", m: 14.99, y: 149.9, line: "Closest to the author", perks: ["Everything in Diver", "Ask the Author board", "Vote on side stories", "Your name in the credits", "Five Tithes a month", "Every frame, including the Crown"] },
+  ];
+  const usd = (n) => "US$" + n.toFixed(2).replace(/\.00$/, "");
+  function membershipBlock() {
+    return `<section class="bloque membresia">
       <header class="cabeza cabeza--centro"><p class="rotulo">How to read</p><h2 class="titulo">Free to start. Kept alive by readers.</h2></header>
-      <div class="planes">
-        <div class="plan"><p class="rotulo">Free</p><b>Chapters 1 to ${FREE()}</b><ul><li>Read every chapter up to ${FREE()}</li><li>Comment on chapters and passages (free account)</li><li>Bookmarks and reading settings</li></ul><a class="boton boton--quieto" href="#/e/${chapters()[0].id}">Start reading</a></div>
-        <div class="plan plan--miembro"><p class="rotulo">Membership · coming soon</p><b>Chapter ${FREE() + 1} onward</b><ul><li>Every chapter after ${FREE()}</li><li><b>The Codex</b>: the full lore of Shardwell, its characters, places, powers and gods</li><li>Art and character studies</li><li>Supports the writing of Shardwell</li><li>Price to be announced</li></ul>
-          <form class="aviso" data-aviso><input type="email" name="email" placeholder="Your email" required autocomplete="email"><input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"><button class="boton" type="submit">Tell me when it opens</button><p class="aviso__msg" hidden></p></form>
-          <p class="plan__nota">We only use your email to tell you when membership opens.</p></div>
+      <div class="planes planes--landing">
+        <div class="plan"><p class="rotulo">Free</p><b>Chapters 1 to ${FREE()}</b><ul><li>Read every chapter up to ${FREE()}</li><li>Comment with a free account</li><li>Bookmarks and reading settings</li></ul><a class="boton" href="#/e/${chapters()[0].id}">Start reading</a></div>
+        <div class="plan plan--miembro"><p class="rotulo">Membership</p><b>From ${usd(PLANS[0].m)} a month</b><ul><li>Chapters after ${FREE()} and early access</li><li>Three plans, cancel anytime</li></ul><a class="boton boton--quieto" href="#/membership">See the plans</a></div>
       </div>
     </section>`;
+  }
+  let CHECKOUT = null;
+  async function checkoutLinks() { if (CHECKOUT) return CHECKOUT; try { CHECKOUT = (await (await fetch("https://shardwell-reader.maxpino.workers.dev/plans")).json()).checkout || {}; } catch { CHECKOUT = {}; } return CHECKOUT; }
+  function membership() {
+    const u = window.Cuenta?.user, r = window.Cuenta?.rank(u) || 0;
+    const ROWS = [["Chapters 1 to " + FREE(), 1, 1, 1, 1], ["Chapters after " + FREE(), 0, 1, 1, 1], ["Early access", 0, 1, 1, 1], ["Comments, forum, streaks and badges", 1, 1, 1, 1], ["The Codex (lore)", 0, 0, 1, 1], ["Art and character studies", 0, 0, 1, 1], ["Tithes to give each month", "—", "—", "1", "5"], ["Avatar frames", "—", "2", "5", "All"], ["Flair under your name", 0, 0, 1, 1], ["Ask the Author", 0, 0, 0, 1], ["Vote on side stories", 0, 0, 0, 1], ["Name in the credits", 0, 0, 0, 1]];
+    const cell = (v) => v === 1 ? '<span class="si">●</span>' : v === 0 ? '<span class="no">—</span>' : v;
+    return `<header class="pagina pagina--img">${img("borde", "", "pagina__img")}${crumbs(["Shardwell", "#/"], ["Membership"])}<h1 class="titulo titulo--xl">Membership</h1><p class="bajada">Chapters 1 to ${FREE()} are free. After that, readers keep Shardwell going.</p></header>
+    <section class="bloque bloque--pegado">
+      <div class="periodo seg" role="radiogroup" aria-label="Billing"><button type="button" data-periodo="m" aria-pressed="true">Monthly</button><button type="button" data-periodo="y" aria-pressed="false">Yearly · two months free</button></div>
+      <div class="planes planes--tres">${PLANS.map((p) => `
+        <div class="plan${p.hot ? " plan--destacado" : ""}${r === { reader: 1, diver: 2, abyssal: 3 }[p.id] ? " plan--actual" : ""}">${p.hot ? '<span class="plan__cinta">Most chosen</span>' : ""}
+          <p class="rotulo">${p.name}</p><b class="plan__precio"><span data-precio-m>${usd(p.m)}<small>/month</small></span><span data-precio-y hidden>${usd(p.y)}<small>/year</small></span></b>
+          <p class="plan__linea">${p.line}</p><ul>${p.perks.map((x) => `<li>${x}</li>`).join("")}</ul>
+          <button class="boton${p.hot ? "" : " boton--quieto"}" type="button" data-comprar="${p.id}">${r === { reader: 1, diver: 2, abyssal: 3 }[p.id] ? "Your plan" : `Choose ${p.name}`}</button></div>`).join("")}</div>
+      <p class="plan__msg" data-plan-msg hidden></p>
+      ${u?.portal ? `<p class="mas mas--centro"><a href="${u.portal}" target="_blank" rel="noopener">Manage or cancel your subscription</a></p>` : ""}
+    </section>
+    <section class="bloque"><header class="cabeza"><p class="rotulo">Compare</p><h2 class="titulo">What each plan opens</h2></header>
+      <div class="tabla tabla--planes"><table><thead><tr><th></th><th>Free</th>${PLANS.map((p) => `<th>${p.name}</th>`).join("")}</tr></thead><tbody>${ROWS.map(([t, ...v]) => `<tr><td>${t}</td>${v.map((x) => `<td>${cell(x)}</td>`).join("")}</tr>`).join("")}</tbody></table></div></section>
+    <section class="bloque faq"><header class="cabeza"><p class="rotulo">Questions</p><h2 class="titulo">Before you choose</h2></header>
+      ${[["Can I cancel?", "Yes, anytime, from the link in your account. You keep your plan until the end of the period you paid."], ["What is early access?", "New chapters reach members first. After a while they open to everyone, up to chapter " + FREE() + "."], ["What are Tithes?", "Awards you give to posts and comments you value in the forum. In Shardwell, a Tithe is an offering."], ["Who handles the payment?", "Lemon Squeezy, our payment partner. It handles cards, taxes and receipts. We never see your card."], ["Is it for adults?", "Shardwell is written for adult readers (18+)."]].map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}
+    </section>
+    <section class="bloque creditos" data-creditos></section>`;
+  }
+  async function membershipEvents() {
+    const v = vista;
+    $$("[data-periodo]", v).forEach((b) => b.addEventListener("click", () => {
+      $$("[data-periodo]", v).forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      $$("[data-precio-m]", v).forEach((x) => (x.hidden = b.dataset.periodo !== "m")); $$("[data-precio-y]", v).forEach((x) => (x.hidden = b.dataset.periodo !== "y"));
+    }));
+    $$("[data-comprar]", v).forEach((b) => b.addEventListener("click", async () => {
+      const u = window.Cuenta?.user;
+      if (!u) { window.Cuenta.open("register", () => location.hash = "#/membership"); return; }
+      const per = $("[data-periodo][aria-pressed=true]", v)?.dataset.periodo === "y" ? "year" : "month";
+      const url = (await checkoutLinks())?.[b.dataset.comprar]?.[per];
+      const msg = $("[data-plan-msg]", v);
+      if (!url) { msg.innerHTML = `Payments open very soon. <form class="aviso aviso--linea" data-aviso><input type="email" name="email" value="${u.email}" required><input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"><button class="boton boton--chico" type="submit">Tell me when</button><span class="aviso__msg" hidden></span></form>`; msg.hidden = false; $("[data-aviso]", msg).addEventListener("submit", notify); return; }
+      location.href = `${url}${url.includes("?") ? "&" : "?"}checkout[email]=${encodeURIComponent(u.email)}&checkout[custom][user_id]=${u.id}&checkout[name]=${encodeURIComponent(u.name)}`;
+    }));
+    try { const c = await (await fetch("https://shardwell-reader.maxpino.workers.dev/credits")).json(); const box = $("[data-creditos]", v); if (box) box.innerHTML = `<header class="cabeza cabeza--centro"><p class="rotulo">Credits</p><h2 class="titulo">Abyssal members</h2></header><p class="creditos__nombres">${c.names.length ? c.names.join(" · ") : "Your name could be the first one here."}</p>`; } catch {}
   }
   async function notify(ev) {
     ev.preventDefault(); const f = ev.target, msg = $(".aviso__msg", f), fd = new FormData(f);
@@ -110,9 +155,6 @@
       msg.textContent = "Done. We will write when membership opens."; f.reset();
     } catch (x) { msg.textContent = x.message || "Something failed. Try again."; }
     msg.hidden = false;
-  }
-  function membership() {
-    return `<header class="pagina">${crumbs(["Shardwell", "#/"], ["Membership"])}<h1 class="titulo titulo--xl">Membership</h1><p class="bajada">Shardwell is free up to chapter ${FREE()}. After that, readers keep it going.</p></header>${membershipBlock(true)}`;
   }
 
   function categoryGrid() {
@@ -191,7 +233,14 @@
     const ch = chapters(), i = ch.indexOf(e);
     return { chapters: ch.map((c) => ({ id: c.id, number: c.number, title: c.title, status: c.status })), prev: ch[i - 1], next: ch[i + 1], minutes: minutes(e.words) };
   }
-  function reader(e) { return window.Lector.html(e, readerCtx(e)); }
+  function reader(e) {
+    if (e.locked && (window.Cuenta?.rank(window.Cuenta?.user) || 0) >= 1 && !e.intro) {
+      fetch("https://shardwell-reader.maxpino.workers.dev/chapter-text/" + e.id, { headers: { authorization: "Bearer " + window.Cuenta.token } })
+        .then((r) => (r.ok ? r.json() : null)).then((t) => { if (t) { Object.assign(e, t, { unlocked: true }); route(); } });
+      return `<p class="cargando cargando--pagina">Opening chapter ${e.number}…</p>`;
+    }
+    return window.Lector.html(e, readerCtx(e));
+  }
 
   function realms() {
     return `<section class="reinos"><h2 class="rotulo">Inside the Shardwells · ${stamp("Concept")}</h2>
@@ -217,43 +266,56 @@
   }
 
   const LORE_ROUTES = ["world", "c", "s", "glossary", "unwritten", "unknowns", "art"];
-  const isMember = () => !!window.Cuenta?.user?.member;
+  const isMember = () => (window.Cuenta?.rank(window.Cuenta?.user) || 0) >= 2;
   function codexGate() {
     const u = window.Cuenta?.user;
     return `<header class="pagina pagina--img">${img("pozo", "", "pagina__img")}${crumbs(["Shardwell", "#/"], ["The Codex"])}
-      <p class="rotulo">Members only</p><h1 class="titulo titulo--xl">The Codex</h1>
+      <p class="rotulo">Diver and Abyssal members</p><h1 class="titulo titulo--xl">The Codex</h1>
       <p class="bajada">The full lore of Shardwell: its characters, places, powers, gods and history. The story reveals it slowly; members can open it all.</p>
-      <div class="acciones acciones--izq">${u ? `<a class="boton" href="#/membership">Become a member</a>` : `<a class="boton" href="#/membership">Become a member</a><button class="boton boton--quieto" type="button" data-entrar>Sign in</button>`}<a class="boton boton--quieto" href="#/novel">Keep reading</a></div>
-      ${u && !u.member ? `<p class="nota-gate">You are signed in as ${u.name}. Your account is not a member yet.</p>` : ""}</header>`;
+      <div class="acciones acciones--izq">${u ? `<a class="boton" href="#/membership">See the plans</a>` : `<a class="boton" href="#/membership">Become a member</a><button class="boton boton--quieto" type="button" data-entrar>Sign in</button>`}<a class="boton boton--quieto" href="#/novel">Keep reading</a></div>
+      ${u && !isMember() ? `<p class="nota-gate">You are signed in as ${u.name} (${window.Cuenta.planName(u)}). The Codex opens with Diver or Abyssal.</p>` : ""}</header>`;
   }
   // ---------- account page ----------
+  const FRAMES = [["", "free", "None"], ["iron", "reader", "Iron"], ["ash", "reader", "Ash"], ["silver", "diver", "Silver"], ["endro", "diver", "Endro"], ["godblood", "diver", "Godblood"], ["abyssal", "abyssal", "Abyssal"], ["crown", "abyssal", "Crown"]];
   function account() {
-    const u = window.Cuenta?.user;
-    if (!u) return `<header class="pagina">${crumbs(["Shardwell", "#/"], ["Account"])}<h1 class="titulo titulo--xl">Your account</h1><p class="bajada">Sign in to comment, keep your bookmarks and become a member.</p><div class="acciones acciones--izq"><button class="boton" type="button" data-entrar>Sign in</button></div></header>`;
-    const pr = window.Lector?.progress() || { done: [], pos: {} }, marks = window.Lector?.store.get("marks", []) || [];
-    const ch = chapters(), done = ch.filter((c) => pr.done.includes(c.id)).length;
-    const cont = progressCta();
+    const C = window.Cuenta, u = C?.user;
+    if (!u) return `<header class="pagina">${crumbs(["Shardwell", "#/"], ["Account"])}<h1 class="titulo titulo--xl">Your account</h1><p class="bajada">Sign in to comment, join the forum, keep your streaks and become a member.</p><div class="acciones acciones--izq"><button class="boton" type="button" data-entrar>Sign in</button></div></header>`;
+    const s = u.stats || { readStreak: { current: 0, best: 0 }, writeStreak: { current: 0, best: 0 }, badges: [], tithesLeft: 0, likes: 0, tithesReceived: 0, reads: 0 };
+    const marks = window.Lector?.store.get("marks", []) || [], ch = chapters(), cont = progressCta(), r = C.rank(u), RK = { free: 0, reader: 1, diver: 2, abyssal: 3 };
     return `<header class="pagina perfil">${crumbs(["Shardwell", "#/"], ["Account"])}
-      <div class="perfil__cab">${window.Cuenta.avatar(u, "avatar--xl")}<div><h1 class="titulo titulo--xl">${u.name}</h1><p class="perfil__meta"><span class="sello ${u.member ? "sello--canon" : ""}">${u.member ? "Member" : "Free reader"}</span><span>Joined ${new Date(u.created).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</span></p></div></div></header>
+      <div class="perfil__cab">${C.avatar(u, "avatar--xl")}<div><h1 class="titulo titulo--xl">${u.name}</h1><p class="perfil__meta">${C.planTag(u) || '<span class="plan-tag">Free reader</span>'}${u.flair ? `<span class="flair">${u.flair}</span>` : ""}<span>Joined ${new Date(u.created).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</span><a href="#/u/${encodeURIComponent(u.name)}">Public page →</a></p></div></div></header>
+    <section class="bloque bloque--pegado">
+      <div class="cifras-perfil">
+        <div><i>☾</i><b>${s.readStreak.current}</b><span>day reading streak · best ${s.readStreak.best}${s.readStreak.today ? "" : s.readStreak.current ? " · read today to keep it" : ""}</span></div>
+        <div><i>≋</i><b>${s.writeStreak.current}</b><span>day forum streak · best ${s.writeStreak.best}</span></div>
+        <div><i>◈</i><b>${s.tithesLeft}</b><span>Tithes to give</span></div>
+        <div><i>♥</i><b>${s.likes}</b><span>likes received</span></div>
+        <div><i>◇</i><b>${s.reads}</b><span>of ${ch.length} chapters read</span></div>
+        <div><i>✦</i><b>${s.badges.filter((b) => b.earned).length}</b><span>of ${s.badges.length} badges</span></div>
+      </div>
+    </section>
     <section class="bloque bloque--pegado perfil__grid">
-      <div class="perfil__caja"><p class="rotulo">Reading</p><b class="perfil__num">${done}<small> of ${ch.length} chapters</small></b>
-        ${cont ? `<a class="boton" href="#/e/${cont.e.id}">${cont.label}</a>` : `<a class="boton" href="#/e/${ch[0].id}">Start reading</a>`}</div>
-      <div class="perfil__caja"><p class="rotulo">Membership</p><b class="perfil__num">${u.member ? "Member" : "Free"}</b>
-        ${u.member ? `<a class="boton boton--quieto" href="#/world">Open the Codex</a>` : `<a class="boton boton--quieto" href="#/membership">Become a member</a>`}</div>
+      <div class="perfil__caja"><p class="rotulo">Reading</p>${cont ? `<a class="boton" href="#/e/${cont.e.id}">${cont.label}</a>` : `<a class="boton" href="#/e/${ch[0].id}">Start reading</a>`}</div>
+      <div class="perfil__caja"><p class="rotulo">Plan</p><b class="perfil__num">${C.planName(u)}</b>${u.portal ? `<a class="boton boton--quieto" href="${u.portal}" target="_blank" rel="noopener">Manage subscription</a>` : `<a class="boton boton--quieto" href="#/membership">${r ? "Change plan" : "See the plans"}</a>`}</div>
+      <div class="perfil__caja perfil__caja--ancha"><p class="rotulo">Badges</p>${window.Foro.badgeGrid(s.badges)}</div>
       <div class="perfil__caja perfil__caja--ancha" id="marcas"><p class="rotulo">Bookmarks</p>
         ${marks.length ? `<ul class="perfil__marcas">${marks.map((m) => `<li><a href="#/e/${m.id}"><span>${m.n}</span><b>${m.title}</b></a></li>`).join("")}</ul>` : `<p class="nota">No bookmarks yet. Use ☆ while reading.</p>`}</div>
-      <form class="perfil__caja perfil__caja--ancha" data-perfil="avatar"><p class="rotulo">Picture</p>
-        <div class="avatares">${window.Cuenta.AVATARS.map((a) => `<button type="button" data-avatar="${a}" aria-pressed="${u.avatar === a}" aria-label="${a || "Initial"}">${window.Cuenta.avatar({ ...u, avatar: a }, "avatar--g")}</button>`).join("")}</div></form>
+      <div class="perfil__caja perfil__caja--ancha"><p class="rotulo">Picture</p>
+        <div class="avatares">${C.AVATARS.map((a) => `<button type="button" data-avatar="${a}" aria-pressed="${u.avatar === a}" aria-label="${a || "Initial"}">${C.avatar({ ...u, avatar: a, frame: "" }, "avatar--g")}</button>`).join("")}</div></div>
+      <div class="perfil__caja perfil__caja--ancha"><p class="rotulo">Frame</p>
+        <div class="avatares">${FRAMES.map(([f, min, name]) => { const ok = r >= RK[min]; return `<button type="button" class="marco-op" data-frame="${f}" aria-pressed="${(u.frame || "") === f}" ${ok ? "" : "disabled"} title="${name}${ok ? "" : " · " + C.PLAN[min] + " and up"}">${C.avatar({ ...u, frame: f }, "avatar--g")}<small>${name}${ok ? "" : " ◆"}</small></button>`; }).join("")}</div></div>
+      <form class="perfil__caja" data-perfil="flair"><p class="rotulo">Flair</p>${r >= 2 ? `<input name="flair" value="${u.flair || ""}" maxlength="24" placeholder="A few words under your name"><p class="perfil__msg" hidden></p><button class="boton boton--quieto" type="submit">Save flair</button>` : `<p class="nota">A few words under your name in the forum. Diver and Abyssal.</p>`}</form>
       <form class="perfil__caja" data-perfil="nombre"><p class="rotulo">Name</p><input name="name" value="${u.name}" maxlength="24" required><p class="perfil__msg" hidden></p><button class="boton boton--quieto" type="submit">Save name</button></form>
-      <form class="perfil__caja" data-perfil="clave"><p class="rotulo">Password</p><input name="oldPassword" type="password" placeholder="Current password" autocomplete="current-password" required><input name="newPassword" type="password" placeholder="New password (8+)" autocomplete="new-password" minlength="8" required><p class="perfil__msg" hidden></p><button class="boton boton--quieto" type="submit">Change password</button></form>
+      <form class="perfil__caja perfil__caja--ancha" data-perfil="clave"><p class="rotulo">Password</p><input name="oldPassword" type="password" placeholder="Current password" autocomplete="current-password" required><input name="newPassword" type="password" placeholder="New password (8+)" autocomplete="new-password" minlength="8" required><p class="perfil__msg" hidden></p><button class="boton boton--quieto" type="submit">Change password</button></form>
       <div class="perfil__caja perfil__caja--ancha perfil__pie"><p>${u.email}</p><button class="boton boton--quieto" type="button" data-salir>Sign out</button><button class="perfil__borrar" type="button" data-borrar-cuenta>Delete account</button></div>
     </section>`;
   }
   async function accountEvents() {
     $$("[data-avatar]", vista).forEach((b) => b.addEventListener("click", async () => { try { await window.Cuenta.update({ avatar: b.dataset.avatar }); route(); } catch (x) { alert(x.message); } }));
-    $$("form[data-perfil=nombre], form[data-perfil=clave]", vista).forEach((f) => f.addEventListener("submit", async (ev) => {
+    $$("[data-frame]", vista).forEach((b) => b.addEventListener("click", async () => { try { await window.Cuenta.update({ frame: b.dataset.frame }); route(); } catch (x) { alert(x.message); } }));
+    $$("form[data-perfil=nombre], form[data-perfil=clave], form[data-perfil=flair]", vista).forEach((f) => f.addEventListener("submit", async (ev) => {
       ev.preventDefault(); const m = $(".perfil__msg", f), fd = Object.fromEntries(new FormData(f));
-      try { await window.Cuenta.update(fd); m.textContent = "Saved."; m.hidden = false; if (f.dataset.perfil === "nombre") setTimeout(route, 600); else f.reset(); }
+      try { await window.Cuenta.update(fd); m.textContent = "Saved."; m.hidden = false; if (f.dataset.perfil !== "clave") setTimeout(route, 600); else f.reset(); }
       catch (x) { m.textContent = x.message; m.hidden = false; }
     }));
     $("[data-borrar-cuenta]", vista)?.addEventListener("click", async () => {
@@ -268,21 +330,24 @@
   function route() {
     const h = location.hash.replace(/^#/, "") || "/";
     if (!h.startsWith("/")) return;
-    const [, a, b] = h.split("/");
+    const [, a, b] = h.split("?")[0].split("/");
     const gated = LORE_ROUTES.includes(a) || (a === "e" && b && !BY.get(b)?.section?.startsWith("novel") && !isMember());
-    const html = gated && !isMember() ? codexGate() : !a ? home() : a === "account" ? account() : a === "e" ? article(b) : a === "c" || a === "s" ? category(b) : a === "world" ? world() : a === "novel" ? novel() : a === "glossary" ? glossary() : a === "unwritten" || a === "unknowns" ? unwrittenPage() : a === "art" ? art() : a === "membership" ? membership() : notFound();
+    const isForum = a === "forum" || a === "u";
+    const html = isForum ? '<div data-foro-raiz><p class="cargando cargando--pagina">Loading…</p></div>' : gated && !isMember() ? codexGate() : !a ? home() : a === "account" ? account() : a === "e" ? article(b) : a === "c" || a === "s" ? category(b) : a === "world" ? world() : a === "novel" ? novel() : a === "glossary" ? glossary() : a === "unwritten" || a === "unknowns" ? unwrittenPage() : a === "art" ? art() : a === "membership" ? membership() : notFound();
     window.Lector?.unmount();
     vista.innerHTML = html;
     const e = a === "e" && BY.get(b);
-    const names = { account: "Account", membership: "Membership", world: "World", novel: "The Novel", glossary: "Glossary", unwritten: "Unwritten", art: "Art" };
+    const names = { forum: "Forum", u: "Profile", account: "Account", membership: "Membership", world: "World", novel: "The Novel", glossary: "Glossary", unwritten: "Unwritten", art: "Art" };
     document.title = e ? `${e.title} · Shardwell` : a === "c" ? `${cat(b)?.name || "World"} · Shardwell` : a ? `${names[a] || "Shardwell"} · Shardwell` : "Shardwell";
     document.body.dataset.ruta = a || "home";
-    const here = e ? (e.section === "novel" ? "novel" : e.id === "fishing-game" ? "game" : e.section === "characters" ? "characters" : "world") : a === "c" ? (b === "characters" ? "characters" : "world") : a || "";
+    const here = isForum ? "forum" : e ? (e.section === "novel" ? "novel" : e.id === "fishing-game" ? "game" : e.section === "characters" ? "characters" : "world") : a === "c" ? (b === "characters" ? "characters" : "world") : a || "";
     $$("a", $("[data-nav]")).forEach((x) => x.setAttribute("aria-current", String(x.dataset.k === here)));
     window.scrollTo(0, 0);
     menu(false);
     after();
     if (a === "account") accountEvents();
+    if (a === "membership") membershipEvents();
+    if (isForum) window.Foro.mount($("[data-foro-raiz]", vista), { crumbs, chapters: chapters().map((c) => ({ id: c.id, number: c.number, title: c.title })), boards: { announcements: "Announcements", chapters: "Chapters", theories: "Theories", art: "Fan Art", general: "General", ask: "Ask the Author", stories: "Side Stories" }, after: () => after() });
   }
 
   function after() {
@@ -387,7 +452,7 @@
       try { const r = await fetch("https://shardwell-reader.maxpino.workers.dev/lore", { headers: { authorization: "Bearer " + window.Cuenta.token } }); if (r.ok) { const full = await r.json(); d = { ...full, extras: PUB.extras }; } } catch {}
     }
     D = d; BY = new Map(d.entries.map((e) => [e.id, e]));
-    $("[data-nav]").innerHTML = [["novel", "#/novel", "Read"], ["membership", "#/membership", "Membership"], ["world", "#/world", (isMember() ? "" : "◆ ") + "The Codex"]]
+    $("[data-nav]").innerHTML = [["novel", "#/novel", "Read"], ["forum", "#/forum", "Forum"], ["membership", "#/membership", "Membership"], ["world", "#/world", (isMember() ? "" : "◆ ") + "The Codex"]]
       .map(([k, h, t]) => `<a href="${h}" data-k="${k}">${t}</a>`).join("");
     $("[data-construido]").textContent = new Date(d.built).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   }

@@ -3,19 +3,35 @@
   const API = "https://shardwell-reader.maxpino.workers.dev";
   const $ = (s, r = document) => r.querySelector(s);
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  const AVATARS = ["", "chrona", "vast", "axion", "nyther", "anastasis", "pozo", "endro", "tithes", "echoforms", "black-veil", "leviathan", "sea-before-time"];
+  const AVATARS = ["", "chrona", "vast", "axion", "nyther", "anastasis", "pozo", "endro", "tithes", "echoforms", "black-veil", "leviathan", "sea-before-time", "mar-ahogado", "borde"];
+  const PLAN = { free: "Free reader", reader: "Reader", diver: "Diver", abyssal: "Abyssal" };
+  const RANK = { free: 0, reader: 1, diver: 2, abyssal: 3 };
+  const rank = (u) => (u?.role === "admin" ? 3 : RANK[u?.plan] || 0);
   let token = null, user = null;
   try { token = localStorage.getItem("sw:token"); user = JSON.parse(localStorage.getItem("sw:user") || "null"); } catch {}
   const listeners = new Set();
   const emit = () => listeners.forEach((f) => f(user));
 
+  function seenBadges(u) {
+    if (!u?.stats) return;
+    const earned = u.stats.badges.filter((b) => b.earned).map((b) => b.id);
+    let seen = null; try { seen = JSON.parse(localStorage.getItem("sw:badges:" + u.id) || "null"); } catch {}
+    try { localStorage.setItem("sw:badges:" + u.id, JSON.stringify(earned)); } catch {}
+    if (!seen) return; // first time on this device: no fanfare
+    earned.filter((id) => !seen.includes(id)).forEach((id, i) => { const bd = u.stats.badges.find((b) => b.id === id); setTimeout(() => announce(bd), 600 + i * 2600); });
+  }
+  function announce(bd) {
+    const el = document.createElement("div"); el.className = "logro"; el.setAttribute("role", "status");
+    el.innerHTML = `<span class="logro__ic">${bd.icon}</span><div><small>Badge earned</small><b>${esc(bd.name)}</b><span>${esc(bd.desc)}</span></div>`;
+    document.body.append(el); requestAnimationFrame(() => el.classList.add("on")); setTimeout(() => { el.classList.remove("on"); setTimeout(() => el.remove(), 600); }, 4200);
+  }
   function save(t, u) {
     token = t; user = u;
     try { t ? localStorage.setItem("sw:token", t) : localStorage.removeItem("sw:token"); u ? localStorage.setItem("sw:user", JSON.stringify(u)) : localStorage.removeItem("sw:user"); } catch {}
-    paintBar(); emit();
+    paintBar(); emit(); seenBadges(u);
   }
   async function call(path, body, method) {
-    const r = await fetch(API + path, { method: method || (body ? "POST" : "GET"), headers: { ...(body ? { "content-type": "application/json" } : {}), ...(token ? { authorization: "Bearer " + token } : {}) }, body: body ? JSON.stringify(body) : undefined });
+    const r = await fetch(API + path, { method: method || (body ? "POST" : "GET"), headers: { "x-tz": String(new Date().getTimezoneOffset()), ...(body ? { "content-type": "application/json" } : {}), ...(token ? { authorization: "Bearer " + token } : {}) }, body: body ? JSON.stringify(body) : undefined });
     const j = await r.json().catch(() => ({}));
     if (r.status === 401 && token && path !== "/auth/login") { if (/Sign in/.test(j.error || "")) save(null, null); }
     if (!r.ok) throw new Error(j.error || "Something failed. Try again.");
@@ -23,7 +39,9 @@
   }
 
   // avatar: painted image, or the initial on a stone tile
-  const avatar = (u, size = "") => u?.avatar ? `<span class="avatar ${size}"><img src="img/${u.avatar}.jpg" alt=""></span>` : `<span class="avatar avatar--letra ${size}">${esc((u?.name || "?")[0].toUpperCase())}</span>`;
+  const avatar = (u, size = "") => { const f = u?.frame ? ` marco marco--${u.frame}` : ""; return u?.avatar ? `<span class="avatar ${size}${f}"><img src="img/${u.avatar}.jpg" alt=""></span>` : `<span class="avatar avatar--letra ${size}${f}">${esc((u?.name || "?")[0].toUpperCase())}</span>`; };
+  const planName = (u) => (u?.role === "admin" ? "The Author" : PLAN[u?.plan] || PLAN.free);
+  const planTag = (u) => (rank(u) >= 1 ? `<span class="plan-tag plan-tag--${u.role === "admin" ? "author" : u.plan}">${planName(u)}</span>` : "");
 
   // ---------- top bar ----------
   const slot = $("[data-cuenta]");
@@ -32,10 +50,12 @@
     if (!user) { slot.innerHTML = `<button class="cuenta__entrar" type="button" data-entrar>Sign in</button>`; return; }
     slot.innerHTML = `<button class="cuenta__yo" type="button" data-menu-cuenta aria-haspopup="menu" aria-expanded="false" aria-label="Your account">${avatar(user)}</button>
       <div class="cuenta__menu" role="menu" hidden>
-        <div class="cuenta__quien">${avatar(user, "avatar--g")}<div><b>${esc(user.name)}</b><span>${user.member ? "Member" : "Free reader"}</span></div></div>
-        <a role="menuitem" href="#/account">Profile</a>
-        <a role="menuitem" href="#/account#marcas">Bookmarks</a>
-        ${user.member ? `<a role="menuitem" href="#/world">The Codex</a>` : `<a role="menuitem" href="#/membership">Become a member</a>`}
+        <div class="cuenta__quien">${avatar(user, "avatar--g")}<div><b>${esc(user.name)}</b><span>${planName(user)}</span></div></div>
+        ${user.stats ? `<div class="cuenta__rachas"><span title="Reading streak"><i>☾</i>${user.stats.readStreak.current} day${user.stats.readStreak.current === 1 ? "" : "s"}</span><span title="Forum streak"><i>≋</i>${user.stats.writeStreak.current}</span><span title="Tithes left to give"><i>◈</i>${user.stats.tithesLeft}</span><span title="Badges"><i>✦</i>${user.stats.badges.filter((b) => b.earned).length}</span></div>` : ""}
+        <a role="menuitem" href="#/account">Your profile</a>
+        <a role="menuitem" href="#/u/${encodeURIComponent(user.name)}">Public page</a>
+        <a role="menuitem" href="#/forum">Forum</a>
+        ${rank(user) >= 2 ? `<a role="menuitem" href="#/world">The Codex</a>` : `<a role="menuitem" href="#/membership">${rank(user) ? "Upgrade your plan" : "Become a member"}</a>`}
         <button role="menuitem" type="button" data-salir>Sign out</button>
       </div>`;
   }
@@ -101,5 +121,6 @@
 
   addEventListener("hashchange", () => { const m = $(".cuenta__menu", slot); if (m) { m.hidden = true; $("[data-menu-cuenta]", slot)?.setAttribute("aria-expanded", "false"); } });
   paintBar(); refresh();
-  window.Cuenta = { get user() { return user; }, get token() { return token; }, open, logout, refresh, update, remove, avatar, AVATARS, call, on: (f) => listeners.add(f) };
+  const setUser = (u) => save(token, u);
+  window.Cuenta = { get user() { return user; }, get token() { return token; }, open, logout, refresh, update, remove, avatar, planName, planTag, rank, PLAN, AVATARS, call, setUser, announce, on: (f) => listeners.add(f) };
 })();

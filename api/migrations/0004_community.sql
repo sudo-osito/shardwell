@@ -1,0 +1,30 @@
+ALTER TABLE users ADD COLUMN plan TEXT NOT NULL DEFAULT 'free';
+ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN frame TEXT NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN flair TEXT NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN portal TEXT NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN credits_ok INTEGER NOT NULL DEFAULT 1;
+UPDATE users SET plan = 'diver' WHERE member = 1;
+CREATE TABLE subscriptions (id TEXT PRIMARY KEY, user INTEGER NOT NULL, variant TEXT, plan TEXT, status TEXT, renews_at TEXT, ends_at TEXT, updated INTEGER NOT NULL);
+CREATE INDEX subscriptions_user ON subscriptions(user);
+CREATE TABLE user_reads (user INTEGER NOT NULL, chapter TEXT NOT NULL, created INTEGER NOT NULL, PRIMARY KEY (user, chapter));
+CREATE TABLE activity (user INTEGER NOT NULL, day TEXT NOT NULL, kind TEXT NOT NULL, PRIMARY KEY (user, day, kind));
+CREATE TABLE posts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, board TEXT NOT NULL, user INTEGER NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL DEFAULT '',
+  link TEXT NOT NULL DEFAULT '', chapter INTEGER, upto INTEGER NOT NULL DEFAULT 0, poll TEXT, poll_min TEXT,
+  score INTEGER NOT NULL DEFAULT 0, ncom INTEGER NOT NULL DEFAULT 0, pinned INTEGER NOT NULL DEFAULT 0, locked INTEGER NOT NULL DEFAULT 0,
+  hidden INTEGER NOT NULL DEFAULT 0, created INTEGER NOT NULL, edited INTEGER
+);
+CREATE INDEX posts_board ON posts(board, hidden, created);
+CREATE INDEX posts_user ON posts(user);
+CREATE TABLE post_votes (post INTEGER NOT NULL, user INTEGER NOT NULL, v INTEGER NOT NULL, PRIMARY KEY (post, user));
+CREATE TABLE fcomments (id INTEGER PRIMARY KEY AUTOINCREMENT, post INTEGER NOT NULL, parent INTEGER, user INTEGER NOT NULL, body TEXT NOT NULL, score INTEGER NOT NULL DEFAULT 0, hidden INTEGER NOT NULL DEFAULT 0, created INTEGER NOT NULL);
+CREATE INDEX fcomments_post ON fcomments(post, created);
+CREATE INDEX fcomments_user ON fcomments(user);
+CREATE TABLE fcomment_votes (comment INTEGER NOT NULL, user INTEGER NOT NULL, v INTEGER NOT NULL, PRIMARY KEY (comment, user));
+CREATE TABLE poll_votes (post INTEGER NOT NULL, user INTEGER NOT NULL, option INTEGER NOT NULL, PRIMARY KEY (post, user));
+CREATE TABLE tithes (id INTEGER PRIMARY KEY AUTOINCREMENT, giver INTEGER NOT NULL, receiver INTEGER NOT NULL, kind TEXT NOT NULL, target TEXT NOT NULL, created INTEGER NOT NULL);
+CREATE INDEX tithes_receiver ON tithes(receiver);
+CREATE INDEX tithes_giver ON tithes(giver, created);
+CREATE INDEX tithes_target ON tithes(target);
+CREATE TABLE reports (id INTEGER PRIMARY KEY AUTOINCREMENT, user INTEGER NOT NULL, target TEXT NOT NULL, reason TEXT NOT NULL, created INTEGER NOT NULL, resolved INTEGER NOT NULL DEFAULT 0);
