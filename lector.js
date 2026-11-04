@@ -78,7 +78,7 @@
     const bar = $(".lbar", root); let lastY = scrollY;
     const prog = $("[data-progreso]", root), pct = $("[data-pct]", root), left = $("[data-left]", root);
     function onScroll() {
-      const y = scrollY; bar.classList.toggle("oculta", y > lastY && y > 200 && !openPanel); lastY = y;
+      const y = scrollY; bar.classList.toggle("oculta", y > lastY + 2 && y > 200 && !openPanel && !autoOn()); if (Math.abs(y - lastY) > 2) lastY = y;
       const r = prosa.getBoundingClientRect(), tot = Math.max(1, r.height - innerHeight * 0.6), k = Math.min(1, Math.max(0, -r.top / tot));
       prog.style.transform = `scaleX(${k})`; pct.textContent = Math.round(k * 100) + "%";
       left.textContent = k >= 0.99 ? "Finished" : `${Math.max(1, Math.round(ctx.minutes * (1 - k)))} min left`;
@@ -99,17 +99,63 @@
     }
 
     // ---------- auto scroll ----------
-    let auto = 0, raf = 0;
-    const autoBtn = $("[data-auto]", root);
-    function step() { if (!auto) return; scrollBy(0, auto * 0.5); raf = requestAnimationFrame(step); }
-    autoBtn.onclick = () => { auto = auto >= 3 ? 0 : auto + 1; autoBtn.dataset.v = auto; autoBtn.setAttribute("aria-label", auto ? `Auto scroll speed ${auto}` : "Auto scroll off"); $("span", autoBtn).textContent = auto ? "×" + auto : "Auto"; cancelAnimationFrame(raf); if (auto) raf = requestAnimationFrame(step); };
-    cleanup.push(() => { auto = 0; cancelAnimationFrame(raf); });
-    on(window, "wheel", () => { if (auto) autoBtn.click(), (auto = 0); }, { passive: true });
+    // Speed in pixels per second. Any manual scroll (wheel, touch, keys, scrollbar drag) pauses it; the floating control resumes or stops it.
+    const SPEEDS = [0, 18, 30, 46, 66, 90];
+    const autoBtn = $("[data-auto]", root), ctl = $(".autoctl", root);
+    let speed = store.get("autoSpeed", 2), running = false, paused = false, raf = 0, acc = 0, lastT = 0, ownScroll = 0;
+    const autoOn = () => running || paused;
+    function paintAuto() {
+      autoBtn.setAttribute("aria-pressed", String(autoOn()));
+      ctl.hidden = !autoOn();
+      $("[data-auto-v]", ctl).textContent = speed;
+      $("[data-auto-pp]", ctl).textContent = paused ? "▶" : "❚❚";
+      $("[data-auto-pp]", ctl).setAttribute("aria-label", paused ? "Resume" : "Pause");
+      $("[data-auto-pp]", ctl).dataset.tip = paused ? "Resume" : "Pause";
+      ctl.classList.toggle("pausado", paused);
+    }
+    function frame(t) {
+      if (!running) return;
+      const dt = lastT ? Math.min(0.1, (t - lastT) / 1000) : 0; lastT = t;
+      acc += SPEEDS[speed] * dt;
+      const px = Math.floor(acc);
+      if (px >= 1) { acc -= px; ownScroll = performance.now(); window.scrollTo(0, scrollY + px); }
+      if (innerHeight + scrollY >= document.documentElement.scrollHeight - 2 || prosa.getBoundingClientRect().bottom < innerHeight * 0.5) { pause(); toast("End of chapter"); return; }
+      raf = requestAnimationFrame(frame);
+    }
+    function start() { running = true; paused = false; lastT = 0; acc = 0; cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); paintAuto(); }
+    function pause() { if (!running) return; running = false; paused = true; cancelAnimationFrame(raf); paintAuto(); }
+    function stop() { running = false; paused = false; cancelAnimationFrame(raf); paintAuto(); }
+    function setSpeed(v) { speed = Math.max(1, Math.min(SPEEDS.length - 1, v)); store.set("autoSpeed", speed); paintAuto(); }
+    autoBtn.onclick = () => (autoOn() ? stop() : start());
+    on(ctl, "click", (ev) => {
+      const b = ev.target.closest("button"); if (!b) return;
+      if (b.dataset.autoPp !== undefined) running ? pause() : start();
+      if (b.dataset.autoMas !== undefined) setSpeed(speed + 1);
+      if (b.dataset.autoMenos !== undefined) setSpeed(speed - 1);
+      if (b.dataset.autoStop !== undefined) stop();
+    });
+    // manual input pauses (only input the reader makes, not our own scrolling)
+    const manual = () => { if (running) pause(); };
+    on(window, "wheel", manual, { passive: true });
+    on(window, "touchstart", (ev) => { if (!ev.target.closest(".autoctl, .lbar")) manual(); }, { passive: true });
+    on(window, "keydown", (ev) => { if (["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "].includes(ev.key) && !/input|textarea/i.test(document.activeElement?.tagName)) manual(); });
+    on(window, "mousedown", (ev) => { if (ev.clientX > document.documentElement.clientWidth) manual(); }); // scrollbar drag
+    on(window, "scroll", () => { if (running && performance.now() - ownScroll > 250) pause(); }, { passive: true });
+    on(document, "visibilitychange", () => { if (document.hidden) pause(); });
+    cleanup.push(() => { running = false; cancelAnimationFrame(raf); });
+    paintAuto();
+
+    // ---------- touch: tap a paragraph to show its comment button ----------
+    if (matchMedia("(hover: none)").matches) on(prosa, "click", (ev) => {
+      if (ev.target.closest(".burbuja, a")) return;
+      const p = ev.target.closest("p"); if (!p || p.parentElement !== prosa) return;
+      const was = p.classList.contains("p-tocado"); $$(".p-tocado", prosa).forEach((x) => x.classList.remove("p-tocado")); if (!was) p.classList.add("p-tocado");
+    });
 
     // ---------- bookmarks ----------
     const bm = $("[data-marcar]", root);
     const marks = () => store.get("marks", []);
-    function paintMark() { const has = marks().some((m) => m.id === e.id); bm.setAttribute("aria-pressed", String(has)); bm.title = has ? "Remove bookmark" : "Bookmark this place"; renderIndex(); }
+    function paintMark() { const has = marks().some((m) => m.id === e.id); bm.setAttribute("aria-pressed", String(has)); bm.dataset.tip = has ? "Remove bookmark" : "Bookmark this place"; renderIndex(); }
     bm.onclick = () => {
       let m = marks(); const i = m.findIndex((x) => x.id === e.id);
       if (i >= 0) m.splice(i, 1); else { const top = paras.find((p) => p.getBoundingClientRect().bottom > 90); m.unshift({ id: e.id, n: e.number, title: e.title, p: top ? +top.dataset.p : 0, t: Date.now() }); }
@@ -258,15 +304,22 @@
     return `<article class="lector">
       <div class="progreso" aria-hidden="true"><i data-progreso></i></div>
       <div class="lbar">
-        <a class="lbar__btn" href="#/novel" aria-label="All chapters">←</a>
+        <a class="lbar__btn" href="#/novel" aria-label="All chapters" data-tip="Back to all chapters">←</a>
         <span class="lbar__tit"><b>${e.number}</b> ${esc(e.title)}</span>
-        <span class="lbar__meta"><span data-pct>0%</span> · <span data-left></span></span>
-        <button class="lbar__btn" type="button" data-auto data-v="0" aria-label="Auto scroll off"><span>Auto</span></button>
-        <button class="lbar__btn" type="button" data-marcar aria-pressed="false">☆</button>
-        <button class="lbar__btn" type="button" data-compartir aria-label="Share">↗</button>
-        <button class="lbar__btn" type="button" data-abrir="indice" aria-expanded="false" aria-label="Chapters and bookmarks">☰</button>
-        <button class="lbar__btn" type="button" data-abrir="ajustes" aria-expanded="false" aria-label="Reading settings">Aa</button>
-        ${locked ? "" : `<a class="lbar__btn lbar__com" href="#/e/${e.id}" onclick="event.preventDefault();document.querySelector('.coms-cap').scrollIntoView({behavior:'smooth'})" aria-label="Comments">❝ <span data-n-com>0</span></a>`}
+        <span class="lbar__meta" data-tip="How much of this chapter you have read"><span data-pct>0%</span> · <span data-left></span></span>
+        <button class="lbar__btn" type="button" data-auto aria-pressed="false" aria-label="Auto scroll" data-tip="Auto scroll: the page moves by itself. Scroll to pause"><span class="ico">⇣</span><span class="lbl">Auto</span></button>
+        <button class="lbar__btn" type="button" data-marcar aria-pressed="false" aria-label="Bookmark" data-tip="Bookmark this place"><span class="ico">☆</span><span class="lbl">Mark</span></button>
+        <button class="lbar__btn" type="button" data-compartir aria-label="Share" data-tip="Share this chapter"><span class="ico">↗</span><span class="lbl">Share</span></button>
+        <button class="lbar__btn" type="button" data-abrir="indice" aria-expanded="false" aria-label="Chapters and bookmarks" data-tip="Chapters and bookmarks"><span class="ico">☰</span><span class="lbl">Chapters</span></button>
+        <button class="lbar__btn" type="button" data-abrir="ajustes" aria-expanded="false" aria-label="Reading settings" data-tip="Reading settings: theme, font, size"><span class="ico">Aa</span><span class="lbl">Display</span></button>
+        ${locked ? "" : `<a class="lbar__btn lbar__com" href="#/e/${e.id}" onclick="event.preventDefault();document.querySelector('.coms-cap').scrollIntoView({behavior:'smooth'})" aria-label="Comments" data-tip="Go to the comments"><span class="ico">❝ <span data-n-com>0</span></span><span class="lbl">Comments</span></a>`}
+      </div>
+      <div class="autoctl" hidden role="group" aria-label="Auto scroll">
+        <button type="button" data-auto-menos aria-label="Slower" data-tip="Slower">−</button>
+        <span class="autoctl__v"><small>Speed</small><b data-auto-v>2</b></span>
+        <button type="button" data-auto-mas aria-label="Faster" data-tip="Faster">+</button>
+        <button type="button" class="autoctl__pp" data-auto-pp aria-label="Pause" data-tip="Pause">❚❚</button>
+        <button type="button" data-auto-stop aria-label="Stop auto scroll" data-tip="Stop auto scroll">×</button>
       </div>
       <div class="reanudar" hidden><span>Continue where you left off?</span><button type="button" class="boton boton--chico" data-reanudar>Continue</button><button type="button" class="lbar__btn" data-desde-inicio aria-label="Start from the top">×</button></div>
       <header class="lector__cabeza"><p class="rotulo">Chapter ${e.number}${e.status === "Draft" ? " · Draft" : ""}</p><h1 class="titulo titulo--xl">${esc(e.title)}</h1>
