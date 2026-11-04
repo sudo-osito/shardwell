@@ -25,7 +25,9 @@
   const cat = (id) => D.sections.find((s) => s.id === id);
   const inCat = (id) => D.entries.filter((e) => e.section === id);
   const chapters = () => inCat("novel");
-  const stamp = (s) => `<span class="sello sello--${s.toLowerCase()}">${s}</span>`;
+  // canon status and undecided things are only for the author; readers only ever see confirmed information
+  const isAuthor = () => window.Cuenta?.user?.role === "admin";
+  const stamp = (s) => (isAuthor() ? `<span class="sello sello--${s.toLowerCase()}">${s}</span>` : "");
   const img = (k, alt = "", cls = "") => `<img class="${cls}" src="img/${k}.jpg" alt="${alt}" loading="lazy" decoding="async" onerror="this.remove()">`;
   const fecha = (d) => d ? new Date(d + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
   const minutes = (w) => Math.max(1, Math.round(w / 230));
@@ -207,7 +209,7 @@
     const infobox = `<aside class="ficha">
       <p class="ficha__titulo">${e.title}</p>
       ${e.image ? `<figure>${img(e.image, e.title)}</figure>` : e.section === "characters" ? `<figure class="ficha__vacia"><span>Appearance not decided yet</span></figure>` : ""}
-      <dl>${[["Category", `<a href="#/c/${c.id}">${c.name}</a>`], ["Status", stamp(e.status)], ...e.info].map(([k, v]) => `<div><dt>${k}</dt><dd>${v ?? unwritten()}</dd></div>`).join("")}</dl>
+      <dl>${[["Category", `<a href="#/c/${c.id}">${c.name}</a>`], ...(isAuthor() ? [["Status", stamp(e.status)]] : []), ...e.info.filter(([, v]) => isAuthor() || v !== null)].map(([k, v]) => `<div><dt>${k}</dt><dd>${v ?? unwritten()}</dd></div>`).join("")}</dl>
     </aside>`;
     const tocItems = [...e.toc, ...(e.unknowns.length ? [{ id: "s-unwritten", head: "Unwritten" }] : [])];
     const toc = tocItems.length > 2 ? `<nav class="indice" aria-label="Contents"><p class="rotulo">Contents</p><ol>${tocItems.map((t, i) => `<li><a href="#/e/${e.id}" data-ir="${t.id}"><span>${i + 1}</span>${t.head}</a></li>`).join("")}</ol></nav>` : "";
@@ -222,7 +224,7 @@
           <div class="texto intro">${e.intro}</div>
           <div class="texto secciones">${e.html}</div>
           ${e.unknowns.length ? `<div class="texto"><section id="s-unwritten"><h2>Unwritten</h2><div class="sec__cuerpo"><p class="nota">Not decided yet. Some of it is open on purpose.</p><ul class="desescritos">${e.unknowns.map((u) => `<li>${unwritten(u)}</li>`).join("")}</ul></div></section></div>` : ""}
-          ${["five-sovereigns", "sovereignty-and-domains"].includes(e.id) ? realms() : ""}
+          ${isAuthor() && ["five-sovereigns", "sovereignty-and-domains"].includes(e.id) ? realms() : ""}
           ${groups.length ? `<section class="relacionados"><h2 class="rotulo">Related</h2>${groups.map(([s, rs]) => `<div><span>${s.name}</span><p>${rs.map((r) => `<a href="#/e/${r.id}" data-link="${r.id}">${r.title}</a>`).join("")}</p></div>`).join("")}</section>` : ""}
         </div>
       </div>
@@ -259,13 +261,16 @@
 
   function art() {
     return `<header class="pagina pagina--img">${img("chrona", "", "pagina__img")}${crumbs(["Shardwell", "#/"], ["Art"])}<h1 class="titulo titulo--xl">Art</h1><p class="bajada">The world is painted and realistic. People are painted anime.</p></header>
-    <section class="bloque bloque--pegado">${realms()}</section>
+    <section class="bloque bloque--pegado"><header class="cabeza"><p class="rotulo">Characters</p><h2 class="titulo">Kalfu and Hinata</h2></header>
+      <div class="retratos">${[["kalfu", "Kalfu"], ["hinata", "Hinata"]].map(([k, n]) => `<a class="retrato" href="#/e/${k}">${img(k, n)}<b>${n}</b></a>`).join("")}</div></section>
+    ${isAuthor() ? `<section class="bloque">${realms()}</section>
     <section class="bloque"><header class="cabeza"><p class="rotulo">Character studies · ${stamp("Concept")}</p><h2 class="titulo">People of 2190</h2>
       <p class="bajada">Style references, not canon characters.</p></header>
-      <div class="refs">${REFS.map((r) => `<figure class="ref">${img("ref-" + r.id, r.who)}<figcaption><span class="rotulo">${r.kind}</span><b>${r.who}</b></figcaption></figure>`).join("")}</div></section>`;
+      <div class="refs">${REFS.map((r) => `<figure class="ref">${img("ref-" + r.id, r.who)}<figcaption><span class="rotulo">${r.kind}</span><b>${r.who}</b></figcaption></figure>`).join("")}</div></section>` : ""}`;
   }
 
   const LORE_ROUTES = ["world", "c", "s", "glossary", "unwritten", "unknowns", "art"];
+  const AUTHOR_ROUTES = ["unwritten", "unknowns"];
   const isMember = () => (window.Cuenta?.rank(window.Cuenta?.user) || 0) >= 2;
   function codexGate() {
     const u = window.Cuenta?.user;
@@ -332,7 +337,7 @@
     });
   }
 
-  const notFound = () => `<header class="pagina"><h1 class="titulo titulo--xl">Unwritten</h1><p class="bajada">This page does not exist yet. <a href="#/">Back to the start.</a></p></header>`;
+  const notFound = () => `<header class="pagina"><h1 class="titulo titulo--xl">Not found</h1><p class="bajada">This page does not exist. <a href="#/">Back to the start.</a></p></header>`;
 
   // ---------- router ----------
   function route() {
@@ -341,7 +346,7 @@
     const [, a, b] = h.split("?")[0].split("/");
     const gated = LORE_ROUTES.includes(a) || (a === "e" && b && !BY.get(b)?.section?.startsWith("novel") && !isMember());
     const isForum = a === "forum" || a === "u";
-    const html = isForum ? '<div data-foro-raiz><p class="cargando cargando--pagina">Loading…</p></div>' : gated && !isMember() ? codexGate() : !a ? home() : a === "account" ? account() : a === "e" ? article(b) : a === "c" || a === "s" ? category(b) : a === "world" ? world() : a === "novel" ? novel() : a === "glossary" ? glossary() : a === "unwritten" || a === "unknowns" ? unwrittenPage() : a === "art" ? art() : a === "membership" ? membership() : notFound();
+    const html = AUTHOR_ROUTES.includes(a) && !isAuthor() ? notFound() : isForum ? '<div data-foro-raiz><p class="cargando cargando--pagina">Loading…</p></div>' : gated && !isMember() ? codexGate() : !a ? home() : a === "account" ? account() : a === "e" ? article(b) : a === "c" || a === "s" ? category(b) : a === "world" ? world() : a === "novel" ? novel() : a === "glossary" ? glossary() : a === "unwritten" || a === "unknowns" ? unwrittenPage() : a === "art" ? art() : a === "membership" ? membership() : notFound();
     window.Lector?.unmount();
     vista.innerHTML = html;
     const e = a === "e" && BY.get(b);
@@ -462,7 +467,6 @@
     D = d; BY = new Map(d.entries.map((e) => [e.id, e]));
     $("[data-nav]").innerHTML = [["novel", "#/novel", "Read"], ["forum", "#/forum", "Forum"], ["membership", "#/membership", "Membership"], ["world", "#/world", (isMember() ? "" : "◆ ") + "The Codex"]]
       .map(([k, h, t]) => `<a href="${h}" data-k="${k}">${t}</a>`).join("");
-    $("[data-construido]").textContent = new Date(d.built).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   }
   addEventListener("cuenta:cambio", async () => { await loadData(); const h = location.hash.split("/"); if (h[1] === "e" && BY.get(h[2])?.section === "novel") { window.Lector.refreshForms(); } else route(); });
   window.Cuenta?.on(() => {});

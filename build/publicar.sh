@@ -4,5 +4,5 @@ set -e
 cd "$(dirname "$0")/.."
 node build/build.mjs "${1:-$HOME/Documents/Shardwell}"
 W=~/Proyectos/neisstech-organics/worker/node_modules/.bin/wrangler
-(cd api && $W kv key put lore --path ../build/out/lore.json --namespace-id a65328af52e6464a85aaca1413dc0f4a --remote && $W kv key put chapters --path ../build/out/chapters.json --namespace-id a65328af52e6464a85aaca1413dc0f4a --remote)
+(cd api && $W kv key put lore --path ../build/out/lore.json --namespace-id a65328af52e6464a85aaca1413dc0f4a --remote && $W kv key put chapters --path ../build/out/chapters.json --namespace-id a65328af52e6464a85aaca1413dc0f4a --remote && $W kv key put lore-admin --path ../build/out/lore-admin.json --namespace-id a65328af52e6464a85aaca1413dc0f4a --remote)
 git add -A && git commit -qm "Rebuild from the vault" && git push -q || echo "nothing to commit"

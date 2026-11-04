@@ -287,14 +287,24 @@ fs.mkdirSync(path.join(path.dirname(new URL(import.meta.url).pathname), "out"), 
 const today = new Date().toISOString().slice(0, 10);
 const isLocked = (e) => e.number > FREE || (e.membersUntil && e.membersUntil > today);
 const novelEntries = entries.filter((e) => e.section === "novel");
-const pubEntries = novelEntries.filter((e) => !isLocked(e)).map((e) => ({ ...e, links: [], backlinks: [] }));
-const locked = novelEntries.filter(isLocked).map((e) => ({ id: e.id, title: e.title, number: e.number, section: "novel", status: e.status, words: e.words, locked: true, membersUntil: e.membersUntil || null, early: e.number <= FREE }));
+const pubEntries = novelEntries.filter((e) => !isLocked(e) && e.status !== "Draft").map((e) => ({ ...e, links: [], backlinks: [] }));
+const locked = novelEntries.filter((e) => isLocked(e) && e.status !== "Draft").map((e) => ({ id: e.id, title: e.title, number: e.number, section: "novel", status: e.status, words: e.words, locked: true, membersUntil: e.membersUntil || null, early: e.number <= FREE }));
 fs.writeFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "out", "chapters.json"), JSON.stringify(Object.fromEntries(novelEntries.filter(isLocked).map((e) => [e.id, { intro: e.intro, html: e.html }]))));
 const extras = { "fishing-game": entries.find((e) => e.id === "fishing-game")?.info || [] };
 fs.writeFileSync(path.join(path.dirname(OUT), "novel.json"), JSON.stringify({ built: data.built, sections: pubSections, entries: [...pubEntries, ...locked], extras }));
-const PRIV = path.join(path.dirname(new URL(import.meta.url).pathname), "out", "lore.json");
-fs.mkdirSync(path.dirname(PRIV), { recursive: true });
-fs.writeFileSync(PRIV, JSON.stringify(data));
+// two Codex versions: "lore" = only confirmed information (what readers and members see); "lore-admin" = everything, for the author
+const OUTDIR = path.join(path.dirname(new URL(import.meta.url).pathname), "out");
+fs.mkdirSync(OUTDIR, { recursive: true });
+const confirmedEntries = entries
+  .filter((e) => e.section !== "ideas" && !(e.section === "novel" && e.status === "Draft"))
+  .map((e) => ({ ...e, unknowns: [], info: e.info.filter(([, v]) => v !== null) }));
+const keep = new Set(confirmedEntries.map((e) => e.id));
+const unlink = (h) => h.replace(/<a href="#\/e\/([a-z0-9-]+)" data-link="\1">(.*?)<\/a>/g, (m, id, label) => (keep.has(id) ? m : label));
+confirmedEntries.forEach((e) => { e.links = e.links.filter((x) => keep.has(x)); e.backlinks = e.backlinks.filter((x) => keep.has(x)); e.intro = unlink(e.intro); e.html = unlink(e.html); });
+const confirmed = { ...data, sections: sections.filter((x) => x.id !== "ideas"), entries: confirmedEntries, unknowns: [] };
+const PRIV = path.join(OUTDIR, "lore.json");
+fs.writeFileSync(PRIV, JSON.stringify(confirmed));
+fs.writeFileSync(path.join(OUTDIR, "lore-admin.json"), JSON.stringify(data));
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 console.log(`public data/novel.json · private build/out/lore.json · entries ${entries.length} · glossary ${glossary.length} · unknowns ${openItems.length} · ${(fs.statSync(PRIV).size / 1024).toFixed(0)} kB`);
 for (const s of sections) console.log(" ", s.name.padEnd(11), entries.filter((e) => e.section === s.id).map((e) => e.title).join(", "));

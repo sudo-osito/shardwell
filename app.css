@@ -775,3 +775,10 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
 .avatar-w--iron .avatar__marco { inset: auto; left: -8.26%; top: -6.44%; width: 116.53%; height: 116.53%; }
 .avatar-w--silver .avatar__marco { inset: auto; left: -13.34%; top: -12.60%; width: 126.69%; height: 126.69%; }
 .clave-w .clave-ojo { position: absolute; top: 0; right: 0; bottom: 0; height: auto; }
+.pie__nav a { color: var(--text-2); text-decoration: none; } .pie__nav a:hover { color: var(--text); }
+.retratos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.retrato { position: relative; display: block; overflow: hidden; text-decoration: none; isolation: isolate; }
+.retrato img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; transition: transform 1.2s var(--e); }
+.retrato:hover img { transform: scale(1.04); }
+.retrato b { position: absolute; left: 18px; bottom: 14px; font: 400 1.6rem/1 var(--f-title); letter-spacing: .06em; text-transform: uppercase; font-weight: 400; text-shadow: 0 2px 12px rgba(0,0,0,.8); }
+@media (max-width: 760px) { .retratos { grid-template-columns: minmax(0, 1fr); } }

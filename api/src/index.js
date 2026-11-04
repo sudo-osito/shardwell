@@ -238,7 +238,7 @@ export default {
         if (p[0] === "lore") {
           const key = req.headers.get("x-member"), keyOk = typeof key === "string" && key.length >= 12 && String(env.MEMBER_KEYS || "").split(",").map((x) => x.trim()).includes(key);
           if (!can(me, "diver") && !keyOk) return bad(req, "Diver or Abyssal members only", 401);
-          return new Response((await env.LORE.get("lore")) || "{}", { headers: { "content-type": "application/json", "cache-control": "private, no-store", ...cors(req) } });
+          return new Response((await env.LORE.get(me?.role === "admin" ? "lore-admin" : "lore")) || "{}", { headers: { "content-type": "application/json", "cache-control": "private, no-store", ...cors(req) } });
         }
         if (p[0] === "chapter-text" && okId(p[1])) {
           if (!can(me, "reader")) return bad(req, "Members only", 401);
