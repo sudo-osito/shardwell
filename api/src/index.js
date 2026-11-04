@@ -1,3 +1,4 @@
+import { codexRoute } from "./codex.js";
 // Shardwell API (Cloudflare Worker + D1 + KV).
 // Novel:     GET /chapter/:id · GET /chapter/:id/para/:n · GET /chapter-text/:id (early access / members)
 //            POST /comment · /like · /react · /read · /delete · /notify
@@ -158,7 +159,7 @@ async function mark(env, u, kind, tz) { await env.DB.prepare("INSERT OR IGNORE I
 async function meOut(env, u, tz) {
   const s = await stats(env, u, tz);
   const reads = (await env.DB.prepare("SELECT chapter FROM user_reads WHERE user = ?").bind(u.id).all()).results.map((r) => r.chapter);
-  return { id: u.id, email: u.email, name: u.name, avatar: u.avatar, frame: u.frame || "", flair: u.flair || "", bio: u.bio || "", banner: u.banner || "", link: u.link || "", plan: u.plan || "free", role: u.role || "", member: rank(u) >= 1, portal: u.portal || "", created: u.created, reads, stats: s };
+  return { id: u.id, email: u.email, name: u.name, avatar: u.avatar, frame: u.frame || "", flair: u.flair || "", bio: u.bio || "", banner: u.banner || "", link: u.link || "", plan: u.plan || "free", role: u.role || "", wiki_role: u.wiki_role || "", member: rank(u) >= 1, portal: u.portal || "", created: u.created, reads, stats: s };
 }
 
 // ---------- Lemon Squeezy ----------
@@ -221,6 +222,8 @@ export default {
       const me = await session(env, req);
       const tz = tzOf(req.headers.get("x-tz") || url.searchParams.get("tz"));
       const admin = (me && me.role === "admin") || (env.ADMIN && req.headers.get("x-admin") === env.ADMIN);
+      const cx = await codexRoute(req, env, url, p, me, { json, bad, clean, now, limited, userPub, can, ipHash });
+      if (cx) return cx;
 
       // ---- public reads ----
       if (req.method === "GET") {
