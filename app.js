@@ -17,6 +17,7 @@
   ];
   const REFS = [
     { id: "w1", who: "Undocumented courier", kind: "Human" }, { id: "m1", who: "Street worker", kind: "Human" },
+    { id: "w2", who: "Endro booth worker", kind: "Rippleborn" },
     { id: "m2", who: "Fisherman of the Rig", kind: "Rippleborn" }, { id: "w3", who: "Clan holder", kind: "Inhuman" }, { id: "m3", who: "Deep holder", kind: "Inhuman" },
   ];
   const IDENTITY = "Mortals carry the shattered bodies of gods inside them, and the deeper they dive the less of themselves remains, in a world that monetizes the very feelings that power it.";
