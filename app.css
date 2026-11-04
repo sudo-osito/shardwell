@@ -701,7 +701,6 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
 .avatar__marco { position: absolute; inset: -22%; width: 144%; height: 144%; max-width: none; opacity: 1; pointer-events: none; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .6)); }
 .avatar-w--endro .avatar__marco { animation: endro-glow 4s ease-in-out infinite; }
 .avatar-w--abyssal .avatar__marco, .avatar-w--crown .avatar__marco { animation: oro-glow 5s ease-in-out infinite; }
-.avatar-w--crown .avatar__marco { inset: -30% -22% -22%; height: 152%; }
 @keyframes endro-glow { 50% { filter: drop-shadow(0 0 7px rgba(150, 110, 230, .85)) drop-shadow(0 2px 4px rgba(0, 0, 0, .6)); } }
 @keyframes oro-glow { 50% { filter: drop-shadow(0 0 7px rgba(227, 195, 142, .6)) drop-shadow(0 2px 4px rgba(0, 0, 0, .6)); } }
 .cuenta__yo .avatar-w { margin: 4px; }
@@ -765,3 +764,14 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
 .clave-ojo { position: absolute; top: 0; right: 0; bottom: 0; width: 48px; display: grid; place-items: center; color: var(--text-2); }
 .clave-ojo:hover, .clave-ojo[aria-pressed="true"] { color: var(--text); }
 .clave-ojo[data-tip]::after { display: none; }
+
+/* frame overlays: positioned from measured ring centre and hole size (img/ui/f-*.png, 256 px) */
+.avatar-w--abyssal .avatar__marco { inset: auto; left: -20.86%; top: -13.14%; width: 141.17%; height: 141.17%; }
+.avatar-w--ash .avatar__marco { inset: auto; left: -8.74%; top: -8.97%; width: 119.34%; height: 119.34%; }
+.avatar-w--bone .avatar__marco { inset: auto; left: -19.76%; top: -20.86%; width: 141.17%; height: 141.17%; }
+.avatar-w--crown .avatar__marco { inset: auto; left: -21.95%; top: -29.85%; width: 144.47%; height: 144.47%; }
+.avatar-w--endro .avatar__marco { inset: auto; left: -21.81%; top: -22.94%; width: 143.63%; height: 143.63%; }
+.avatar-w--godblood .avatar__marco { inset: auto; left: -14.33%; top: -6.29%; width: 132.82%; height: 132.82%; }
+.avatar-w--iron .avatar__marco { inset: auto; left: -8.26%; top: -6.44%; width: 116.53%; height: 116.53%; }
+.avatar-w--silver .avatar__marco { inset: auto; left: -13.34%; top: -12.60%; width: 126.69%; height: 126.69%; }
+.clave-w .clave-ojo { position: absolute; top: 0; right: 0; bottom: 0; height: auto; }
