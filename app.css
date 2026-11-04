@@ -479,13 +479,7 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
 .plan-tag--abyssal { color: #e3c38e; border-color: #8f7445; background: rgba(227, 195, 142, .06); }
 .plan-tag--author { color: #0b0b0b; background: #d9d5cc; border-color: #d9d5cc; }
 .flair { font-size: .9rem; font-style: italic; color: var(--text-2); }
-.marco { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--mc, #555); border-color: transparent; }
-.marco--iron { --mc: #6f6d68; } .marco--ash { --mc: #9b9890; }
-.marco--silver { --mc: #cfd2d6; } .marco--endro { --mc: #8f74d6; box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--mc), 0 0 10px rgba(143, 116, 214, .55); }
-.marco--godblood { --mc: #050505; box-shadow: 0 0 0 2px #2a2a2a, 0 0 0 4px #050505, 0 0 0 5px #3a3a3a; }
-.marco--abyssal { --mc: #c9a76a; box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--mc), 0 0 14px rgba(201, 167, 106, .4); animation: latido 4s ease-in-out infinite; }
-.marco--crown { --mc: #e7cf98; box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--mc), 0 0 0 5px #6b5527, 0 0 18px rgba(231, 207, 152, .45); }
-@keyframes latido { 50% { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--mc), 0 0 22px rgba(201, 167, 106, .7); } }
+/* frames are painted PNGs (img/ui/f-*.png) */
 .marco-op { display: grid; justify-items: center; gap: 6px; border-radius: 0 !important; padding: 8px !important; }
 .marco-op small { font-size: .8rem; color: var(--text-2); }
 .marco-op[disabled] { opacity: .45; cursor: not-allowed; }
@@ -640,9 +634,9 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
 .insignias { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
 .insignia-c { display: grid; justify-items: center; gap: 4px; padding: 16px 10px; text-align: center; border: 1px solid var(--line); opacity: .45; filter: grayscale(1); }
 .insignia-c.ok { opacity: 1; filter: none; border-color: var(--line-2); background: radial-gradient(80% 70% at 50% 0%, rgba(201, 167, 106, .08), transparent); }
-.insignia { display: grid; place-items: center; width: 46px; height: 46px; font-size: 1.4rem; border: 1px solid var(--line-2); clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%); background: rgba(217,213,204,.04); }
+.insignia { display: grid; place-items: center; width: 64px; height: 64px; }
 .insignia-c .insignia { margin: 6px 0 8px; }
-.insignia-c.ok .insignia { border-color: #8f7445; color: #e3c38e; box-shadow: 0 0 14px rgba(201, 167, 106, .25); }
+
 .insignia { line-height: 1; }
 .insignia > * , .insignia { text-indent: 0; }
 .insignia-c b { font-size: 1rem; font-weight: 600; }
@@ -650,7 +644,7 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
 .progreso-ins { display: block; width: 80%; height: 2px; background: var(--line); }
 .progreso-ins span { display: block; height: 100%; background: var(--text-2); }
 .insignias--mini { display: flex; flex-wrap: wrap; gap: 8px; }
-.insignias--mini .insignia { width: 30px; height: 30px; font-size: .9rem; border-color: #8f7445; color: #e3c38e; }
+.insignias--mini .insignia { width: 34px; height: 34px; }
 /* keep the glyph upright inside the rotated diamond */
 .insignia { display: grid; }
 .insignia-c .insignia, .insignias--mini .insignia { --r: -45deg; }
@@ -659,7 +653,7 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
 /* badge earned toast */
 .logro { position: fixed; left: 50%; bottom: 28px; z-index: 60; display: flex; gap: 16px; align-items: center; padding: 16px 22px 16px 18px; background: #17150f; border: 1px solid #8f7445; box-shadow: 0 24px 70px rgba(0, 0, 0, .6), 0 0 30px rgba(201, 167, 106, .15); transform: translate(-50%, 30px); opacity: 0; transition: transform .6s var(--e), opacity .6s; }
 .logro.on { transform: translate(-50%, 0); opacity: 1; }
-.logro__ic { display: grid; place-items: center; width: 46px; height: 46px; font-size: 1.4rem; color: #e3c38e; border: 1px solid #8f7445; }
+.logro__ic { display: grid; place-items: center; width: 64px; height: 64px; }
 .logro small { display: block; font-size: .66rem; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: #c9a76a; }
 .logro b { display: block; font: 400 1.25rem/1.1 var(--f-title); letter-spacing: .05em; text-transform: uppercase; font-weight: 400; }
 .logro span { font-size: .95rem; color: var(--text-2); }
@@ -689,3 +683,36 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
 .periodo button + button { border-left: 1px solid var(--line-2); }
 .periodo button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
 .seg { --r-line: var(--line-2); --r-text: var(--text); --r-bg: var(--bg); --r-text2: var(--text-2); }
+
+/* ---------- painted emblems, frames and Tithes ---------- */
+.emblema { width: 100%; height: 100%; object-fit: contain; opacity: 1; filter: drop-shadow(0 4px 10px rgba(0, 0, 0, .7)); transition: transform .4s var(--e), filter .4s; }
+.insignia-c { position: relative; overflow: hidden; }
+.insignia-c .insignia { width: 76px; height: 76px; }
+.insignia-c.ok .emblema { filter: drop-shadow(0 0 12px rgba(201, 167, 106, .28)) drop-shadow(0 4px 10px rgba(0, 0, 0, .7)); }
+.insignia-c.ok:hover .emblema { transform: translateY(-3px) scale(1.06); }
+.insignia-c.ok::after { content: ""; position: absolute; inset: -40% auto -40% -60%; width: 40%; background: linear-gradient(100deg, transparent, rgba(255, 240, 210, .10), transparent); transform: skewX(-18deg); animation: brillo 6s var(--e) infinite; pointer-events: none; }
+.insignia-c.ok:nth-child(3n)::after { animation-delay: 2s; } .insignia-c.ok:nth-child(3n+1)::after { animation-delay: 4s; }
+@keyframes brillo { 0%, 70% { left: -60%; } 100% { left: 130%; } }
+.insignia-c:not(.ok) .emblema { filter: grayscale(1) brightness(.55); }
+.logro__ic .emblema { animation: aparece-logro 1.2s var(--e) both; }
+@keyframes aparece-logro { from { transform: scale(.4) rotate(-12deg); opacity: 0; filter: brightness(3); } to { transform: none; opacity: 1; } }
+.avatar-w { position: relative; display: inline-grid; place-items: center; flex: 0 0 auto; vertical-align: middle; }
+.avatar-w > .avatar { border-color: transparent; }
+.avatar__marco { position: absolute; inset: -22%; width: 144%; height: 144%; max-width: none; opacity: 1; pointer-events: none; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .6)); }
+.avatar-w--endro .avatar__marco { animation: endro-glow 4s ease-in-out infinite; }
+.avatar-w--abyssal .avatar__marco, .avatar-w--crown .avatar__marco { animation: oro-glow 5s ease-in-out infinite; }
+.avatar-w--crown .avatar__marco { inset: -30% -22% -22%; height: 152%; }
+@keyframes endro-glow { 50% { filter: drop-shadow(0 0 7px rgba(150, 110, 230, .85)) drop-shadow(0 2px 4px rgba(0, 0, 0, .6)); } }
+@keyframes oro-glow { 50% { filter: drop-shadow(0 0 7px rgba(227, 195, 142, .6)) drop-shadow(0 2px 4px rgba(0, 0, 0, .6)); } }
+.cuenta__yo .avatar-w { margin: 4px; }
+.quien .avatar-w { margin: 0 4px; }
+.tithe__img { width: 1.35em; height: 1.35em; object-fit: contain; opacity: 1; vertical-align: -.3em; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .8)); }
+.tithe--endro .tithe__img { filter: drop-shadow(0 0 4px rgba(150, 110, 230, .8)); }
+.tithe--crown .tithe__img { filter: drop-shadow(0 0 4px rgba(227, 195, 142, .6)); }
+.tithe-ops .tithe__img { width: 42px; height: 42px; }
+.leyenda-tithes li { grid-template-columns: 30px auto 1fr; align-items: center; }
+.marco-op .avatar-w { margin: 12px 12px 4px; }
+@media (prefers-reduced-motion: reduce) { .insignia-c.ok::after, .avatar__marco { animation: none !important; } }
+.insignia-c { opacity: .78 !important; filter: none !important; }
+.insignia-c:not(.ok) .emblema { filter: grayscale(1) brightness(.7) !important; }
+.insignia-c:not(.ok) b { color: var(--text-2); }

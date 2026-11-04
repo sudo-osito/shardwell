@@ -12,7 +12,7 @@ const AVATARS = ["", "chrona", "vast", "axion", "nyther", "anastasis", "pozo", "
 const RANK = { free: 0, reader: 1, diver: 2, abyssal: 3 };
 const PLAN_NAME = { free: "Free reader", reader: "Reader", diver: "Diver", abyssal: "Abyssal" };
 // avatar frames, the plan they need
-const FRAMES = { "": "free", iron: "reader", ash: "reader", silver: "diver", endro: "diver", godblood: "diver", abyssal: "abyssal", crown: "abyssal" };
+const FRAMES = { "": "free", iron: "reader", ash: "reader", silver: "diver", endro: "diver", godblood: "diver", abyssal: "abyssal", crown: "abyssal", bone: "diver" };
 // Tithes: awards (in-world offerings). Monthly allowance by plan; a 7-day reading streak adds one.
 const TITHES = { shard: { name: "Shard", min: "free" }, endro: { name: "Endro", min: "diver" }, crown: { name: "Crown", min: "abyssal" } };
 const ALLOWANCE = { free: 0, reader: 0, diver: 1, abyssal: 5 };

@@ -7,7 +7,8 @@
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const ago = (t) => { const s = (Date.now() - t) / 1000; return s < 60 ? "just now" : s < 3600 ? `${Math.floor(s / 60)} min ago` : s < 86400 ? `${Math.floor(s / 3600)} h ago` : s < 2592000 ? `${Math.floor(s / 86400)} d ago` : new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }); };
   const C = () => window.Cuenta;
-  const TITHE = { shard: { ic: "◆", name: "Shard", min: "free", desc: "A small offering" }, endro: { ic: "✦", name: "Endro", min: "diver", desc: "Purple, for something that moved you" }, crown: { ic: "♛", name: "Crown", min: "abyssal", desc: "The highest offering" } };
+  const TITHE = { shard: { name: "Shard", min: "free", desc: "A small offering" }, endro: { name: "Endro", min: "diver", desc: "Purple, for something that moved you" }, crown: { name: "Crown", min: "abyssal", desc: "The highest offering" } };
+  Object.entries(TITHE).forEach(([k, t]) => (t.ic = `<img class="tithe__img" src="img/ui/t-${k}.png" alt="${t.name}">`));
   const RANK = { free: 0, reader: 1, diver: 2, abyssal: 3 };
 
   async function call(path, body) {
@@ -63,7 +64,7 @@
     const earned = s.badges.filter((b) => b.earned);
     return `<div class="caja-lado yo">${who(me, "avatar--g")}
       <div class="rachas"><div><i>☾</i><b>${s.readStreak.current}</b><span>reading streak</span></div><div><i>≋</i><b>${s.writeStreak.current}</b><span>forum streak</span></div><div><i>◈</i><b>${s.tithesLeft}</b><span>Tithes to give</span></div></div>
-      <div class="insignias insignias--mini">${earned.slice(-8).map((b) => `<span class="insignia" title="${esc(b.name)}: ${esc(b.desc)}">${b.icon}</span>`).join("")}</div>
+      <div class="insignias insignias--mini">${earned.slice(-8).map((b) => `<span class="insignia" title="${esc(b.name)}: ${esc(b.desc)}">${C().badgeImg(b)}</span>`).join("")}</div>
       <a class="mas-link" href="#/account">Badges and profile →</a></div>`;
   }
   function list(posts, ctx, showBoard) {
@@ -150,7 +151,7 @@
   }
   function badgeGrid(badges, groups = [...new Set(badges.map((b) => b.group))]) {
     return `<div class="insignias-todas">${groups.map((g) => `<div><h3 class="rotulo">${g}</h3><ul class="insignias">${badges.filter((b) => b.group === g).map((b) => `
-      <li class="insignia-c${b.earned ? " ok" : ""}" title="${esc(b.desc)}"><span class="insignia">${b.icon}</span><b>${esc(b.name)}</b><small>${esc(b.desc)}</small>${b.earned ? "" : `<i class="progreso-ins"><span style="width:${(b.have / b.need) * 100}%"></span></i><small>${b.have} / ${b.need}</small>`}</li>`).join("")}</ul></div>`).join("")}</div>`;
+      <li class="insignia-c${b.earned ? " ok" : ""}" title="${esc(b.desc)}"><span class="insignia">${C().badgeImg(b)}</span><b>${esc(b.name)}</b><small>${esc(b.desc)}</small>${b.earned ? "" : `<i class="progreso-ins"><span style="width:${(b.have / b.need) * 100}%"></span></i><small>${b.have} / ${b.need}</small>`}</li>`).join("")}</ul></div>`).join("")}</div>`;
   }
 
   // ---------- tithe picker ----------

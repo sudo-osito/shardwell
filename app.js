@@ -110,7 +110,7 @@
   async function checkoutLinks() { if (CHECKOUT) return CHECKOUT; try { CHECKOUT = (await (await fetch("https://shardwell-reader.maxpino.workers.dev/plans")).json()).checkout || {}; } catch { CHECKOUT = {}; } return CHECKOUT; }
   function membership() {
     const u = window.Cuenta?.user, r = window.Cuenta?.rank(u) || 0;
-    const ROWS = [["Chapters 1 to " + FREE(), 1, 1, 1, 1], ["Chapters after " + FREE(), 0, 1, 1, 1], ["Early access", 0, 1, 1, 1], ["Comments, forum, streaks and badges", 1, 1, 1, 1], ["The Codex (lore)", 0, 0, 1, 1], ["Art and character studies", 0, 0, 1, 1], ["Tithes to give each month", "—", "—", "1", "5"], ["Avatar frames", "—", "2", "5", "All"], ["Flair under your name", 0, 0, 1, 1], ["Ask the Author", 0, 0, 0, 1], ["Vote on side stories", 0, 0, 0, 1], ["Name in the credits", 0, 0, 0, 1]];
+    const ROWS = [["Chapters 1 to " + FREE(), 1, 1, 1, 1], ["Chapters after " + FREE(), 0, 1, 1, 1], ["Early access", 0, 1, 1, 1], ["Comments, forum, streaks and badges", 1, 1, 1, 1], ["The Codex (lore)", 0, 0, 1, 1], ["Art and character studies", 0, 0, 1, 1], ["Tithes to give each month", "—", "—", "1", "5"], ["Avatar frames", "—", "2", "6", "All 8"], ["Flair under your name", 0, 0, 1, 1], ["Ask the Author", 0, 0, 0, 1], ["Vote on side stories", 0, 0, 0, 1], ["Name in the credits", 0, 0, 0, 1]];
     const cell = (v) => v === 1 ? '<span class="si">●</span>' : v === 0 ? '<span class="no">—</span>' : v;
     return `<header class="pagina pagina--img">${img("borde", "", "pagina__img")}${crumbs(["Shardwell", "#/"], ["Membership"])}<h1 class="titulo titulo--xl">Membership</h1><p class="bajada">Chapters 1 to ${FREE()} are free. After that, readers keep Shardwell going.</p></header>
     <section class="bloque bloque--pegado">
@@ -276,7 +276,7 @@
       ${u && !isMember() ? `<p class="nota-gate">You are signed in as ${u.name} (${window.Cuenta.planName(u)}). The Codex opens with Diver or Abyssal.</p>` : ""}</header>`;
   }
   // ---------- account page ----------
-  const FRAMES = [["", "free", "None"], ["iron", "reader", "Iron"], ["ash", "reader", "Ash"], ["silver", "diver", "Silver"], ["endro", "diver", "Endro"], ["godblood", "diver", "Godblood"], ["abyssal", "abyssal", "Abyssal"], ["crown", "abyssal", "Crown"]];
+  const FRAMES = [["", "free", "None"], ["iron", "reader", "Iron"], ["ash", "reader", "Ash"], ["silver", "diver", "Silver"], ["endro", "diver", "Endro"], ["godblood", "diver", "Godblood"], ["bone", "diver", "Bone"], ["abyssal", "abyssal", "Abyssal"], ["crown", "abyssal", "Crown"]];
   function account() {
     const C = window.Cuenta, u = C?.user;
     if (!u) return `<header class="pagina">${crumbs(["Shardwell", "#/"], ["Account"])}<h1 class="titulo titulo--xl">Your account</h1><p class="bajada">Sign in to comment, join the forum, keep your streaks and become a member.</p><div class="acciones acciones--izq"><button class="boton" type="button" data-entrar>Sign in</button></div></header>`;

@@ -22,7 +22,7 @@
   }
   function announce(bd) {
     const el = document.createElement("div"); el.className = "logro"; el.setAttribute("role", "status");
-    el.innerHTML = `<span class="logro__ic">${bd.icon}</span><div><small>Badge earned</small><b>${esc(bd.name)}</b><span>${esc(bd.desc)}</span></div>`;
+    el.innerHTML = `<span class="logro__ic">${badgeImg(bd)}</span><div><small>Badge earned</small><b>${esc(bd.name)}</b><span>${esc(bd.desc)}</span></div>`;
     document.body.append(el); requestAnimationFrame(() => el.classList.add("on")); setTimeout(() => { el.classList.remove("on"); setTimeout(() => el.remove(), 600); }, 4200);
   }
   function save(t, u) {
@@ -39,7 +39,11 @@
   }
 
   // avatar: painted image, or the initial on a stone tile
-  const avatar = (u, size = "") => { const f = u?.frame ? ` marco marco--${u.frame}` : ""; return u?.avatar ? `<span class="avatar ${size}${f}"><img src="img/${u.avatar}.jpg" alt=""></span>` : `<span class="avatar avatar--letra ${size}${f}">${esc((u?.name || "?")[0].toUpperCase())}</span>`; };
+  const avatar = (u, size = "") => {
+    const inner = u?.avatar ? `<span class="avatar ${size}"><img src="img/${u.avatar}.jpg" alt=""></span>` : `<span class="avatar avatar--letra ${size}">${esc((u?.name || "?")[0].toUpperCase())}</span>`;
+    return u?.frame ? `<span class="avatar-w avatar-w--${u.frame} ${size}">${inner}<img class="avatar__marco" src="img/ui/f-${u.frame}.png" alt=""></span>` : inner;
+  };
+  const badgeImg = (b) => `<img class="emblema" src="img/ui/b-${b.id}.png" alt="" loading="lazy">`;
   const planName = (u) => (u?.role === "admin" ? "The Author" : PLAN[u?.plan] || PLAN.free);
   const planTag = (u) => (rank(u) >= 1 ? `<span class="plan-tag plan-tag--${u.role === "admin" ? "author" : u.plan}">${planName(u)}</span>` : "");
 
@@ -122,5 +126,5 @@
   addEventListener("hashchange", () => { const m = $(".cuenta__menu", slot); if (m) { m.hidden = true; $("[data-menu-cuenta]", slot)?.setAttribute("aria-expanded", "false"); } });
   paintBar(); refresh();
   const setUser = (u) => save(token, u);
-  window.Cuenta = { get user() { return user; }, get token() { return token; }, open, logout, refresh, update, remove, avatar, planName, planTag, rank, PLAN, AVATARS, call, setUser, announce, on: (f) => listeners.add(f) };
+  window.Cuenta = { get user() { return user; }, get token() { return token; }, open, logout, refresh, update, remove, avatar, badgeImg, planName, planTag, rank, PLAN, AVATARS, call, setUser, announce, on: (f) => listeners.add(f) };
 })();
