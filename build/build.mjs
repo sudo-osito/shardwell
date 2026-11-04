@@ -286,14 +286,20 @@ const pubSections = sections.filter((x) => x.id === "novel");
 fs.mkdirSync(path.join(path.dirname(new URL(import.meta.url).pathname), "out"), { recursive: true });
 const RELEASE = JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "release.json"), "utf8"));
 const today = new Date().toISOString().slice(0, 10);
-const needOf = (e) => (e.number > RELEASE.reader ? "diver" : e.number > RELEASE.free || (e.membersUntil && e.membersUntil > today) ? "reader" : "free");
+const LATEST = Math.max(0, ...entries.filter((e) => e.section === "novel" && e.status !== "Draft").map((e) => e.number));
+// the lowest plan that can read chapter n: free up to RELEASE.free, then by how far behind the newest chapter each plan is
+const needOf = (e) => {
+  if (e.number <= RELEASE.free && !(e.membersUntil && e.membersUntil > today)) return "free";
+  for (const plan of ["reader", "diver", "abyssal"]) if (e.number <= LATEST - RELEASE.behind[plan]) return plan;
+  return "abyssal";
+};
 const isLocked = (e) => needOf(e) !== "free";
 const novelEntries = entries.filter((e) => e.section === "novel");
 const pubEntries = novelEntries.filter((e) => !isLocked(e) && e.status !== "Draft").map((e) => ({ ...e, links: [], backlinks: [] }));
 const locked = novelEntries.filter((e) => isLocked(e) && e.status !== "Draft").map((e) => ({ id: e.id, title: e.title, number: e.number, section: "novel", status: e.status, words: e.words, locked: true, need: needOf(e), membersUntil: e.membersUntil || null, early: e.number <= FREE }));
 fs.writeFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "out", "chapters.json"), JSON.stringify(Object.fromEntries(novelEntries.filter(isLocked).map((e) => [e.id, { intro: e.intro, html: e.html, need: needOf(e) }]))));
 const extras = { "fishing-game": entries.find((e) => e.id === "fishing-game")?.info || [] };
-fs.writeFileSync(path.join(path.dirname(OUT), "novel.json"), JSON.stringify({ built: data.built, release: { free: RELEASE.free, reader: RELEASE.reader }, sections: pubSections, entries: [...pubEntries, ...locked], extras }));
+fs.writeFileSync(path.join(path.dirname(OUT), "novel.json"), JSON.stringify({ built: data.built, release: { free: RELEASE.free, behind: RELEASE.behind, latest: LATEST }, sections: pubSections, entries: [...pubEntries, ...locked], extras }));
 // two Codex versions: "lore" = only confirmed information (what readers and members see); "lore-admin" = everything, for the author
 const OUTDIR = path.join(path.dirname(new URL(import.meta.url).pathname), "out");
 fs.mkdirSync(OUTDIR, { recursive: true });

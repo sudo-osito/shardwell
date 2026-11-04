@@ -782,3 +782,80 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
 .retrato:hover img { transform: scale(1.04); }
 .retrato b { position: absolute; left: 18px; bottom: 14px; font: 400 1.6rem/1 var(--f-title); letter-spacing: .06em; text-transform: uppercase; font-weight: 400; text-shadow: 0 2px 12px rgba(0,0,0,.8); }
 @media (max-width: 760px) { .retratos { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- profile header v2: banner on top, nothing written over it ---------- */
+.perfil-portada { display: block; min-height: 0; overflow: visible; border-bottom: 1px solid var(--line); padding-top: 70px; }
+.perfil-portada::before { display: none; }
+.perfil-portada__img { position: static; display: block; width: 100%; height: auto; aspect-ratio: 3 / 1; max-height: 460px; object-fit: cover; z-index: auto; }
+.perfil-portada:not(:has(.perfil-portada__img))::after { content: ""; display: block; order: -1; }
+.perfil-portada:not(:has(.perfil-portada__img)) .perfil-portada__in { padding-top: 40px; }
+.perfil-portada .migas { display: none; }
+.perfil-portada__in { padding: 0 var(--pad) 30px; }
+.perfil-portada:has(.perfil-portada__img) .perfil__cab { margin-top: -64px; align-items: flex-end; }
+.perfil-portada .perfil__cab > div { padding-bottom: 6px; }
+.perfil-portada .avatar--xl { border: 4px solid var(--bg); }
+.perfil-portada .avatar-w .avatar--xl { border-color: transparent; }
+.banner-op { aspect-ratio: 3 / 1; }
+.banners { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+.tarjeta-u__banner { height: auto; aspect-ratio: 3 / 1; }
+
+/* frame picker: every option on the same row height, centred */
+.marco-op { grid-template-rows: 96px auto; align-items: center; justify-items: center; min-width: 96px; }
+.marco-op > :first-child { align-self: center; }
+.marco-op .avatar-w { margin: 0; }
+.perfil-portada .avatar-w.avatar--xl { border: 0; width: auto; height: auto; }
+.perfil-portada:has(.perfil-portada__img) .perfil__cab { align-items: flex-start; }
+.perfil-portada:has(.perfil-portada__img) .perfil__cab > div { padding-top: 78px; }
+/* Who reads what */
+.plan > b { font: 600 1.9rem/1.1 var(--f-text); letter-spacing: 0; text-transform: none; }
+.carril { max-width: 1080px; margin: 0 auto 40px; padding: 26px clamp(16px, 3vw, 34px) 22px; border: 1px solid var(--line); background: linear-gradient(180deg, #141413, #0f0f0f); }
+.carril__top { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+.carril__lema { font: 400 1.22rem/1.45 var(--f-text); color: var(--text-2); max-width: 640px; }
+.carril__lema b { color: var(--text); font-weight: 600; }
+.carril__ctl { display: flex; align-items: center; gap: 12px; font: 600 .72rem/1 var(--f-text); letter-spacing: .16em; text-transform: uppercase; color: var(--text-2); }
+.carril__ctl input { width: 150px; accent-color: #e3c38e; }
+.carril__ctl output { min-width: 2.4em; font: 600 1.5rem/1 var(--f-text); letter-spacing: 0; color: #e3c38e; }
+.carril__filas { display: grid; gap: 10px; }
+.carril__fila { display: grid; grid-template-columns: 96px 1fr 200px; gap: 16px; align-items: center; }
+.carril__pista { display: flex; gap: 3px; height: 30px; }
+.carril__pista > * { flex: 1 1 0; min-width: 0; background: #1d1d1c; border-radius: 2px; transition: background .25s var(--e), box-shadow .25s var(--e); }
+.carril__libre, .carril__bloque { flex: 0 0 auto !important; display: grid; place-items: center; padding: 0 10px; font: 600 .78rem/1 var(--f-text); color: var(--text-3); }
+.carril__libre { width: 22%; }
+.carril__bloque { width: 12%; }
+.carril__pista .si { background: #3a3936; color: #c9c5bc; }
+.carril__fila--reader .carril__pista i.si, .carril__fila--reader .carril__bloque.si { background: #b9b5ac; }
+.carril__fila--diver .carril__pista i.si, .carril__fila--diver .carril__bloque.si { background: #9a86c8; }
+.carril__fila--abyssal .carril__pista i.si, .carril__fila--abyssal .carril__bloque.si { background: #e3c38e; }
+.carril__fila--reader .carril__bloque.si, .carril__fila--diver .carril__bloque.si, .carril__fila--abyssal .carril__bloque.si { color: #111; }
+.carril__pista i:not(.si) { background: repeating-linear-gradient(135deg, #1a1a19 0 4px, #222120 4px 6px); }
+.carril__pista i.nuevo { box-shadow: 0 0 0 1px rgba(227, 195, 142, .55); }
+.carril__fila--abyssal .carril__pista i.nuevo.si { box-shadow: 0 0 14px rgba(227, 195, 142, .45); }
+.carril__fila--eje .carril__pista { height: 18px; }
+.carril__fila--eje .carril__pista > * { background: none !important; display: grid; place-items: end center; font: 600 .7rem/1 var(--f-text); color: var(--text-3); font-style: normal; overflow: visible; white-space: nowrap; }
+.carril__fila--eje .carril__libre, .carril__fila--eje .carril__bloque { color: var(--text-3); }
+.carril__fin { display: grid; gap: 2px; }
+.carril__fin b { font: 600 1.35rem/1 var(--f-text); color: var(--text); }
+.carril__fin small { font: italic 400 .95rem/1.2 var(--f-text); color: var(--text-2); }
+.carril__fin--eje { font: 600 .66rem/1 var(--f-text); letter-spacing: .16em; text-transform: uppercase; color: #e3c38e; justify-self: start; transform: translateX(-28px); }
+.carril__fila--free .carril__fin b { color: var(--text-2); }
+.carril__pie { margin-top: 16px; font: italic 400 1rem/1.4 var(--f-text); color: var(--text-3); }
+@media (max-width: 760px) {
+  .carril__fila { grid-template-columns: 1fr auto; grid-template-areas: "nombre fin" "pista pista"; gap: 6px 10px; }
+  .carril__nombre { grid-area: nombre; } .carril__fin { grid-area: fin; text-align: right; } .carril__pista { grid-area: pista; height: 24px; gap: 2px; }
+  .carril__fila--eje { display: none; }
+  .carril__fin b { font-size: 1.1rem; } .carril__libre { width: 18%; font-size: .7rem; padding: 0 4px; } .carril__bloque { width: 14%; font-size: .66rem; padding: 0 3px; }
+  .carril__filas { gap: 16px; }
+}
+.carril { margin: 0 0 40px; max-width: 1180px; }
+.carril__fila { grid-template-columns: 110px 1fr 250px; }
+.carril__nombre .plan-tag { font-size: .7rem; padding: 4px 9px 3px; }
+.carril__libre, .carril__bloque { font-size: .9rem; }
+.carril__fila--eje .carril__pista > * { font-size: .85rem; color: var(--text-2); }
+.carril__fila--eje .carril__pista > .nuevo { color: #e3c38e; box-shadow: none; }
+.carril__fin--eje { transform: none; font-size: .7rem; }
+.carril__fin small { font-size: 1.02rem; }
+.carril__fin em { font-style: normal; font-weight: 700; color: var(--text); }
+.carril__fila--diver .carril__fin em { color: #b4a4e0; } .carril__fila--abyssal .carril__fin em { color: #e3c38e; }
+@media (max-width: 760px) { .carril__fila { grid-template-columns: 1fr auto; } }
+.membresia .carril { margin: 0 auto 40px; }
+.carril__lema { max-width: 820px; }

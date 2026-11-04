@@ -37,7 +37,7 @@
 
   // ---------- home: the novel's landing page ----------
   const FREE = () => window.Lector?.release?.free || 50;
-  const READ_UP = () => window.Lector?.release?.reader || 60;
+  const BEHIND = (p) => window.Lector?.release?.behind?.[p] ?? { reader: 5, diver: 1, abyssal: 0 }[p];
   const OPENING = "The sun cast uncountable shadows across the ocean, and to him they felt like the bars of a cell.";
   const TAGS = ["Dark fantasy", "Science fantasy", "Dystopia", "Gods and abyss", "Adult 18+"];
   function progressCta() {
@@ -95,25 +95,48 @@
   }
 
   const PLANS = [
-    { id: "reader", name: "Reader", m: 4.99, y: 49.9, line: "Read ahead of the free chapters", perks: [() => `Chapters ${FREE() + 1} to ${READ_UP()}, ahead of free readers`, "Reader badge and two avatar frames"] },
-    { id: "diver", name: "Diver", m: 8.99, y: 89.9, line: "Read, and know the world", perks: ["Everything in Reader", () => `<b>The newest chapters first</b>: every chapter after ${READ_UP()}`, "<b>The Codex</b>: the full lore of Shardwell", "Art of Shardwell", "One Tithe to give each month", "More frames and a flair under your name"], hot: true },
-    { id: "abyssal", name: "Abyssal", m: 14.99, y: 149.9, line: "Closest to the author", perks: ["Everything in Diver", "Ask the Author board", "Vote on side stories", "Your name in the credits", "Five Tithes a month", "Every frame, including the Crown"] },
+    { id: "reader", name: "Reader", m: 4.99, y: 49.9, line: "Read ahead of the free chapters", perks: [() => `Every chapter after ${FREE()}, ${BEHIND("reader")} behind the newest`, "Reader badge and two avatar frames"] },
+    { id: "diver", name: "Diver", m: 8.99, y: 89.9, line: "Read, and know the world", perks: ["Everything in Reader", () => `<b>Only ${BEHIND("diver")} chapter behind</b> the newest`, "<b>The Codex</b>: the full lore of Shardwell", "Art of Shardwell", "One Tithe to give each month", "More frames and a flair under your name"], hot: true },
+    { id: "abyssal", name: "Abyssal", m: 14.99, y: 149.9, line: "Closest to the author", perks: ["Everything in Diver", "<b>Always up to date</b>: every new chapter the moment it is out", "Ask the Author board", "Vote on side stories", "Your name in the credits", "Five Tithes a month", "Every frame, including the Crown"] },
   ];
   const usd = (n) => "US$" + n.toFixed(2).replace(/\.00$/, "");
   function membershipBlock() {
     return `<section class="bloque membresia">
       <header class="cabeza cabeza--centro"><p class="rotulo">How to read</p><h2 class="titulo">Free to start. Kept alive by readers.</h2></header>
+      ${carril()}
       <div class="planes planes--landing">
         <div class="plan"><p class="rotulo">Free</p><b>Chapters 1 to ${FREE()}</b><ul><li>Read every chapter up to ${FREE()}</li><li>Comment with a free account</li><li>Bookmarks and reading settings</li></ul><a class="boton" href="#/e/${chapters()[0].id}">Start reading</a></div>
         <div class="plan plan--miembro"><p class="rotulo">Membership</p><b>From ${usd(PLANS[0].m)} a month</b><ul><li>Read ahead of everyone: the newest chapters reach members first</li><li>Three plans, cancel anytime</li></ul><a class="boton boton--quieto" href="#/membership">See the plans</a></div>
       </div>
     </section>`;
   }
+  // Who reads what: one line per plan, chapters after the free ones as cells, the newest at the right edge.
+  const DEMO_N = 70;
+  function carrilN() { const L = window.Lector?.release?.latest || 0; return L >= FREE() + 6 ? L : DEMO_N; }
+  function carrilFilas(n) {
+    const F = FREE(), N = Math.max(F + 6, n), start = Math.max(F + 1, N - 19), pre = start > F + 1;
+    const cells = []; for (let i = start; i <= N; i++) cells.push(i);
+    const rows = [["free", "Free", F], ...PLANS.map((p) => [p.id, p.name, N - BEHIND(p.id)])];
+    const eje = `<div class="carril__fila carril__fila--eje" aria-hidden="true"><span></span><div class="carril__pista"><span class="carril__libre">1–${F}</span>${pre ? `<span class="carril__bloque">${F + 1}–${start - 1}</span>` : ""}${cells.map((i) => `<i${i === N ? ' class="nuevo"' : ""}>${i === start || i === N || (i % 5 === 0 && N - i > 2) ? i : ""}</i>`).join("")}</div><span class="carril__fin carril__fin--eje">← Newest</span></div>`;
+    return eje + rows.map(([id, name, to]) => `<div class="carril__fila carril__fila--${id}">
+      <span class="carril__nombre"><span class="plan-tag${id === "free" ? "" : ` plan-tag--${id}`}">${name}</span></span>
+      <div class="carril__pista" role="img" aria-label="${name}: chapters 1 to ${to}"><span class="carril__libre si">1–${F}</span>${pre ? `<span class="carril__bloque${to >= start - 1 ? " si" : ""}">${F + 1}–${start - 1}</span>` : ""}${cells.map((i) => `<i class="${i <= to ? "si" : ""}${i === N ? " nuevo" : ""}"></i>`).join("")}</div>
+      <span class="carril__fin"><b>${id === "free" ? `1–${F}` : `1–${to}`}</b><small>${id === "free" ? "free for everyone" : `<em>+${to - F}</em> after the free ones · ${to === N ? "up to date" : `${N - to} behind`}`}</small></span></div>`).join("");
+  }
+  function carril() {
+    const n = carrilN(), demo = n === DEMO_N && (window.Lector?.release?.latest || 0) < FREE() + 6;
+    return `<div class="carril" data-carril>
+      <div class="carril__top"><p class="carril__lema"><b>Reader</b> is ${BEHIND("reader")} chapters behind. <b>Diver</b> is ${BEHIND("diver")} behind. <b>Abyssal</b> reads the newest the day it is out.</p>
+      <label class="carril__ctl"><span>${demo ? "Say the newest chapter is" : "Newest chapter"}</span><input type="range" min="${FREE() + 6}" max="${FREE() + 80}" value="${n}" data-carril-n aria-label="Newest chapter out"><output>${n}</output></label></div>
+      <div class="carril__filas" data-carril-filas>${carrilFilas(n)}</div>
+      <p class="carril__pie">Every time a chapter comes out, every line moves forward one. Drag to see it.</p>
+    </div>`;
+  }
   let CHECKOUT = null;
   async function checkoutLinks() { if (CHECKOUT) return CHECKOUT; try { CHECKOUT = (await (await fetch("https://shardwell-reader.maxpino.workers.dev/plans")).json()).checkout || {}; } catch { CHECKOUT = {}; } return CHECKOUT; }
   function membership() {
     const u = window.Cuenta?.user, r = window.Cuenta?.rank(u) || 0;
-    const ROWS = [["Chapters 1 to " + FREE(), 1, 1, 1, 1], [`Chapters ${FREE() + 1} to ${READ_UP()}`, 0, 1, 1, 1], [`The newest chapters (after ${READ_UP()})`, 0, 0, 1, 1], ["Comments, forum, streaks and badges", 1, 1, 1, 1], ["The Codex (lore)", 0, 0, 1, 1], ["Art of Shardwell", 0, 0, 1, 1], ["Tithes to give each month", "—", "—", "1", "5"], ["Avatar frames", "—", "2", "6", "All 8"], ["Flair under your name", 0, 0, 1, 1], ["Ask the Author", 0, 0, 0, 1], ["Vote on side stories", 0, 0, 0, 1], ["Name in the credits", 0, 0, 0, 1]];
+    const ROWS = [["Chapters 1 to " + FREE(), 1, 1, 1, 1], [`Chapters after ${FREE()}`, 0, 1, 1, 1], ["How far behind the newest chapter", "—", `${BEHIND("reader")} chapters`, `${BEHIND("diver")} chapter`, "Up to date"], ["Comments, forum, streaks and badges", 1, 1, 1, 1], ["The Codex (lore)", 0, 0, 1, 1], ["Art of Shardwell", 0, 0, 1, 1], ["Tithes to give each month", "—", "—", "1", "5"], ["Avatar frames", "—", "2", "6", "All 8"], ["Flair under your name", 0, 0, 1, 1], ["Ask the Author", 0, 0, 0, 1], ["Vote on side stories", 0, 0, 0, 1], ["Name in the credits", 0, 0, 0, 1]];
     const cell = (v) => v === 1 ? '<span class="si">●</span>' : v === 0 ? '<span class="no">—</span>' : v;
     return `<header class="pagina pagina--img">${img("borde", "", "pagina__img")}${crumbs(["Shardwell", "#/"], ["Membership"])}<h1 class="titulo titulo--xl">Membership</h1><p class="bajada">Chapters 1 to ${FREE()} are free. After that, readers keep Shardwell going.</p></header>
     <section class="bloque bloque--pegado">
@@ -126,10 +149,11 @@
       <p class="plan__msg" data-plan-msg hidden></p>
       ${u?.portal ? `<p class="mas mas--centro"><a href="${u.portal}" target="_blank" rel="noopener">Manage or cancel your subscription</a></p>` : ""}
     </section>
+    <section class="bloque"><header class="cabeza"><p class="rotulo">Who reads what</p><h2 class="titulo">How far each plan reads</h2></header>${carril()}</section>
     <section class="bloque"><header class="cabeza"><p class="rotulo">Compare</p><h2 class="titulo">What each plan opens</h2></header>
       <div class="tabla tabla--planes"><table><thead><tr><th></th><th>Free</th>${PLANS.map((p) => `<th>${p.name}</th>`).join("")}</tr></thead><tbody>${ROWS.map(([t, ...v]) => `<tr><td>${t}</td>${v.map((x) => `<td>${cell(x)}</td>`).join("")}</tr>`).join("")}</tbody></table></div></section>
     <section class="bloque faq"><header class="cabeza"><p class="rotulo">Questions</p><h2 class="titulo">Before you choose</h2></header>
-      ${[["Can I cancel?", "Yes, anytime, from the link in your account. You keep your plan until the end of the period you paid."], ["Why do plans read different chapters?", `Chapters 1 to ${FREE()} are free. Reader members read ahead, up to chapter ${READ_UP()}. Diver and Abyssal members read the newest chapters first. As new chapters come out, every line moves forward.`], ["What are Tithes?", "Awards you give to posts and comments you value in the forum. In Shardwell, a Tithe is an offering."], ["Who handles the payment?", "Lemon Squeezy, our payment partner. It handles cards, taxes and receipts. We never see your card."], ["Is it for adults?", "Shardwell is written for adult readers (18+)."]].map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}
+      ${[["Can I cancel?", "Yes, anytime, from the link in your account. You keep your plan until the end of the period you paid."], ["Why do plans read different chapters?", `Chapters 1 to ${FREE()} are free. After that: Reader is ${BEHIND("reader")} chapters behind the newest, Diver ${BEHIND("diver")} behind, Abyssal reads the newest the day it is out. See "How far each plan reads" above.`], ["What are Tithes?", "Awards you give to posts and comments you value in the forum. In Shardwell, a Tithe is an offering."], ["Who handles the payment?", "Lemon Squeezy, our payment partner. It handles cards, taxes and receipts. We never see your card."], ["Is it for adults?", "Shardwell is written for adult readers (18+)."]].map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}
     </section>
     <section class="bloque creditos" data-creditos></section>`;
   }
@@ -237,7 +261,7 @@
     return { chapters: ch.map((c) => ({ id: c.id, number: c.number, title: c.title, status: c.status, need: c.need || "free" })), prev: ch[i - 1], next: ch[i + 1], minutes: minutes(e.words) };
   }
   function reader(e) {
-    if (e.locked && (window.Cuenta?.rank(window.Cuenta?.user) || 0) >= ({ reader: 1, diver: 2 }[e.need] || 1) && !e.intro) {
+    if (e.locked && (window.Cuenta?.rank(window.Cuenta?.user) || 0) >= ({ reader: 1, diver: 2, abyssal: 3 }[e.need] || 1) && !e.intro) {
       fetch("https://shardwell-reader.maxpino.workers.dev/chapter-text/" + e.id, { headers: { authorization: "Bearer " + window.Cuenta.token } })
         .then((r) => (r.ok ? r.json() : null)).then((t) => { if (t) { Object.assign(e, t, { unlocked: true }); route(); } });
       return `<p class="cargando cargando--pagina">Opening chapter ${e.number}…</p>`;
@@ -365,6 +389,7 @@
   }
 
   function after() {
+    $$("[data-carril-n]", vista).forEach((r) => r.addEventListener("input", () => { const c = r.closest("[data-carril]"); $("[data-carril-filas]", c).innerHTML = carrilFilas(+r.value); $("output", c).value = r.value; }));
     $$("img", vista).forEach((im) => { const on = () => im.classList.add("cargada"); im.complete ? on() : im.addEventListener("load", on, { once: true }); });
     const io = new IntersectionObserver((es) => es.forEach((x) => { if (x.isIntersecting) { x.target.classList.add("visto"); io.unobserve(x.target); } }), { threshold: 0.12 });
     $$(".clave, .categoria, .fila, .reino, .ref", vista).forEach((x) => io.observe(x));
