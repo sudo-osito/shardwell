@@ -1,5 +1,1 @@
-{
-  "_": "Chapters 1..free are free for everyone. After that, each plan reads up to the newest published chapter minus its delay: Abyssal is up to date, Diver one chapter behind, Reader five behind. Draft chapters are never published.",
-  "free": 50,
-  "behind": { "abyssal": 0, "diver": 1, "reader": 5 }
-}
+{"free": 50, "behind": {"abyssal": 0, "diver": 0, "reader": 0}}

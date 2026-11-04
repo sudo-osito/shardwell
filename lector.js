@@ -2,7 +2,7 @@
    Mounted by app.js with Lector.mount(root, entry, ctx). Comments live in the shardwell-reader Worker (D1). */
 (() => {
   const API = "https://shardwell-reader.maxpino.workers.dev";
-  let REL = { free: 50, behind: { abyssal: 0, diver: 1, reader: 5 }, latest: 0 }; // set by app.js from data/novel.json (build/release.json)
+  let REL = { free: 50, behind: { abyssal: 0, diver: 0, reader: 0 }, latest: 0 }; // set by app.js from data/novel.json (build/release.json)
   const PLAN_OF = { reader: "Reader", diver: "Diver", abyssal: "Abyssal" };
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -296,7 +296,7 @@
       <div class="panel__cab"><b>Chapters</b><button class="panel__cerrar" type="button" data-cerrar aria-label="Close">×</button></div>
       <ol class="lista-cap" data-lista-cap></ol>
       <p class="rotulo panel__sub">Bookmarks</p><ul class="lista-cap lista-cap--marcas" data-lista-marcas></ul>
-      <p class="ajuste__nota">Chapters 1 to ${REL.free} are free. After that, Abyssal members are up to date, Diver members one chapter behind and Reader members ${REL.behind.reader} behind.</p>
+      <p class="ajuste__nota">Chapters 1 to ${REL.free} are free. After that, every plan reads every chapter the day it is out.</p>
     </div>`;
     const para = `<div class="panel panel--ancho" data-panel="parrafo" hidden role="dialog" aria-label="Comments on this passage">
       <div class="panel__cab"><b>On this passage</b><button class="panel__cerrar" type="button" data-cerrar aria-label="Close">×</button></div>
@@ -315,7 +315,7 @@
     const need = e.need || "reader";
     const WHO = { reader: "Reader, Diver and Abyssal", diver: "Diver and Abyssal", abyssal: "Abyssal" };
     const paywall = locked ? `<div class="muro"><p class="rotulo">Chapter ${e.number} · ${WHO[need]}</p><h2 class="titulo">${need === "abyssal" ? "The newest chapter is with Abyssal members" : "Members are reading ahead"}</h2>
-      <p>Chapters 1 to ${REL.free} are free. After that, Abyssal members are up to date, Diver members are one chapter behind and Reader members ${REL.behind.reader} behind. This chapter opens for <b>${WHO[need]}</b> members now.</p>
+      <p>Chapters 1 to ${REL.free} are free. Every plan reads every chapter after that, the day it is out. This chapter opens for <b>${WHO[need]}</b> members now.</p>
       <a class="boton" href="#/membership">See membership</a><a class="boton boton--quieto" href="#/novel">Back to the chapters</a></div>` : "";
     return `<article class="lector">
       <div class="progreso" aria-hidden="true"><i data-progreso></i></div>
