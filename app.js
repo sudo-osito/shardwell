@@ -48,7 +48,7 @@
     const words = ch.filter((c) => c.status !== "Draft").reduce((t, c) => t + c.words, 0);
     return `
     <section class="portada portada--novela">
-      ${img("pozo", "An immense ruined well descending into black water, in the rain", "portada__img")}
+      ${img("mar-ahogado", "A drowned world: a black sea, the ribs of a dead god, a sunken colossus, a leaning gothic tower and a well opening in the sea", "portada__img")}
       <canvas class="lluvia" aria-hidden="true"></canvas>
       <div class="portada__texto">
         <p class="rotulo portada__pre">A novel</p>

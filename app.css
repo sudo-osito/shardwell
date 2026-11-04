@@ -469,3 +469,4 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
   .perfil__pie { grid-template-columns: 1fr; justify-items: start; }
   .cuenta__menu { position: fixed; top: 64px; right: 8px; }
 }
+@media (max-width: 760px) { .portada--novela .portada__img { object-position: 74% 50%; } }
