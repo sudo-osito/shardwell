@@ -161,7 +161,7 @@
     const me = C().user, left = me?.stats?.tithesLeft ?? 0, r = C().rank(me);
     const dlg = document.createElement("dialog"); dlg.className = "acceso tithe-dlg";
     dlg.innerHTML = `<button class="acceso__cerrar" type="button" data-x aria-label="Close">×</button><p class="logo acceso__logo">Give a Tithe</p>
-      <p class="nota" style="text-align:center">You have <b>${left}</b> to give${r < 2 ? ". Diver and Abyssal members get them every month; a 7-day reading streak earns one" : " this month"}.</p>
+      <p class="nota" style="text-align:center">You have <b>${left}</b> to give${r < 2 ? ". Diver members and above get them every month; a 7-day reading streak earns one" : " this month"}.</p>
       <div class="tithe-ops">${Object.entries(TITHE).map(([k, t]) => { const ok = r >= RANK[t.min] && left > 0; return `<button type="button" data-kind="${k}" ${ok ? "" : "disabled"}><span class="tithe tithe--${k}">${t.ic}</span><b>${t.name}</b><small>${t.min === "free" ? t.desc : `${C().PLAN[t.min]} and up`}</small></button>`; }).join("")}</div>
       <p class="acceso__err" hidden></p>${r < 2 ? `<a class="boton boton--quieto" href="#/membership" data-x>See membership</a>` : ""}`;
     document.body.append(dlg); dlg.showModal();

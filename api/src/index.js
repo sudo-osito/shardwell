@@ -373,7 +373,7 @@ export default {
         if (b.bio !== undefined) await env.DB.prepare("UPDATE users SET bio = ? WHERE id = ?").bind(clean(b.bio, 300), me.id).run();
         if (b.link !== undefined) { const l = clean(b.link, 200); if (!okLink(l)) return bad(req, "The link must start with https://"); await env.DB.prepare("UPDATE users SET link = ? WHERE id = ?").bind(l, me.id).run(); }
         if (b.banner !== undefined) { if (!(b.banner in BANNERS)) return bad(req, "banner"); if (!can(me, BANNERS[b.banner])) return bad(req, "That banner needs a higher plan.", 403); await env.DB.prepare("UPDATE users SET banner = ? WHERE id = ?").bind(b.banner, me.id).run(); }
-        if (b.flair !== undefined) { if (!can(me, "diver")) return bad(req, "Flair is for Diver and Abyssal members.", 403); await env.DB.prepare("UPDATE users SET flair = ? WHERE id = ?").bind(clean(b.flair, 24), me.id).run(); }
+        if (b.flair !== undefined) { if (!can(me, "diver")) return bad(req, "Flair is for Diver members and above.", 403); await env.DB.prepare("UPDATE users SET flair = ? WHERE id = ?").bind(clean(b.flair, 24), me.id).run(); }
         if (b.newPassword !== undefined) {
           if (!(await checkPass(String(b.oldPassword || ""), me.pass))) return bad(req, "Your current password is wrong.", 401);
           if (String(b.newPassword).length < 8) return bad(req, "Use a password of at least 8 characters.");
@@ -497,7 +497,7 @@ export default {
           if (!t) return bad(req, "Not found", 404);
           if (t.user === me.id) return bad(req, "You cannot give a Tithe to yourself.");
           const s = await stats(env, me, tz);
-          if (s.tithesLeft < 1) return bad(req, rank(me) < 2 ? "You have no Tithes left. Diver and Abyssal members get Tithes every month, and a 7-day reading streak earns one." : "You have given all your Tithes this month.", 403);
+          if (s.tithesLeft < 1) return bad(req, rank(me) < 2 ? "You have no Tithes left. Diver members and above get Tithes every month, and a 7-day reading streak earns one." : "You have given all your Tithes this month.", 403);
           await env.DB.prepare("INSERT INTO tithes (giver, receiver, kind, target, created) VALUES (?, ?, ?, ?, ?)").bind(me.id, t.user, kind, (isC ? "c" : "p") + id, now()).run();
           return json(req, { ok: true, left: s.tithesLeft - 1 });
         }
