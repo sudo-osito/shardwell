@@ -3,7 +3,7 @@
   const API = "https://shardwell-reader.maxpino.workers.dev";
   const $ = (s, r = document) => r.querySelector(s);
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  const AVATARS = ["", "kalfu", "hinata", "clerk", "cook", "punk", "scholar", "fisher", "nurse", "mechanic", "runner", "widow", "fox", "wolf", "cat", "horned", "antler", "marked", "rabbit", "devil", "pale", "sleepy", "smuggler", "matriarch", "baker", "masked", "twintails", "archivist", "eyepatch", "noble"]; // painted characters, img/avatars/<id>.jpg
+  const AVATARS = ["", "kalfu", "hinata", "veined", "clerk", "cook", "punk", "scholar", "fisher", "nurse", "mechanic", "runner", "widow", "fox", "wolf", "cat", "horned", "antler", "marked", "rabbit", "devil", "pale", "sleepy", "smuggler", "matriarch", "baker", "masked", "twintails", "archivist", "eyepatch", "noble"]; // painted characters, img/avatars/<id>.jpg
   const PLAN = { free: "Free reader", reader: "Reader", diver: "Diver", abyssal: "Abyssal", sovereign: "Sovereign" };
   const RANK = { free: 0, reader: 1, diver: 2, abyssal: 3, sovereign: 4 };
   const rank = (u) => (u?.role === "admin" ? 4 : RANK[u?.plan] || 0);
