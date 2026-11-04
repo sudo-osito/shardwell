@@ -1,0 +1,373 @@
+{
+ "_note": "Every cosmetic in one place. Add an item here (and its image) and both the site and the Worker pick it up. 'added' (YYYY-MM-DD) marks it New for 30 days. Plans: free, reader, diver, abyssal, sovereign.",
+ "sets": {
+  "avatars": [
+   [
+    "shardwell",
+    "Of Shardwell"
+   ],
+   [
+    "kayaba",
+    "People of Kayaba"
+   ],
+   [
+    "inhuman",
+    "Inhuman"
+   ]
+  ],
+  "banners": [
+   [
+    "world",
+    "The world"
+   ],
+   [
+    "realms",
+    "The five realms"
+   ],
+   [
+    "depths",
+    "The depths"
+   ]
+  ]
+ },
+ "avatars": [
+  {
+   "id": "kalfu",
+   "name": "Kalfu",
+   "set": "shardwell",
+   "plan": "free"
+  },
+  {
+   "id": "hinata",
+   "name": "Hinata",
+   "set": "shardwell",
+   "plan": "free"
+  },
+  {
+   "id": "clerk",
+   "name": "The Clerk",
+   "set": "kayaba",
+   "plan": "free"
+  },
+  {
+   "id": "cook",
+   "name": "The Cook",
+   "set": "kayaba",
+   "plan": "free"
+  },
+  {
+   "id": "punk",
+   "name": "The Punk",
+   "set": "kayaba",
+   "plan": "free"
+  },
+  {
+   "id": "scholar",
+   "name": "The Scholar",
+   "set": "kayaba",
+   "plan": "free"
+  },
+  {
+   "id": "fisher",
+   "name": "The Old Fisher",
+   "set": "kayaba",
+   "plan": "free"
+  },
+  {
+   "id": "nurse",
+   "name": "The Nurse",
+   "set": "kayaba",
+   "plan": "free"
+  },
+  {
+   "id": "mechanic",
+   "name": "The Mechanic",
+   "set": "kayaba",
+   "plan": "free"
+  },
+  {
+   "id": "runner",
+   "name": "The Runner",
+   "set": "kayaba",
+   "plan": "free"
+  },
+  {
+   "id": "widow",
+   "name": "The Widow",
+   "set": "kayaba",
+   "plan": "free"
+  },
+  {
+   "id": "sleepy",
+   "name": "The Sleepless",
+   "set": "kayaba",
+   "plan": "free"
+  },
+  {
+   "id": "smuggler",
+   "name": "The Smuggler",
+   "set": "kayaba",
+   "plan": "free"
+  },
+  {
+   "id": "matriarch",
+   "name": "The Matriarch",
+   "set": "kayaba",
+   "plan": "free"
+  },
+  {
+   "id": "baker",
+   "name": "The Baker",
+   "set": "kayaba",
+   "plan": "free"
+  },
+  {
+   "id": "masked",
+   "name": "The Masked",
+   "set": "kayaba",
+   "plan": "free"
+  },
+  {
+   "id": "twintails",
+   "name": "The Brawler",
+   "set": "kayaba",
+   "plan": "free"
+  },
+  {
+   "id": "archivist",
+   "name": "The Archivist",
+   "set": "kayaba",
+   "plan": "free"
+  },
+  {
+   "id": "eyepatch",
+   "name": "The One-Eyed",
+   "set": "kayaba",
+   "plan": "free"
+  },
+  {
+   "id": "noble",
+   "name": "The Heir",
+   "set": "kayaba",
+   "plan": "free"
+  },
+  {
+   "id": "veined",
+   "name": "The Veined",
+   "set": "inhuman",
+   "plan": "free"
+  },
+  {
+   "id": "fox",
+   "name": "The Fox",
+   "set": "inhuman",
+   "plan": "free"
+  },
+  {
+   "id": "wolf",
+   "name": "The Wolf",
+   "set": "inhuman",
+   "plan": "free"
+  },
+  {
+   "id": "cat",
+   "name": "The Cat",
+   "set": "inhuman",
+   "plan": "free"
+  },
+  {
+   "id": "horned",
+   "name": "The Horned",
+   "set": "inhuman",
+   "plan": "free"
+  },
+  {
+   "id": "antler",
+   "name": "The Antlered",
+   "set": "inhuman",
+   "plan": "free"
+  },
+  {
+   "id": "marked",
+   "name": "The Marked",
+   "set": "inhuman",
+   "plan": "free"
+  },
+  {
+   "id": "rabbit",
+   "name": "The Hare",
+   "set": "inhuman",
+   "plan": "free"
+  },
+  {
+   "id": "devil",
+   "name": "The Grinning",
+   "set": "inhuman",
+   "plan": "free"
+  },
+  {
+   "id": "pale",
+   "name": "The Pale",
+   "set": "inhuman",
+   "plan": "free"
+  }
+ ],
+ "frames": [
+  {
+   "id": "iron",
+   "name": "Iron",
+   "plan": "reader"
+  },
+  {
+   "id": "ash",
+   "name": "Ash",
+   "plan": "reader"
+  },
+  {
+   "id": "silver",
+   "name": "Silver",
+   "plan": "diver"
+  },
+  {
+   "id": "endro",
+   "name": "Endro",
+   "plan": "diver"
+  },
+  {
+   "id": "godblood",
+   "name": "Godblood",
+   "plan": "diver"
+  },
+  {
+   "id": "bone",
+   "name": "Bone",
+   "plan": "diver"
+  },
+  {
+   "id": "abyssal",
+   "name": "Abyssal",
+   "plan": "abyssal"
+  },
+  {
+   "id": "crown",
+   "name": "Crown",
+   "plan": "abyssal"
+  }
+ ],
+ "banners": [
+  {
+   "id": "pozo",
+   "name": "The Well",
+   "plan": "free",
+   "set": "world"
+  },
+  {
+   "id": "borde",
+   "name": "The Edge",
+   "plan": "free",
+   "set": "world"
+  },
+  {
+   "id": "corazon",
+   "name": "The Drowned Heart",
+   "plan": "free",
+   "set": "world"
+  },
+  {
+   "id": "catedral",
+   "name": "The Cathedral",
+   "plan": "free",
+   "set": "world"
+  },
+  {
+   "id": "mar",
+   "name": "The Sea",
+   "plan": "free",
+   "set": "world"
+  },
+  {
+   "id": "chrona",
+   "name": "The Stopped Sea",
+   "plan": "diver",
+   "set": "realms"
+  },
+  {
+   "id": "vast",
+   "name": "The Long Stair",
+   "plan": "diver",
+   "set": "realms"
+  },
+  {
+   "id": "axion",
+   "name": "The Repeating Halls",
+   "plan": "diver",
+   "set": "realms"
+  },
+  {
+   "id": "nyther",
+   "name": "The Unmaking",
+   "plan": "diver",
+   "set": "realms"
+  },
+  {
+   "id": "anastasis",
+   "name": "The Bone Garden",
+   "plan": "diver",
+   "set": "realms"
+  },
+  {
+   "id": "leviathan",
+   "name": "Leviathan",
+   "plan": "diver",
+   "set": "depths"
+  },
+  {
+   "id": "echoforms",
+   "name": "Echoforms",
+   "plan": "diver",
+   "set": "depths"
+  },
+  {
+   "id": "first-drowning",
+   "name": "The First Drowning",
+   "plan": "diver",
+   "set": "depths"
+  },
+  {
+   "id": "rig",
+   "name": "The Rig",
+   "plan": "diver",
+   "set": "world"
+  },
+  {
+   "id": "mar-ahogado",
+   "name": "The Drowned Sea",
+   "plan": "abyssal",
+   "set": "depths"
+  },
+  {
+   "id": "black-veil",
+   "name": "The Black Veil",
+   "plan": "abyssal",
+   "set": "depths"
+  },
+  {
+   "id": "sea-before-time",
+   "name": "The Sea Before Time",
+   "plan": "abyssal",
+   "set": "depths"
+  },
+  {
+   "id": "endro",
+   "name": "Endro",
+   "plan": "abyssal",
+   "set": "depths"
+  },
+  {
+   "id": "tithes",
+   "name": "Tithes",
+   "plan": "abyssal",
+   "set": "depths"
+  }
+ ]
+}

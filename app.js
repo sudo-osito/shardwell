@@ -345,17 +345,89 @@
         <textarea name="bio" maxlength="300" rows="3" placeholder="A few lines other readers see on your card and profile">${(u.bio || "").replace(/</g, "&lt;")}</textarea>
         <input name="link" value="${u.link || ""}" maxlength="200" placeholder="A link (https://), optional">
         <p class="perfil__msg" hidden></p><button class="boton boton--quieto" type="submit">Save</button></form>
-      <div class="perfil__caja perfil__caja--ancha"><p class="rotulo">Banner</p>
-        <div class="banners">${BANNERS.map(([b, min]) => { const ok = r >= RK[min]; return `<button type="button" class="banner-op" data-banner="${b}" aria-pressed="${(u.banner || "") === b}" ${ok ? "" : "disabled"} title="${ok ? "" : C.PLAN[min] + " and up"}">${b ? `<img src="img/${b}.jpg" alt="" loading="lazy">` : "<span>None</span>"}${ok ? "" : `<i>${C.PLAN[min]}</i>`}</button>`; }).join("")}</div></div>
-      <div class="perfil__caja perfil__caja--ancha"><p class="rotulo">Picture</p>
-        <div class="avatares">${C.AVATARS.map((a) => `<button type="button" data-avatar="${a}" aria-pressed="${u.avatar === a}" aria-label="${a || "Initial"}">${C.avatar({ ...u, avatar: a, frame: "" }, "avatar--g")}</button>`).join("")}</div></div>
-      <div class="perfil__caja perfil__caja--ancha"><p class="rotulo">Frame</p>
-        <div class="avatares">${FRAMES.map(([f, min, name]) => { const ok = r >= RK[min]; return `<button type="button" class="marco-op" data-frame="${f}" aria-pressed="${(u.frame || "") === f}" ${ok ? "" : "disabled"} title="${name}${ok ? "" : " · " + C.PLAN[min] + " and up"}">${C.avatar({ ...u, frame: f }, "avatar--g")}<small>${name}${ok ? "" : " ◆"}</small></button>`; }).join("")}</div></div>
-      <form class="perfil__caja" data-perfil="flair"><p class="rotulo">Flair</p>${r >= 2 ? `<input name="flair" value="${u.flair || ""}" maxlength="24" placeholder="A few words under your name"><p class="perfil__msg" hidden></p><button class="boton boton--quieto" type="submit">Save flair</button>` : `<p class="nota">A few words under your name in the forum. Diver and Abyssal.</p>`}</form>
+      <a class="perfil__caja perfil__caja--ancha perfil__look" href="#/look">${u.banner ? `<img class="perfil__look-img cargada" src="img/${u.banner}.jpg" alt="">` : ""}<div>${C.avatar(u, "avatar--g")}<span><p class="rotulo">Your look</p><b>Picture, frame, banner${r >= 2 ? " and flair" : ""}</b></span></div><span class="boton boton--quieto">Open the wardrobe</span></a>
       <form class="perfil__caja" data-perfil="nombre"><p class="rotulo">Name</p><input name="name" value="${u.name}" maxlength="24" required><p class="perfil__msg" hidden></p><button class="boton boton--quieto" type="submit">Save name</button></form>
       <form class="perfil__caja perfil__caja--ancha" data-perfil="clave"><p class="rotulo">Password</p><input name="oldPassword" type="password" placeholder="Current password" autocomplete="current-password" required><input name="newPassword" type="password" placeholder="New password (8+)" autocomplete="new-password" minlength="8" required><p class="perfil__msg" hidden></p><button class="boton boton--quieto" type="submit">Change password</button></form>
       <div class="perfil__caja perfil__caja--ancha perfil__pie"><p>${u.email}</p><button class="boton boton--quieto" type="button" data-salir>Sign out</button><button class="perfil__borrar" type="button" data-borrar-cuenta>Delete account</button></div>
     </section>`;
+  }
+  // ---------- your look: the wardrobe (pictures, frames, banners, flair) from data/cosmetics.json ----------
+  function look() {
+    if (!window.Cuenta?.user) return account();
+    return `<header class="pagina pagina--corta">${crumbs(["Shardwell", "#/"], ["Account", "#/account"], ["Your look"])}<h1 class="titulo titulo--xl">Your look</h1><p class="bajada">How other readers see you: on your card, your profile, in the forum and the comments.</p></header>
+    <section class="bloque bloque--pegado look" data-look><p class="cargando">Opening the wardrobe…</p></section>`;
+  }
+  async function lookEvents() {
+    const C = window.Cuenta, u = C?.user, box = $("[data-look]", vista);
+    if (!u || !box) return;
+    const cat = await C.cosmetics(), r = C.rank(u), RK = { free: 0, reader: 1, diver: 2, abyssal: 3, sovereign: 4 };
+    const fresh = (it) => it.added && Date.now() - Date.parse(it.added) < 30 * 864e5;
+    const ok = (it) => r >= (RK[it.plan] || 0);
+    const saved = { avatar: u.avatar || "", frame: u.frame || "", banner: u.banner || "", flair: u.flair || "" };
+    let draft = { ...saved }, tab = "avatar", set = "all", mine = false, peek = null;
+    const TABS = [["avatar", "Picture", cat.avatars], ["frame", "Frame", cat.frames], ["banner", "Banner", cat.banners], ["flair", "Flair", null]];
+    const sets = { avatar: cat.sets.avatars, banner: cat.sets.banners, frame: [] };
+    const lock = (it) => ok(it) ? "" : `<span class="pieza__lock">◆ ${C.PLAN[it.plan]}${it.plan === "sovereign" ? "" : " and up"}</span>`;
+    const tile = (kind, it) => {
+      const id = it ? it.id : "", on = draft[kind] === id, can = !it || ok(it), name = it ? it.name : "None";
+      const art = kind === "avatar" ? (it ? `<img src="img/avatars/${id}.jpg" alt="" loading="lazy">` : `<span class="pieza__letra">${u.name[0].toUpperCase()}</span>`)
+        : kind === "frame" ? C.avatar({ ...u, avatar: draft.avatar, frame: id }, "avatar--xl")
+        : it ? `<img src="img/${id}.jpg" alt="" loading="lazy">` : `<span class="pieza__nada">No banner</span>`;
+      return `<button type="button" class="pieza pieza--${kind}${on ? " pieza--on" : ""}${can ? "" : " pieza--cerrada"}" data-pieza="${kind}" data-id="${id}" aria-pressed="${on}" ${can ? "" : 'aria-disabled="true"'}>
+        <span class="pieza__arte">${art}</span>${it && fresh(it) ? '<span class="pieza__nueva">New</span>' : ""}${it ? lock(it) : ""}<span class="pieza__nombre">${name}</span></button>`;
+    };
+    const preview = () => {
+      const d = { ...draft, ...(peek || {}) }, v = { ...u, ...d };
+      return `<div class="look__tarjeta">${d.banner ? `<img class="look__banner cargada" src="img/${d.banner}.jpg" alt="">` : '<div class="look__banner look__banner--vacio"></div>'}
+        <div class="look__yo">${C.avatar(v, "avatar--xl")}<div><b class="look__nombre">${u.name.replace(/</g, "&lt;")}</b><p>${C.planTag(u) || '<span class="plan-tag">Free reader</span>'}</p>${d.flair ? `<p class="flair">${d.flair.replace(/</g, "&lt;")}</p>` : ""}</div></div></div>
+        <div class="look__usos"><p class="rotulo">In a comment</p><div class="look__com">${C.avatar(v, "")}<span><b>${u.name.replace(/</g, "&lt;")}</b>${d.flair ? ` <i>${d.flair.replace(/</g, "&lt;")}</i>` : ""}<br><small>The sun cast uncountable shadows across the ocean…</small></span></div></div>`;
+    };
+    const changed = () => Object.keys(saved).some((k) => saved[k] !== draft[k]);
+    const panel = () => {
+      const [, , items] = TABS.find((t) => t[0] === tab);
+      if (tab === "flair") return r >= 2 ? `<div class="look__flair"><label><span class="rotulo">A few words under your name</span><input data-flair maxlength="24" value="${draft.flair.replace(/"/g, "&quot;")}" placeholder="e.g. Diver since Chapter 1"></label><p class="nota">Shown in the forum, the comments and on your card. 24 characters.</p></div>`
+        : `<div class="look__flair"><p class="nota">Flair, a few words under your name, comes with Diver and above.</p><a class="boton boton--quieto" href="#/membership">See the plans</a></div>`;
+      const list = items.filter((it) => (set === "all" || it.set === set) && (!mine || ok(it)));
+      const chips = (sets[tab] || []).length ? `<div class="look__sets" role="group" aria-label="Collections"><button type="button" data-set="all" aria-pressed="${set === "all"}">All <small>${items.length}</small></button>${sets[tab].map(([k, n]) => `<button type="button" data-set="${k}" aria-pressed="${set === k}">${n} <small>${items.filter((i) => i.set === k).length}</small></button>`).join("")}</div>` : "";
+      const groups = tab === "frame" ? [["", list]] : (set === "all" && sets[tab]?.length ? sets[tab].map(([k, n]) => [n, list.filter((i) => i.set === k)]) : [["", list]]);
+      return `<div class="look__filtros">${chips}<label class="look__mios"><input type="checkbox" data-mios ${mine ? "checked" : ""}> Only what I can use</label></div>
+        ${groups.filter(([, l]) => l.length).map(([n, l], gi) => `${n ? `<p class="look__grupo rotulo">${n}</p>` : ""}<div class="look__grid look__grid--${tab}">${gi === 0 ? tile(tab, null) : ""}${l.map((it) => tile(tab, it)).join("")}</div>`).join("")}`;
+    };
+    const draw = () => {
+      box.innerHTML = `<aside class="look__vista"><div data-preview>${preview()}</div>
+        <div class="look__acciones"><button class="boton" type="button" data-guardar ${changed() ? "" : "disabled"}>Save my look</button><button class="boton boton--quieto" type="button" data-deshacer ${changed() ? "" : "disabled"}>Undo</button><p class="perfil__msg" data-look-msg hidden></p></div></aside>
+        <div class="look__panel"><nav class="look__tabs" role="tablist">${TABS.map(([k, n, items]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${tab === k}">${n}${items ? ` <small>${items.length}</small>` : ""}</button>`).join("")}</nav><div data-panel>${panel()}</div></div>`;
+      wire();
+    };
+    const repaint = () => { $("[data-preview]", box).innerHTML = preview(); $$("[data-guardar], [data-deshacer]", box).forEach((b) => (b.disabled = !changed())); };
+    function wire() {
+      $$("[data-tab]", box).forEach((b) => b.addEventListener("click", () => { tab = b.dataset.tab; set = "all"; draw(); }));
+      $$("[data-set]", box).forEach((b) => b.addEventListener("click", () => { set = b.dataset.set; draw(); }));
+      $("[data-mios]", box)?.addEventListener("change", (ev) => { mine = ev.target.checked; draw(); });
+      $("[data-flair]", box)?.addEventListener("input", (ev) => { draft.flair = ev.target.value; repaint(); });
+      $$("[data-pieza]", box).forEach((b) => {
+        const k = b.dataset.pieza, id = b.dataset.id;
+        b.addEventListener("mouseenter", () => { peek = { [k]: id }; repaint(); });
+        b.addEventListener("mouseleave", () => { peek = null; repaint(); });
+        b.addEventListener("click", () => {
+          if (b.getAttribute("aria-disabled")) { const m = $("[data-look-msg]", box); m.textContent = "That one opens with a higher plan. See Membership."; m.hidden = false; return; }
+          draft[k] = id; peek = null;
+          $$(`[data-pieza="${k}"]`, box).forEach((x) => { const on = x.dataset.id === id; x.classList.toggle("pieza--on", on); x.setAttribute("aria-pressed", String(on)); });
+          if (k === "avatar") $$('[data-pieza="frame"] .avatar img', box).forEach((im) => (im.src = `img/avatars/${id}.jpg`));
+          repaint();
+        });
+      });
+      $("[data-deshacer]", box)?.addEventListener("click", () => { draft = { ...saved }; draw(); });
+      $("[data-guardar]", box)?.addEventListener("click", async (ev) => {
+        const m = $("[data-look-msg]", box), body = {};
+        for (const k of ["avatar", "frame", "banner"]) if (draft[k] !== saved[k]) body[k] = draft[k];
+        if (r >= 2 && draft.flair !== saved.flair) body.flair = draft.flair;
+        ev.target.disabled = true;
+        try { await C.update(body); Object.assign(saved, draft); C.cardCache?.clear(); m.textContent = "Saved. This is how readers see you now."; m.hidden = false; repaint(); }
+        catch (x) { m.textContent = x.message; m.hidden = false; ev.target.disabled = false; }
+      });
+    }
+    draw();
   }
   async function accountEvents() {
     $$("[data-avatar]", vista).forEach((b) => b.addEventListener("click", async () => { try { await window.Cuenta.update({ avatar: b.dataset.avatar }); route(); } catch (x) { alert(x.message); } }));
@@ -381,11 +453,11 @@
     const [, a, b] = h.split("?")[0].split("/");
     const gated = LORE_ROUTES.includes(a) || (a === "e" && b && !BY.get(b)?.section?.startsWith("novel") && !isMember());
     const isForum = a === "forum" || a === "u";
-    const html = AUTHOR_ROUTES.includes(a) && !isAuthor() ? notFound() : isForum ? '<div data-foro-raiz><p class="cargando cargando--pagina">Loading…</p></div>' : gated && !isMember() ? codexGate() : !a ? home() : a === "account" ? account() : a === "e" ? article(b) : a === "c" || a === "s" ? category(b) : a === "world" ? world() : a === "novel" ? novel() : a === "glossary" ? glossary() : a === "unwritten" || a === "unknowns" ? unwrittenPage() : a === "art" ? art() : a === "membership" ? membership() : notFound();
+    const html = AUTHOR_ROUTES.includes(a) && !isAuthor() ? notFound() : isForum ? '<div data-foro-raiz><p class="cargando cargando--pagina">Loading…</p></div>' : gated && !isMember() ? codexGate() : !a ? home() : a === "account" ? account() : a === "look" ? look() : a === "e" ? article(b) : a === "c" || a === "s" ? category(b) : a === "world" ? world() : a === "novel" ? novel() : a === "glossary" ? glossary() : a === "unwritten" || a === "unknowns" ? unwrittenPage() : a === "art" ? art() : a === "membership" ? membership() : notFound();
     window.Lector?.unmount();
     vista.innerHTML = html;
     const e = a === "e" && BY.get(b);
-    const names = { forum: "Forum", u: "Profile", account: "Account", membership: "Membership", world: "World", novel: "The Novel", glossary: "Glossary", unwritten: "Unwritten", art: "Art" };
+    const names = { look: "Your look", forum: "Forum", u: "Profile", account: "Account", membership: "Membership", world: "World", novel: "The Novel", glossary: "Glossary", unwritten: "Unwritten", art: "Art" };
     document.title = e ? `${e.title} · Shardwell` : a === "c" ? `${cat(b)?.name || "World"} · Shardwell` : a ? `${names[a] || "Shardwell"} · Shardwell` : "Shardwell";
     document.body.dataset.ruta = a || "home";
     const here = isForum ? "forum" : e ? (e.section === "novel" ? "novel" : e.id === "fishing-game" ? "game" : e.section === "characters" ? "characters" : "world") : a === "c" ? (b === "characters" ? "characters" : "world") : a || "";
@@ -394,6 +466,7 @@
     menu(false);
     after();
     if (a === "account") accountEvents();
+    if (a === "look") lookEvents();
     if (a === "membership") membershipEvents();
     if (isForum) window.Foro.mount($("[data-foro-raiz]", vista), { crumbs, chapters: chapters().map((c) => ({ id: c.id, number: c.number, title: c.title })), boards: { announcements: "Announcements", chapters: "Chapters", theories: "Theories", art: "Fan Art", general: "General", ask: "Ask the Author", stories: "Side Stories" }, after: () => after() });
   }

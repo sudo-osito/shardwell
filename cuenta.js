@@ -3,7 +3,9 @@
   const API = "https://shardwell-reader.maxpino.workers.dev";
   const $ = (s, r = document) => r.querySelector(s);
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  const AVATARS = ["", "kalfu", "hinata", "veined", "clerk", "cook", "punk", "scholar", "fisher", "nurse", "mechanic", "runner", "widow", "fox", "wolf", "cat", "horned", "antler", "marked", "rabbit", "devil", "pale", "sleepy", "smuggler", "matriarch", "baker", "masked", "twintails", "archivist", "eyepatch", "noble"]; // painted characters, img/avatars/<id>.jpg
+  let AVATARS = []; // filled from data/cosmetics.json
+  let COS = null;
+  const cosmetics = async () => COS || (COS = await (await fetch("data/cosmetics.json")).json().then((c) => { AVATARS = ["", ...c.avatars.map((a) => a.id)]; return c; }));
   const PLAN = { free: "Free reader", reader: "Reader", diver: "Diver", abyssal: "Abyssal", sovereign: "Sovereign" };
   const RANK = { free: 0, reader: 1, diver: 2, abyssal: 3, sovereign: 4 };
   const rank = (u) => (u?.role === "admin" ? 4 : RANK[u?.plan] || 0);
@@ -40,7 +42,7 @@
 
   // avatar: painted image, or the initial on a stone tile
   const avatar = (u, size = "") => {
-    const inner = u?.avatar && AVATARS.includes(u.avatar) ? `<span class="avatar ${size}"><img src="img/avatars/${u.avatar}.jpg" alt=""></span>` : `<span class="avatar avatar--letra ${size}">${esc((u?.name || "?")[0].toUpperCase())}</span>`;
+    const inner = u?.avatar && /^[a-z0-9-]+$/.test(u.avatar) ? `<span class="avatar ${size}" data-letra="${esc((u?.name || "?")[0].toUpperCase())}"><img src="img/avatars/${u.avatar}.jpg" alt="" onerror="this.parentNode.classList.add('avatar--letra');this.parentNode.textContent=this.parentNode.dataset.letra"></span>` : `<span class="avatar avatar--letra ${size}">${esc((u?.name || "?")[0].toUpperCase())}</span>`;
     return u?.frame ? `<span class="avatar-w avatar-w--${u.frame} ${size}">${inner}<img class="avatar__marco" src="img/ui/f-${u.frame}.png" alt=""></span>` : inner;
   };
   const badgeImg = (b) => `<img class="emblema" src="img/ui/b-${b.id}.png" alt="" loading="lazy">`;
@@ -192,5 +194,5 @@
 
   paintBar(); refresh();
   const setUser = (u) => save(token, u);
-  window.Cuenta = { get user() { return user; }, get token() { return token; }, open, logout, refresh, update, remove, avatar, badgeImg, planName, planTag, rank, userAttr, cardCache, PLAN, AVATARS, call, setUser, announce, on: (f) => listeners.add(f) };
+  window.Cuenta = { get user() { return user; }, get token() { return token; }, open, logout, refresh, update, remove, avatar, badgeImg, planName, planTag, rank, userAttr, cardCache, PLAN, get AVATARS() { return AVATARS; }, cosmetics, call, setUser, announce, on: (f) => listeners.add(f) };
 })();

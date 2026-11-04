@@ -1,4 +1,5 @@
 import { codexRoute } from "./codex.js";
+import COS from "../../data/cosmetics.json"; // one catalog for the site and the Worker
 // Shardwell API (Cloudflare Worker + D1 + KV).
 // Novel:     GET /chapter/:id · GET /chapter/:id/para/:n · GET /chapter-text/:id (early access / members)
 //            POST /comment · /like · /react · /read · /delete · /notify
@@ -9,13 +10,14 @@ import { codexRoute } from "./codex.js";
 // Admin:     POST /admin/plan · /admin/role · /admin/hide · /admin/post (pin, lock, hide) — header x-admin, or a signed-in admin
 const ORIGINS = ["https://sudo-osito.github.io", "http://127.0.0.1:4815", "http://localhost:4815"];
 const KINDS = ["heart", "dread", "tears", "chills", "awe"];
-const AVATARS = ["", "kalfu", "hinata", "veined", "clerk", "cook", "punk", "scholar", "fisher", "nurse", "mechanic", "runner", "widow", "fox", "wolf", "cat", "horned", "antler", "marked", "rabbit", "devil", "pale", "sleepy", "smuggler", "matriarch", "baker", "masked", "twintails", "archivist", "eyepatch", "noble"]; // painted characters, img/avatars/<id>.jpg
+const AVATARS = ["", ...COS.avatars.map((a) => a.id)];
+const AVATAR_PLAN = Object.fromEntries(COS.avatars.map((a) => [a.id, a.plan || "free"]));
 const RANK = { free: 0, reader: 1, diver: 2, abyssal: 3, sovereign: 4 };
 // profile banners (painted art), the plan they need
-const BANNERS = { "": "free", pozo: "free", borde: "free", corazon: "free", catedral: "free", mar: "free", chrona: "diver", vast: "diver", axion: "diver", nyther: "diver", anastasis: "diver", leviathan: "diver", echoforms: "diver", "first-drowning": "diver", rig: "diver", "mar-ahogado": "abyssal", "black-veil": "abyssal", "sea-before-time": "abyssal", endro: "abyssal", tithes: "abyssal" };
+const BANNERS = { "": "free", ...Object.fromEntries(COS.banners.map((b) => [b.id, b.plan])) };
 const PLAN_NAME = { free: "Free reader", reader: "Reader", diver: "Diver", abyssal: "Abyssal", sovereign: "Sovereign" };
 // avatar frames, the plan they need
-const FRAMES = { "": "free", iron: "reader", ash: "reader", silver: "diver", endro: "diver", godblood: "diver", abyssal: "abyssal", crown: "abyssal", bone: "diver" };
+const FRAMES = { "": "free", ...Object.fromEntries(COS.frames.map((f) => [f.id, f.plan])) };
 // Tithes: awards (in-world offerings). Monthly allowance by plan; a 7-day reading streak adds one.
 const TITHES = { shard: { name: "Shard", min: "free" }, endro: { name: "Endro", min: "diver" }, crown: { name: "Crown", min: "abyssal" } };
 const ALLOWANCE = { free: 0, reader: 0, diver: 1, abyssal: 5, sovereign: 5 };
@@ -358,7 +360,7 @@ export default {
           if (await env.DB.prepare("SELECT 1 FROM users WHERE name = ? AND id != ?").bind(name, me.id).first()) return bad(req, "That name is taken.");
           await env.DB.prepare("UPDATE users SET name = ? WHERE id = ?").bind(name, me.id).run();
         }
-        if (b.avatar !== undefined) { if (!AVATARS.includes(b.avatar)) return bad(req, "avatar"); await env.DB.prepare("UPDATE users SET avatar = ? WHERE id = ?").bind(b.avatar, me.id).run(); }
+        if (b.avatar !== undefined) { if (!AVATARS.includes(b.avatar)) return bad(req, "avatar"); if (b.avatar && !can(me, AVATAR_PLAN[b.avatar])) return bad(req, `That picture is for ${PLAN_NAME[AVATAR_PLAN[b.avatar]]} members and up.`, 403); await env.DB.prepare("UPDATE users SET avatar = ? WHERE id = ?").bind(b.avatar, me.id).run(); }
         if (b.frame !== undefined) { if (!(b.frame in FRAMES)) return bad(req, "frame"); if (!can(me, FRAMES[b.frame])) return bad(req, "That frame needs a higher plan.", 403); await env.DB.prepare("UPDATE users SET frame = ? WHERE id = ?").bind(b.frame, me.id).run(); }
         if (b.bio !== undefined) await env.DB.prepare("UPDATE users SET bio = ? WHERE id = ?").bind(clean(b.bio, 300), me.id).run();
         if (b.link !== undefined) { const l = clean(b.link, 200); if (!okLink(l)) return bad(req, "The link must start with https://"); await env.DB.prepare("UPDATE users SET link = ? WHERE id = ?").bind(l, me.id).run(); }
