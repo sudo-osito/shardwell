@@ -8,7 +8,7 @@
 // Admin:     POST /admin/plan · /admin/role · /admin/hide · /admin/post (pin, lock, hide) — header x-admin, or a signed-in admin
 const ORIGINS = ["https://sudo-osito.github.io", "http://127.0.0.1:4815", "http://localhost:4815"];
 const KINDS = ["heart", "dread", "tears", "chills", "awe"];
-const AVATARS = ["", "chrona", "vast", "axion", "nyther", "anastasis", "pozo", "endro", "tithes", "echoforms", "black-veil", "leviathan", "sea-before-time", "mar-ahogado", "borde"];
+const AVATARS = ["", "kalfu", "hinata", "clerk", "cook", "punk", "scholar", "fisher", "nurse", "mechanic", "runner", "widow", "fox", "wolf", "cat", "horned", "antler", "marked", "rabbit", "devil", "pale"]; // painted characters, img/avatars/<id>.jpg
 const RANK = { free: 0, reader: 1, diver: 2, abyssal: 3, sovereign: 4 };
 // profile banners (painted art), the plan they need
 const BANNERS = { "": "free", pozo: "free", borde: "free", corazon: "free", catedral: "free", mar: "free", chrona: "diver", vast: "diver", axion: "diver", nyther: "diver", anastasis: "diver", leviathan: "diver", echoforms: "diver", "first-drowning": "diver", rig: "diver", "mar-ahogado": "abyssal", "black-veil": "abyssal", "sea-before-time": "abyssal", endro: "abyssal", tithes: "abyssal" };
