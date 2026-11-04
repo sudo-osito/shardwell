@@ -2,7 +2,8 @@
    Mounted by app.js with Lector.mount(root, entry, ctx). Comments live in the shardwell-reader Worker (D1). */
 (() => {
   const API = "https://shardwell-reader.maxpino.workers.dev";
-  const FREE = 50; // chapters 1–50 are free; after that, members only
+  let REL = { free: 50, reader: 60 }; // set by app.js from data/novel.json (build/release.json)
+  const PLAN_OF = { reader: "Reader", diver: "Diver" };
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -164,7 +165,7 @@
     };
     function renderIndex() {
       const done = store.get("done", []), m = marks();
-      $("[data-lista-cap]", root).innerHTML = ctx.chapters.map((c) => `<li class="${c.id === e.id ? "actual" : ""}"><a href="#/e/${c.id}"><span>${c.number}</span><b>${esc(c.title)}</b>${c.number > FREE ? '<i class="candado" title="Members">◆</i>' : done.includes(c.id) ? '<i title="Read">✓</i>' : c.status === "Draft" ? "<i>draft</i>" : ""}</a></li>`).join("");
+      $("[data-lista-cap]", root).innerHTML = ctx.chapters.map((c) => `<li class="${c.id === e.id ? "actual" : ""}"><a href="#/e/${c.id}"><span>${c.number}</span><b>${esc(c.title)}</b>${c.need && c.need !== "free" ? `<i class="candado" title="${PLAN_OF[c.need]} and up">◆</i>` : done.includes(c.id) ? '<i title="Read">✓</i>' : c.status === "Draft" ? "<i>draft</i>" : ""}</a></li>`).join("");
       $("[data-lista-marcas]", root).innerHTML = m.length ? m.map((x) => `<li><a href="#/e/${x.id}" data-ir-marca="${x.id}:${x.p}"><span>${x.n}</span><b>${esc(x.title)}</b><i>${ago(x.t)}</i></a></li>`).join("") : '<li class="vacio">No bookmarks yet. Use ☆ in the bar.</li>';
     }
     on(root, "click", (ev) => { const a = ev.target.closest("[data-ir-marca]"); if (!a) return; const [id, p] = a.dataset.irMarca.split(":"); if (id === e.id) { ev.preventDefault(); show(null); paras[+p]?.scrollIntoView({ block: "start" }); scrollBy(0, -90); } else store.set("jump", { id, p: +p }); });
@@ -295,7 +296,7 @@
       <div class="panel__cab"><b>Chapters</b><button class="panel__cerrar" type="button" data-cerrar aria-label="Close">×</button></div>
       <ol class="lista-cap" data-lista-cap></ol>
       <p class="rotulo panel__sub">Bookmarks</p><ul class="lista-cap lista-cap--marcas" data-lista-marcas></ul>
-      <p class="ajuste__nota">Chapters 1 to ${FREE} are free. After that, chapters are for members.</p>
+      <p class="ajuste__nota">Chapters 1 to ${REL.free} are free. Reader members read up to chapter ${REL.reader}; Diver and Abyssal members read the newest chapters first.</p>
     </div>`;
     const para = `<div class="panel panel--ancho" data-panel="parrafo" hidden role="dialog" aria-label="Comments on this passage">
       <div class="panel__cab"><b>On this passage</b><button class="panel__cerrar" type="button" data-cerrar aria-label="Close">×</button></div>
@@ -306,13 +307,14 @@
       <p class="rotulo">End of chapter ${e.number}</p>
       <div class="reacciones" data-reacciones></div>
       <p class="fin__lecturas" data-lecturas></p><div class="fin__racha" data-racha></div>
-      <div class="fin__sig">${ctx.next ? `<a class="boton" href="#/e/${ctx.next.id}">${ctx.next.number > FREE ? "Unlock" : "Next"}: Chapter ${ctx.next.number} · ${esc(ctx.next.title)}</a>` : `<p class="fin__nada">You have reached the latest chapter. New chapters are on the way.</p><a class="boton boton--quieto" href="#/novel">All chapters</a>`}</div>
+      <div class="fin__sig">${ctx.next ? `<a class="boton" href="#/e/${ctx.next.id}">${ctx.next.need && ctx.next.need !== "free" ? "Unlock" : "Next"}: Chapter ${ctx.next.number} · ${esc(ctx.next.title)}</a>` : `<p class="fin__nada">You have reached the latest chapter. New chapters are on the way.</p><a class="boton boton--quieto" href="#/novel">All chapters</a>`}</div>
       <div class="coms-cap"><div class="coms-cap__cab"><h2 class="titulo">Comments <span data-n-com>0</span></h2>
         <div class="seg seg--chico"><button type="button" data-orden="new" aria-pressed="true">Newest</button><button type="button" data-orden="top" aria-pressed="false">Top</button><button type="button" data-orden="old" aria-pressed="false">Oldest</button></div></div>
         <div data-form-capitulo></div><p class="estado" data-estado hidden></p><ul class="coms" data-comentarios></ul></div>
     </section>`;
-    const paywall = locked ? `<div class="muro"><p class="rotulo">Chapter ${e.number} · ${e.early ? "Early access" : "Members"}</p><h2 class="titulo">${e.early ? "Members are reading this one first" : "The story continues for members"}</h2>
-      <p>${e.early ? `This chapter is early access${e.membersUntil ? ` until ${new Date(e.membersUntil + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long" })}` : ""}. Then it opens to everyone.` : `Chapters 1 to ${FREE} are free for everyone. From chapter ${FREE + 1} on, Shardwell is supported by its readers.`}</p>
+    const need = e.need || "reader";
+    const paywall = locked ? `<div class="muro"><p class="rotulo">Chapter ${e.number} · ${need === "diver" ? "Diver and Abyssal" : "Reader and up"}</p><h2 class="titulo">${need === "diver" ? "The newest chapters reach Diver and Abyssal first" : "Members are reading ahead"}</h2>
+      <p>${e.early && e.membersUntil ? `This chapter is for members until ${new Date(e.membersUntil + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long" })}. Then it opens to everyone.` : need === "diver" ? `Diver and Abyssal members read the newest chapters before anyone else. Reader members are a few chapters behind, and chapters 1 to ${REL.free} are free.` : `Chapters 1 to ${REL.free} are free. Reader members read ahead, up to chapter ${REL.reader}.`}</p>
       <a class="boton" href="#/membership">See membership</a><a class="boton boton--quieto" href="#/novel">Back to the chapters</a></div>` : "";
     return `<article class="lector">
       <div class="progreso" aria-hidden="true"><i data-progreso></i></div>
@@ -349,5 +351,5 @@
     </article>`;
   }
 
-  window.Lector = { html, mount, unmount, refreshForms: () => refreshForms(), FREE, store, progress: () => ({ last: store.get("last", null), pos: store.get("pos", {}), done: store.get("done", []) }) };
+  window.Lector = { html, mount, unmount, refreshForms: () => refreshForms(), get FREE() { return REL.free; }, setRelease: (r) => { if (r) REL = r; }, get release() { return REL; }, store, progress: () => ({ last: store.get("last", null), pos: store.get("pos", {}), done: store.get("done", []) }) };
 })();

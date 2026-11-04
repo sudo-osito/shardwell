@@ -241,9 +241,10 @@ export default {
           return new Response((await env.LORE.get(me?.role === "admin" ? "lore-admin" : "lore")) || "{}", { headers: { "content-type": "application/json", "cache-control": "private, no-store", ...cors(req) } });
         }
         if (p[0] === "chapter-text" && okId(p[1])) {
-          if (!can(me, "reader")) return bad(req, "Members only", 401);
-          const all = parseJSON(await env.LORE.get("chapters"), {});
-          return all[p[1]] ? json(req, all[p[1]]) : bad(req, "Not found", 404);
+          const all = parseJSON(await env.LORE.get("chapters"), {}), ch = all[p[1]];
+          if (!ch) return bad(req, "Not found", 404);
+          if (!can(me, ch.need || "reader")) return bad(req, `${PLAN_NAME[ch.need || "reader"]} members only`, 401);
+          return json(req, ch);
         }
         if (p[0] === "chapter" && okId(p[1])) {
           const ch = p[1], reader = url.searchParams.get("reader") || "";

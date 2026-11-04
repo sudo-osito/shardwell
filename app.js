@@ -36,7 +36,8 @@
   const chList = (cls = "") => `<ol class="capitulos ${cls}">${chapters().map((c) => `<li><a href="#/e/${c.id}"><span class="capitulos__n">${c.number}</span><b>${c.title}</b><span>${c.status === "Draft" ? "In progress" : minutes(c.words) + " min read"}</span></a></li>`).join("")}</ol>`;
 
   // ---------- home: the novel's landing page ----------
-  const FREE = () => window.Lector?.FREE || 50;
+  const FREE = () => window.Lector?.release?.free || 50;
+  const READ_UP = () => window.Lector?.release?.reader || 60;
   const OPENING = "The sun cast uncountable shadows across the ocean, and to him they felt like the bars of a cell.";
   const TAGS = ["Dark fantasy", "Science fantasy", "Dystopia", "Gods and abyss", "Adult 18+"];
   function progressCta() {
@@ -94,8 +95,8 @@
   }
 
   const PLANS = [
-    { id: "reader", name: "Reader", m: 4.99, y: 49.9, line: "For those who just want to keep reading", perks: ["Every chapter after " + 50, "Early access to new chapters", "Reader badge and two avatar frames"] },
-    { id: "diver", name: "Diver", m: 8.99, y: 89.9, line: "Read, and know the world", perks: ["Everything in Reader", "<b>The Codex</b>: the full lore of Shardwell", "Art and character studies", "One Tithe to give each month", "More frames and a flair under your name"], hot: true },
+    { id: "reader", name: "Reader", m: 4.99, y: 49.9, line: "Read ahead of the free chapters", perks: [() => `Chapters ${FREE() + 1} to ${READ_UP()}, ahead of free readers`, "Reader badge and two avatar frames"] },
+    { id: "diver", name: "Diver", m: 8.99, y: 89.9, line: "Read, and know the world", perks: ["Everything in Reader", () => `<b>The newest chapters first</b>: every chapter after ${READ_UP()}`, "<b>The Codex</b>: the full lore of Shardwell", "Art of Shardwell", "One Tithe to give each month", "More frames and a flair under your name"], hot: true },
     { id: "abyssal", name: "Abyssal", m: 14.99, y: 149.9, line: "Closest to the author", perks: ["Everything in Diver", "Ask the Author board", "Vote on side stories", "Your name in the credits", "Five Tithes a month", "Every frame, including the Crown"] },
   ];
   const usd = (n) => "US$" + n.toFixed(2).replace(/\.00$/, "");
@@ -104,7 +105,7 @@
       <header class="cabeza cabeza--centro"><p class="rotulo">How to read</p><h2 class="titulo">Free to start. Kept alive by readers.</h2></header>
       <div class="planes planes--landing">
         <div class="plan"><p class="rotulo">Free</p><b>Chapters 1 to ${FREE()}</b><ul><li>Read every chapter up to ${FREE()}</li><li>Comment with a free account</li><li>Bookmarks and reading settings</li></ul><a class="boton" href="#/e/${chapters()[0].id}">Start reading</a></div>
-        <div class="plan plan--miembro"><p class="rotulo">Membership</p><b>From ${usd(PLANS[0].m)} a month</b><ul><li>Chapters after ${FREE()} and early access</li><li>Three plans, cancel anytime</li></ul><a class="boton boton--quieto" href="#/membership">See the plans</a></div>
+        <div class="plan plan--miembro"><p class="rotulo">Membership</p><b>From ${usd(PLANS[0].m)} a month</b><ul><li>Read ahead of everyone: the newest chapters reach members first</li><li>Three plans, cancel anytime</li></ul><a class="boton boton--quieto" href="#/membership">See the plans</a></div>
       </div>
     </section>`;
   }
@@ -112,7 +113,7 @@
   async function checkoutLinks() { if (CHECKOUT) return CHECKOUT; try { CHECKOUT = (await (await fetch("https://shardwell-reader.maxpino.workers.dev/plans")).json()).checkout || {}; } catch { CHECKOUT = {}; } return CHECKOUT; }
   function membership() {
     const u = window.Cuenta?.user, r = window.Cuenta?.rank(u) || 0;
-    const ROWS = [["Chapters 1 to " + FREE(), 1, 1, 1, 1], ["Chapters after " + FREE(), 0, 1, 1, 1], ["Early access", 0, 1, 1, 1], ["Comments, forum, streaks and badges", 1, 1, 1, 1], ["The Codex (lore)", 0, 0, 1, 1], ["Art and character studies", 0, 0, 1, 1], ["Tithes to give each month", "—", "—", "1", "5"], ["Avatar frames", "—", "2", "6", "All 8"], ["Flair under your name", 0, 0, 1, 1], ["Ask the Author", 0, 0, 0, 1], ["Vote on side stories", 0, 0, 0, 1], ["Name in the credits", 0, 0, 0, 1]];
+    const ROWS = [["Chapters 1 to " + FREE(), 1, 1, 1, 1], [`Chapters ${FREE() + 1} to ${READ_UP()}`, 0, 1, 1, 1], [`The newest chapters (after ${READ_UP()})`, 0, 0, 1, 1], ["Comments, forum, streaks and badges", 1, 1, 1, 1], ["The Codex (lore)", 0, 0, 1, 1], ["Art of Shardwell", 0, 0, 1, 1], ["Tithes to give each month", "—", "—", "1", "5"], ["Avatar frames", "—", "2", "6", "All 8"], ["Flair under your name", 0, 0, 1, 1], ["Ask the Author", 0, 0, 0, 1], ["Vote on side stories", 0, 0, 0, 1], ["Name in the credits", 0, 0, 0, 1]];
     const cell = (v) => v === 1 ? '<span class="si">●</span>' : v === 0 ? '<span class="no">—</span>' : v;
     return `<header class="pagina pagina--img">${img("borde", "", "pagina__img")}${crumbs(["Shardwell", "#/"], ["Membership"])}<h1 class="titulo titulo--xl">Membership</h1><p class="bajada">Chapters 1 to ${FREE()} are free. After that, readers keep Shardwell going.</p></header>
     <section class="bloque bloque--pegado">
@@ -120,7 +121,7 @@
       <div class="planes planes--tres">${PLANS.map((p) => `
         <div class="plan${p.hot ? " plan--destacado" : ""}${r === { reader: 1, diver: 2, abyssal: 3 }[p.id] ? " plan--actual" : ""}">${p.hot ? '<span class="plan__cinta">Most chosen</span>' : ""}
           <p class="rotulo">${p.name}</p><b class="plan__precio"><span data-precio-m>${usd(p.m)}<small>/month</small></span><span data-precio-y hidden>${usd(p.y)}<small>/year</small></span></b>
-          <p class="plan__linea">${p.line}</p><ul>${p.perks.map((x) => `<li>${x}</li>`).join("")}</ul>
+          <p class="plan__linea">${p.line}</p><ul>${p.perks.map((x) => `<li>${typeof x === "function" ? x() : x}</li>`).join("")}</ul>
           <button class="boton${p.hot ? "" : " boton--quieto"}" type="button" data-comprar="${p.id}">${r === { reader: 1, diver: 2, abyssal: 3 }[p.id] ? "Your plan" : `Choose ${p.name}`}</button></div>`).join("")}</div>
       <p class="plan__msg" data-plan-msg hidden></p>
       ${u?.portal ? `<p class="mas mas--centro"><a href="${u.portal}" target="_blank" rel="noopener">Manage or cancel your subscription</a></p>` : ""}
@@ -128,7 +129,7 @@
     <section class="bloque"><header class="cabeza"><p class="rotulo">Compare</p><h2 class="titulo">What each plan opens</h2></header>
       <div class="tabla tabla--planes"><table><thead><tr><th></th><th>Free</th>${PLANS.map((p) => `<th>${p.name}</th>`).join("")}</tr></thead><tbody>${ROWS.map(([t, ...v]) => `<tr><td>${t}</td>${v.map((x) => `<td>${cell(x)}</td>`).join("")}</tr>`).join("")}</tbody></table></div></section>
     <section class="bloque faq"><header class="cabeza"><p class="rotulo">Questions</p><h2 class="titulo">Before you choose</h2></header>
-      ${[["Can I cancel?", "Yes, anytime, from the link in your account. You keep your plan until the end of the period you paid."], ["What is early access?", "New chapters reach members first. After a while they open to everyone, up to chapter " + FREE() + "."], ["What are Tithes?", "Awards you give to posts and comments you value in the forum. In Shardwell, a Tithe is an offering."], ["Who handles the payment?", "Lemon Squeezy, our payment partner. It handles cards, taxes and receipts. We never see your card."], ["Is it for adults?", "Shardwell is written for adult readers (18+)."]].map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}
+      ${[["Can I cancel?", "Yes, anytime, from the link in your account. You keep your plan until the end of the period you paid."], ["Why do plans read different chapters?", `Chapters 1 to ${FREE()} are free. Reader members read ahead, up to chapter ${READ_UP()}. Diver and Abyssal members read the newest chapters first. As new chapters come out, every line moves forward.`], ["What are Tithes?", "Awards you give to posts and comments you value in the forum. In Shardwell, a Tithe is an offering."], ["Who handles the payment?", "Lemon Squeezy, our payment partner. It handles cards, taxes and receipts. We never see your card."], ["Is it for adults?", "Shardwell is written for adult readers (18+)."]].map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}
     </section>
     <section class="bloque creditos" data-creditos></section>`;
   }
@@ -233,10 +234,10 @@
 
   function readerCtx(e) {
     const ch = chapters(), i = ch.indexOf(e);
-    return { chapters: ch.map((c) => ({ id: c.id, number: c.number, title: c.title, status: c.status })), prev: ch[i - 1], next: ch[i + 1], minutes: minutes(e.words) };
+    return { chapters: ch.map((c) => ({ id: c.id, number: c.number, title: c.title, status: c.status, need: c.need || "free" })), prev: ch[i - 1], next: ch[i + 1], minutes: minutes(e.words) };
   }
   function reader(e) {
-    if (e.locked && (window.Cuenta?.rank(window.Cuenta?.user) || 0) >= 1 && !e.intro) {
+    if (e.locked && (window.Cuenta?.rank(window.Cuenta?.user) || 0) >= ({ reader: 1, diver: 2 }[e.need] || 1) && !e.intro) {
       fetch("https://shardwell-reader.maxpino.workers.dev/chapter-text/" + e.id, { headers: { authorization: "Bearer " + window.Cuenta.token } })
         .then((r) => (r.ok ? r.json() : null)).then((t) => { if (t) { Object.assign(e, t, { unlocked: true }); route(); } });
       return `<p class="cargando cargando--pagina">Opening chapter ${e.number}…</p>`;
@@ -464,7 +465,7 @@
     if (isMember() && window.Cuenta.token) {
       try { const r = await fetch("https://shardwell-reader.maxpino.workers.dev/lore", { headers: { authorization: "Bearer " + window.Cuenta.token } }); if (r.ok) { const full = await r.json(); d = { ...full, extras: PUB.extras }; } } catch {}
     }
-    D = d; BY = new Map(d.entries.map((e) => [e.id, e]));
+    D = d; BY = new Map(d.entries.map((e) => [e.id, e])); window.Lector?.setRelease(PUB.release);
     $("[data-nav]").innerHTML = [["novel", "#/novel", "Read"], ["forum", "#/forum", "Forum"], ["membership", "#/membership", "Membership"], ["world", "#/world", (isMember() ? "" : "◆ ") + "The Codex"]]
       .map(([k, h, t]) => `<a href="${h}" data-k="${k}">${t}</a>`).join("");
   }

@@ -1,0 +1,5 @@
+{
+  "_": "Who can read each chapter. Chapters 1..free are free for everyone; free+1..reader need Reader or higher; after reader, Diver or Abyssal (the newest chapters first). Move these lines as chapters are released. A chapter's frontmatter members_until: YYYY-MM-DD also makes it Reader-only until that date.",
+  "free": 50,
+  "reader": 60
+}
