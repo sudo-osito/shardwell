@@ -203,6 +203,8 @@
       const s = u.stats.readStreak;
       box.innerHTML = `<span class="racha"><i>☾</i><b>${s.current}</b> day reading streak${s.current >= 7 ? "" : ` · ${7 - s.current} more for a free Tithe`}</span>`;
     }
+    // the chapter's own discussion thread in the forum
+    fetch("https://shardwell-reader.maxpino.workers.dev/forum/chapter/" + e.id).then((r) => r.json()).then((d) => { const a = $("[data-fin-hilo]", root); if (!a) return; if (d.id) a.href = "#/forum/p/" + d.id; a.hidden = false; }).catch(() => {});
     // Codex pages that cite this chapter (the readers' wiki)
     (async () => {
       const box = $("[data-fin-codex]", root); if (!box) return;
@@ -362,7 +364,7 @@
     const end = locked ? "" : `<section class="fin">
       <p class="rotulo">End of chapter ${e.number}</p>
       <div class="reacciones" data-reacciones></div>
-      <p class="fin__lecturas" data-lecturas></p><div class="fin__racha" data-racha></div><div class="fin__codex" data-fin-codex></div>
+      <p class="fin__lecturas" data-lecturas></p><div class="fin__racha" data-racha></div><div class="fin__codex" data-fin-codex></div><a class="boton boton--quieto fin__hilo" data-fin-hilo href="#/forum/b/chapters?chapter=${e.number}" hidden>Discuss this chapter in the forum</a>
       <div class="fin__sig">${ctx.next ? `<a class="boton" href="#/e/${ctx.next.id}">${ctx.next.need && ctx.next.need !== "free" ? "Unlock" : "Next"}: Chapter ${ctx.next.number} · ${esc(ctx.next.title)}</a>` : `<p class="fin__nada">You have reached the latest chapter. New chapters are on the way.</p><a class="boton boton--quieto" href="#/novel">All chapters</a>`}</div>
       <div class="coms-cap"><div class="coms-cap__cab"><h2 class="titulo">Comments <span data-n-com>0</span></h2>
         <div class="seg seg--chico"><button type="button" data-orden="new" aria-pressed="true">Newest</button><button type="button" data-orden="top" aria-pressed="false">Top</button><button type="button" data-orden="old" aria-pressed="false">Oldest</button></div></div>

@@ -327,3 +327,4 @@ html[data-lectura="paper"] .interruptor__pista, html[data-lectura="sepia"] .inte
   .lbar__com small { display: none; }
 }
 .lbar__btn[data-auto]:not([aria-pressed="true"]) { border-color: transparent; background: none; }
+.fin__hilo { margin-top: 14px; justify-self: center; }

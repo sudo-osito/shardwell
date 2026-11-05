@@ -196,10 +196,27 @@ async function applySubscriptions(env, userId) {
 
 // ---------- forum ----------
 const POST_COLS = "p.*, u.name uname, u.avatar uavatar, u.frame uframe, u.flair uflair, u.plan uplan, u.role urole, u.exp uexp";
+// One discussion thread per published chapter, made by the site under the author's name.
+// The chapter list comes from the public site (data/novel.json); checked at most every 10 minutes per isolate.
+const SITE = "https://sudo-osito.github.io/shardwell";
+let threadsAt = 0;
+async function chapterThreads(env) {
+  if (now() - threadsAt < 600000) return; threadsAt = now();
+  try {
+    const d = await (await fetch(SITE + "/data/novel.json", { cf: { cacheTtl: 300 } })).json();
+    const chs = d.entries.filter((e) => e.section === "novel" && e.status !== "Draft").sort((a, b) => a.number - b.number);
+    const author = await env.DB.prepare("SELECT id FROM users WHERE role = 'admin' ORDER BY id LIMIT 1").first();
+    if (!author || !chs.length) return;
+    const have = new Set((await env.DB.prepare("SELECT auto FROM posts WHERE auto LIKE 'chapter:%'").all()).results.map((r) => r.auto));
+    const t = now(), st = [];
+    chs.forEach((c, i) => { if (have.has("chapter:" + c.id)) return; st.push(env.DB.prepare("INSERT OR IGNORE INTO posts (board, user, title, body, chapter, upto, created, auto) VALUES ('chapters', ?, ?, ?, ?, ?, ?, ?)").bind(author.id, `Chapter ${c.number}: ${c.title} · Discussion`, `Talk about Chapter ${c.number} here: what hit you, what you noticed, what you think comes next. Spoilers up to this chapter are fine. Mark anything from later chapters.`, c.number, c.number, t + i, "chapter:" + c.id)); });
+    if (st.length) await env.DB.batch(st);
+  } catch { threadsAt = 0; }
+}
 function postOut(p, my = {}) {
   return {
     id: p.id, board: p.board, title: p.title, body: p.body, link: p.link, chapter: p.chapter, upto: p.upto, score: p.score, ncom: p.ncom,
-    pinned: !!p.pinned, locked: !!p.locked, created: p.created, edited: p.edited,
+    pinned: !!p.pinned, locked: !!p.locked, created: p.created, edited: p.edited, auto: p.auto || "",
     poll: p.poll ? parseJSON(p.poll, null) : null, pollMin: p.poll_min || "",
     author: { id: p.user, name: p.uname, avatar: p.uavatar, frame: p.uframe, flair: p.uflair, plan: p.uplan, role: p.urole, lv: levelOf(p.uexp || 0).level },
     vote: my.votes?.get(p.id) || 0, tithes: my.tithes?.get("p" + p.id) || {},
@@ -307,6 +324,8 @@ export default {
         }
         // ---- forum reads ----
         if (p[0] === "forum") {
+          await chapterThreads(env);
+          if (p[1] === "chapter" && p[2]) { const r = await env.DB.prepare("SELECT id FROM posts WHERE auto = ? AND hidden = 0").bind("chapter:" + p[2]).first(); return json(req, { id: r?.id || null }); }
           if (!p[1]) {
             const counts = (await env.DB.prepare("SELECT board, COUNT(*) n, MAX(created) last FROM posts WHERE hidden = 0 GROUP BY board").all()).results;
             const sort = url.searchParams.get("sort") || "hot", weekAgo = now() - 7 * 86400000;
