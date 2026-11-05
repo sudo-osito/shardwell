@@ -1,0 +1,38 @@
+{
+  "_note": "Scenes per chapter. Each scene starts at the paragraph that begins with `at`. `bed` = looping recordings and their volume (0-1, files in sound/). `sfx` = one-shot sounds when the reader reaches the scene. `under` = muffle everything as if under water. `fx` = particles: wind, fall, motes, bubbles, drops, sparks, rain; `n` = how many. Sounds: BigSoundBank.com, CC0.",
+  "chapter-1": [
+    { "at": "The sun cast", "bed": { "wind-cliff": 0.45, "city-muffled": 0.22 }, "fx": { "type": "wind", "n": 16 } },
+    { "at": "Up here, the city was gone", "bed": { "wind-strong": 0.6, "wind-cliff": 0.35, "breath": 0.22 }, "fx": { "type": "wind", "n": 30 } },
+    { "at": "Behind him, nobody spoke", "bed": { "wind-strong": 0.45, "wind-cliff": 0.3 }, "fx": { "type": "wind", "n": 22 } },
+    { "at": "Seven of them", "bed": { "wind-strong": 0.45, "wind-cliff": 0.3, "flag": 0.35 }, "fx": { "type": "wind", "n": 26 } },
+    { "at": "A gust almost took him", "bed": { "wind-strong": 0.65, "gravel": 0.4 }, "fx": { "type": "wind", "n": 34 } },
+    { "at": "The edge was a low lip", "bed": { "wind-strong": 0.5, "wind-cliff": 0.3 }, "fx": { "type": "wind", "n": 20 } },
+    { "at": "His heartbeat scattered", "bed": { "wind-strong": 0.35 }, "sfx": [{ "s": "heartbeat", "v": 0.9, "repeat": 4, "every": 0.85 }], "fx": { "type": "wind", "n": 12 } },
+    { "at": "He held his breath", "bed": { "wind-cliff": 0.07 }, "fx": { "type": "wind", "n": 4 } },
+    { "at": "Sky.", "bed": {}, "fx": { "type": "none" } },
+    { "at": "Then not sky", "bed": { "wind-strong": 1, "wind-cliff": 0.6 }, "sfx": [{ "s": "whoosh-long", "v": 1 }], "fx": { "type": "fall", "n": 70 } },
+    { "at": "He remembered a lamp", "bed": { "room-window": 0.35, "ventilation": 0.1 }, "fx": { "type": "motes", "n": 16 } },
+    { "at": "The fall went on", "bed": { "wind-strong": 0.85 }, "sfx": [{ "s": "whoosh", "v": 0.7 }], "fx": { "type": "fall", "n": 55 } },
+    { "at": "Kalfu.", "bed": { "wind-strong": 0.2 }, "fx": { "type": "fall", "n": 12 } },
+    { "at": "Something clenched", "bed": { "drone": 0.25, "wind-strong": 0.2 }, "sfx": [{ "s": "heartbeat", "v": 1, "repeat": 3, "every": 1.1 }], "fx": { "type": "sparks", "n": 26 } },
+    { "at": "The roof was once again", "bed": { "wind-cliff": 0.35 }, "fx": { "type": "wind", "n": 10 } }
+  ],
+  "chapter-2": [
+    { "at": "Water.", "bed": { "sea": 0.8, "bubbles": 0.55 }, "under": true, "fx": { "type": "bubbles", "n": 44 } },
+    { "at": "He coughed", "bed": { "stream": 0.16, "fountain": 0.14 }, "sfx": [{ "s": "drops", "v": 0.5 }], "fx": { "type": "drops", "n": 14 } },
+    { "at": "There was no sound", "bed": { "fountain": 0.03 }, "fx": { "type": "drops", "n": 4 } },
+    { "at": "Something low in his stomach", "bed": { "drone": 0.1, "fountain": 0.05 }, "fx": { "type": "sparks", "n": 14 } },
+    { "at": "He looked at the water", "bed": { "stream": 0.12, "fountain": 0.1 }, "fx": { "type": "drops", "n": 8 } },
+    { "at": "He had been climbing for hours", "bed": { "stream": 0.2, "fountain": 0.18, "wind-cliff": 0.12 }, "fx": { "type": "drops", "n": 14 } },
+    { "at": "Chrona.", "bed": { "drone": 0.12, "fountain": 0.08 }, "fx": { "type": "sparks", "n": 10 } },
+    { "at": "A foothold gave", "bed": { "stream": 0.25, "wind-cliff": 0.2 }, "sfx": [{ "s": "whoosh", "v": 0.8 }, { "s": "heartbeat", "v": 0.9, "repeat": 3, "every": 0.7 }], "fx": { "type": "drops", "n": 20 } },
+    { "at": "At last the cable ended", "bed": { "wind-cliff": 0.25, "sea": 0.12 }, "fx": { "type": "drops", "n": 6 } },
+    { "at": "The city began to ring", "bed": { "drone": 0.55 }, "fx": { "type": "none" } },
+    { "at": "And under the hum", "bed": { "drone": 0.4, "sea": 0.35 }, "under": true, "fx": { "type": "none" } },
+    { "at": "Then the water moved", "bed": { "drone": 0.45, "sea": 0.55 }, "fx": { "type": "drops", "n": 10 } },
+    { "at": "And the ocean rose", "bed": { "storm": 0.5, "sea": 0.7, "drone": 0.4 }, "fx": { "type": "drops", "n": 30 } },
+    { "at": "The roar arrived", "bed": { "storm": 1, "sea": 0.9, "wind-strong": 0.6 }, "fx": { "type": "rain", "n": 80 } },
+    { "at": "He ran.", "bed": { "storm": 0.8, "sea": 0.7, "wind-strong": 0.5 }, "sfx": [{ "s": "heartbeat", "v": 1, "repeat": 6, "every": 0.55 }], "fx": { "type": "rain", "n": 60 } },
+    { "at": "Far above, past the last bridge", "bed": { "wind-cliff": 0.15, "sea": 0.15 }, "fx": { "type": "motes", "n": 10 } }
+  ]
+}

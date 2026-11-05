@@ -171,26 +171,27 @@
   }
 
   // ---------- views ----------
+  // the six ways into the Codex, with their painted covers (img/codex/cat-*.jpg)
+  const SHELVES = [["character", "Characters", "Who they are, what they want", "characters"], ["place", "Places", "The city, the sea, the wells", "places"], ["creature", "Creatures", "What lives in the deep", "creatures"], ["faction", "Factions", "Clans, houses and companies", "factions"], ["item", "Objects", "Relics, shards and tools", "items"], ["event", "Events", "What happened, and when", "events"]];
   async function home() {
-    const [d] = await Promise.all([call("/codex"), pagesKnown(true)]);
-    const me = d.me, rk = me.wikiRank;
-    const role = `<span class="cx-rango cx-rango--${rk}">${RANKS[rk]}</span>`;
-    const act = rk >= 1 ? `<a class="boton" href="#/codex/new">Start a page</a>` : me.application === "open" ? `<span class="nota">Your application to write is waiting for review.</span>` : `<a class="boton boton--quieto" href="#/codex/apply">Apply to write</a>`;
-    const recent = d.recent.length ? `<ol class="cx-cambios">${d.recent.map((r) => `<li><p class="cx-cambios__t"><a href="#/codex/p/${r.slug}">${esc(r.title)}</a> ${delta(r.delta)}</p><span>${who(r.user)} · ${ago(r.created)}${r.summary ? ` · <i>${esc(r.summary)}</i>` : ""}</span></li>`).join("")}</ol>` : `<p class="nota">No edits yet. The first Scribes will write the first pages.</p>`;
-    const cats = d.cats.length ? `<ul class="cx-chips">${d.cats.map((c) => `<li><a href="#/codex/cat/${encodeURIComponent(c.cat)}">${esc(c.cat)} <small>${c.n}</small></a></li>`).join("")}</ul>` : `<p class="nota">Categories appear as pages are written.</p>`;
-    const wanted = d.wanted.length ? `<ul class="cx-buscadas">${d.wanted.map((w) => `<li><a class="cx-link cx-link--rojo" href="#/codex/p/${w.dst}">${esc(w.dst.replace(/-/g, " "))}</a> <small>linked ${w.n}×</small></li>`).join("")}</ul>` : `<p class="nota">Nothing yet. When a page links to one that does not exist, it shows up here.</p>`;
-    const top = d.top.length ? `<ol class="cx-top">${d.top.map((t, i) => `<li><span>${i + 1}</span>${who(t.user)}<small>${t.n} edits</small></li>`).join("")}</ol>` : `<p class="nota">The first Scribes will appear here.</p>`;
-    const inner = `<div class="cx-portada">
-      <div class="cx-portada__barra">${searchBox()}<div class="cx-portada__acc">${act}<a class="boton boton--quieto" href="#/codex/random">Random page</a><a class="boton boton--quieto" href="#/codex/all">All pages</a>${rk >= 2 ? `<a class="boton boton--quieto" href="#/codex/queue">Review${me.queue ? ` <b class="cx-num">${me.queue}</b>` : ""}</a>` : ""}${rk >= 3 ? `<a class="boton boton--quieto" href="#/codex/ranks">Ranks</a>` : ""}</div></div>
-      <div class="cx-cifras"><div><b>${d.pages}</b><span>pages</span></div><div><b>${d.cats.length}</b><span>categories</span></div><div><b>${d.top.reduce((t, x) => t + x.n, 0)}</b><span>edits this month</span></div><div>${role}<span class="cx-cifras__pie">your rank · <a href="#/codex/help">how ranks work</a></span></div></div>
-      <div class="cx-cols">
-        <section class="cx-caja cx-caja--ancha"><h2 class="rotulo">Recent changes</h2>${recent}<p class="mas"><a href="#/codex/watchlist">Pages you follow →</a></p></section>
-        <section class="cx-caja"><h2 class="rotulo">Categories</h2>${cats}</section>
-        <section class="cx-caja"><h2 class="rotulo">Wanted pages</h2><p class="cx-caja__sub">Linked, but nobody has written them yet.</p>${wanted}</section>
-        <section class="cx-caja"><h2 class="rotulo">Top Scribes · 30 days</h2>${top}</section>
-        <section class="cx-caja"><h2 class="rotulo">How the Codex works</h2><ul class="cx-reglas"><li>Everything comes from the chapters. Cite them with <code>{{ch|12}}</code>.</li><li>Spoilers stay hidden until a reader reaches that chapter.</li><li>Every edit is kept; any page can be restored.</li><li>Pages with the <span class="cx-sello cx-sello--mini">Confirmed by the author</span> seal were checked by the author.</li></ul><a class="mas-link" href="#/codex/help">Writing guide →</a></section>
-      </div></div>`;
-    return shell("The Codex", "The wiki of Shardwell, written by its readers. Spoilers stay hidden until you reach them.", inner);
+    const [d, all] = await Promise.all([call("/codex"), call("/codex/all")]);
+    const me = d.me, rk = me.wikiRank, pages = all.pages;
+    const count = (t) => pages.filter((p) => p.type === t).length;
+    const latest = [...pages].sort((a, b) => b.updated - a.updated).slice(0, 8);
+    const write = rk >= 1 ? `<a class="boton" href="#/codex/new">Write a page</a>` : me.application === "open" ? `<p class="nota">Your application to write is waiting for review.</p>` : `<a class="boton boton--quieto" href="#/codex/apply">Apply to write</a>`;
+    const inner = `<div class="cx2">
+      <form class="cx2__buscar" data-cx-buscar role="search"><img src="img/ui/ic-search.png" alt=""><input name="q" placeholder="Search the Codex: a name, a place, a word…" aria-label="Search the Codex" autocomplete="off"><button class="boton" type="submit">Search</button></form>
+      <section class="cx2__estantes" aria-label="Browse the Codex">${SHELVES.map(([t, n, line, img]) => `<a class="estante" href="#/codex/type/${t}"><img src="img/codex/cat-${img}.jpg" alt="" loading="lazy"><span class="estante__txt"><b>${n}</b><small>${line}</small><i>${count(t) ? `${count(t)} page${count(t) === 1 ? "" : "s"}` : "No pages yet"}</i></span></a>`).join("")}</section>
+      <section class="cx2__como"><h2 class="rotulo">How it works</h2>
+        <ol><li><b>Read the novel</b><span>Everything here comes from the chapters.</span></li><li><b>Look things up</b><span>Search or browse. Anything past where you have read stays hidden.</span></li><li><b>Write it with us</b><span>Diver members and above can apply to become Scribes and write pages.</span>${write}</li></ol></section>
+      <section class="cx2__ultimas"><h2 class="rotulo">Latest pages</h2>${latest.length ? `<ul>${latest.map((p) => `<li><a href="#/codex/p/${p.slug}"><b>${esc(p.title)}</b><span>${TYPES[p.type] || "Article"} · ${ago(p.updated)}</span></a></li>`).join("")}</ul>` : `<p class="cx2__vacio">The Codex is brand new. ${rk >= 1 ? "Write the first page." : "The first pages are being written by the readers."}</p>`}</section>
+      <nav class="cx2__mas"><a href="#/codex/all">All pages</a><a href="#/codex/random">A random page</a><a href="#/codex/recent">Recent edits</a><a href="#/codex/watchlist">Pages you follow</a><a href="#/codex/help">Writing guide</a>${rk >= 2 ? `<a href="#/codex/queue">Review${me.queue ? ` (${me.queue})` : ""}</a>` : ""}</nav>
+    </div>`;
+    return shell("The Codex", "The wiki of Shardwell, written by its readers as the story unfolds.", inner);
+  }
+  async function recentView() {
+    const d = await call("/codex");
+    return shell("Recent edits", "Every change to the Codex, newest first.", d.recent.length ? `<ol class="cx-cambios">${d.recent.map((r) => `<li><p class="cx-cambios__t"><a href="#/codex/p/${r.slug}">${esc(r.title)}</a> ${delta(r.delta)}</p><span>${who(r.user)} · ${ago(r.created)}${r.summary ? ` · <i>${esc(r.summary)}</i>` : ""} · <a href="#/codex/rev/${r.id}">see the change</a></span></li>`).join("")}</ol>` : `<p class="nota">No edits yet.</p>`, [["Recent edits"]]);
   }
 
   async function pageView(slug) {
@@ -300,7 +301,7 @@
   }
   async function listView(title, sub, rows, crumbs) {
     const read = maxRead();
-    const inner = rows.length ? `<ul class="cx-lista">${rows.map((p) => `<li><a href="#/codex/p/${p.slug}"><b>${esc(p.title)}</b></a><span>${TYPES[p.type] || ""}${p.spoiler ? ` · ${p.spoiler > read ? "spoilers past where you are" : "spoilers to ch. " + p.spoiler}` : ""}</span>${p.body ? `<p>${esc(p.body.replace(/\[\[(?:[^\]|]+\|)?([^\]]+)\]\]/g, "$1").replace(/[#*>{}:]/g, "").slice(0, 200))}…</p>` : ""}</li>`).join("")}</ul>` : `<p class="nota">Nothing here yet.</p>`;
+    const inner = rows.length ? `<ul class="cx-lista">${rows.map((p) => `<li><a href="#/codex/p/${p.slug}"><b>${esc(p.title)}</b></a><span>${TYPES[p.type] || ""}${p.spoiler ? ` · ${p.spoiler > read ? "spoilers past where you are" : "spoilers to ch. " + p.spoiler}` : ""}</span>${p.body ? `<p>${esc(p.body.replace(/\[\[(?:[^\]|]+\|)?([^\]]+)\]\]/g, "$1").replace(/[#*>{}:]/g, "").slice(0, 200))}…</p>` : ""}</li>`).join("")}</ul>` : `<div class="cx-vacia"><p>No pages here yet.</p><a class="boton boton--quieto" href="#/codex/new">Write the first one</a></div>`;
     return shell(title, sub, inner, crumbs);
   }
   async function applyView() {
@@ -359,6 +360,8 @@
       else if (a === "talk" && b) html = await talkView(b);
       else if (a === "links" && b) { const d = await call(`/codex/p/${encodeURIComponent(b)}/links`); html = await listView("What links here", `Pages that link to <a href="#/codex/p/${b}">${esc(b.replace(/-/g, " "))}</a>.`, d.pages, [["What links here"]]); }
       else if (a === "cat" && b) { const d = await call("/codex/cat/" + encodeURIComponent(b)); html = await listView(`Category: ${esc(b)}`, `${d.pages.length} page${d.pages.length === 1 ? "" : "s"}.`, d.pages, [["Categories"], [b]]); }
+      else if (a === "recent") html = await recentView();
+      else if (a === "type" && b) { const d = await call("/codex/all"), sh = SHELVES.find((x) => x[0] === b); html = await listView(sh ? sh[1] : "Pages", sh ? sh[2] : "", d.pages.filter((p) => p.type === b), [[sh ? sh[1] : b]]); }
       else if (a === "all") { const d = await call("/codex/all"); html = await listView("All pages", `${d.pages.length} pages, A to Z.`, d.pages, [["All pages"]]); }
       else if (a === "search") { const d = await call("/codex/search?q=" + encodeURIComponent(q.get("q") || "")); const k = await pagesKnown(); const exact = k.has(slugOf(q.get("q"))); html = (await listView(`Search: ${esc(q.get("q") || "")}`, exact ? "" : `No page with that exact name. <a class="cx-link cx-link--rojo" href="#/codex/p/${slugOf(q.get("q"))}">Create “${esc(q.get("q"))}”</a>`, d.pages, [["Search"]])).replace('<div class="cx" data-cx>', `<div class="cx" data-cx>${searchBox(q.get("q") || "")}`); }
       else if (a === "random") { const d = await call("/codex/random"); location.replace(d.slug ? "#/codex/p/" + d.slug : "#/codex"); return; }

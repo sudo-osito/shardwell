@@ -53,15 +53,16 @@
   const slot = $("[data-cuenta]");
   function paintBar() {
     if (!slot) return;
-    if (!user) { slot.innerHTML = `<button class="cuenta__entrar" type="button" data-entrar>Sign in</button>`; return; }
+    if (!user) { slot.innerHTML = `<a class="cuenta__plan" href="#/membership">Membership</a><button class="cuenta__entrar" type="button" data-entrar>Sign in</button>`; return; }
     slot.innerHTML = `<button class="cuenta__yo" type="button" data-menu-cuenta aria-haspopup="menu" aria-expanded="false" aria-label="Your account">${avatar(user)}</button>
       <div class="cuenta__menu" role="menu" hidden>
         <div class="cuenta__quien">${avatar(user, "avatar--g")}<div><b>${esc(user.name)}</b><span>${planName(user)}</span></div></div>
         ${user.stats ? `<div class="cuenta__rachas"><span title="Reading streak"><i>☾</i>${user.stats.readStreak.current} day${user.stats.readStreak.current === 1 ? "" : "s"}</span><span title="Forum streak"><i>≋</i>${user.stats.writeStreak.current}</span><span title="Tithes left to give"><i>◈</i>${user.stats.tithesLeft}</span><span title="Badges"><i>✦</i>${user.stats.badges.filter((b) => b.earned).length}</span></div>` : ""}
-        <a role="menuitem" href="#/account">Your profile</a>
-        <a role="menuitem" href="#/u/${encodeURIComponent(user.name)}">Public page</a>
-        <a role="menuitem" href="#/forum">Forum</a>
-        ${rank(user) >= 2 ? `<a role="menuitem" href="#/world">The Codex</a>` : `<a role="menuitem" href="#/membership">${rank(user) ? "Upgrade your plan" : "Become a member"}</a>`}
+        <a role="menuitem" href="#/account"><img src="img/ui/ic-account.png" alt="">Your profile</a>
+        <a role="menuitem" href="#/look"><img src="img/ui/ic-look.png" alt="">Your look</a>
+        <a role="menuitem" href="#/membership"><img src="img/ui/ic-membership.png" alt="">${rank(user) ? "Membership" : "Become a member"}</a>
+        <a role="menuitem" href="#/forum/shop"><img src="img/ui/ic-shop.png" alt="">The shop</a>
+        ${user.role === "admin" ? `<a role="menuitem" href="#/admin"><img src="img/ui/ic-dashboard.png" alt="">Dashboard</a><a role="menuitem" href="#/world"><img src="img/ui/ic-authors.png" alt="">Author's Codex</a>` : ""}
         <button role="menuitem" type="button" data-salir>Sign out</button>
       </div>`;
   }

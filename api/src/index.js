@@ -1,5 +1,6 @@
 import { codexRoute } from "./codex.js";
 import { rewardsRoute, levelOf } from "./rewards.js";
+import { adminRoute } from "./admin.js";
 import COS from "../../data/cosmetics.json"; // one catalog for the site and the Worker
 // Shardwell API (Cloudflare Worker + D1 + KV).
 // Novel:     GET /chapter/:id · GET /chapter/:id/para/:n · GET /chapter-text/:id (early access / members)
@@ -246,6 +247,9 @@ export default {
         return new Response(o.value, { headers: { "content-type": o.metadata?.type || "image/webp", "cache-control": "public, max-age=31536000, immutable", "x-content-type-options": "nosniff", "access-control-allow-origin": "*" } });
       }
       if (me && req.method === "GET" && p[0] === "codex" && p[1] === "p" && p[2] && !p[3]) await mark(env, me, "codex", tz);
+      const ad = await adminRoute(req, env, url, p, me, { json, bad, clean, now, userPub, RANK });
+      if (ad) return ad;
+      if (me && me.banned_until > now() && req.method === "POST" && !(p[0] === "auth" && p[1] === "logout")) return bad(req, `Your account is suspended${me.banned_until < 4e12 ? " until " + new Date(me.banned_until).toISOString().slice(0, 10) : ""}.${me.ban_reason ? " " + me.ban_reason : ""}`, 403);
       const rw = await rewardsRoute(req, env, url, p, me, tz, { json, bad, now, COS, can, dayKey, monthStart });
       if (rw) return rw;
       const cx = await codexRoute(req, env, url, p, me, { json, bad, clean, now, limited, userPub, can, ipHash });
@@ -372,6 +376,7 @@ export default {
         if (p[1] === "login") {
           const u = await env.DB.prepare("SELECT * FROM users WHERE email = ?").bind(email).first();
           if (!u || !(await checkPass(password, u.pass))) return bad(req, "Email or password is wrong.", 401);
+          if (u.banned_until > now()) return bad(req, `This account is suspended${u.banned_until < 4e12 ? " until " + new Date(u.banned_until).toISOString().slice(0, 10) : ""}.${u.ban_reason ? " " + u.ban_reason : ""}`, 403);
           return json(req, { token: await newSession(env, u.id), user: await meOut(env, u, tz) });
         }
         return bad(req, "not found", 404);
