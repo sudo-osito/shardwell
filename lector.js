@@ -12,7 +12,7 @@
     set(k, v) { try { localStorage.setItem("sw:" + k, JSON.stringify(v)); } catch {} },
   };
   const reader = (() => { let r = store.get("reader"); if (!r) { r = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(36).padStart(2, "0")).join("").slice(0, 24); store.set("reader", r); } return r; })();
-  const DEF = { size: 21, font: "book", line: 1.78, width: 34, align: "left", theme: "night", bubbles: true, indent: false, sound: false, focus: false, moments: true, voices: true, particles: true, volume: 0.7, guide: true, mode: "immersive" };
+  const DEF = { size: 21, font: "book", line: 1.78, width: 34, align: "left", theme: "night", bubbles: true, indent: false, focus: false, moments: true, voices: true, particles: true, volume: 0.7, guide: true, mode: "immersive", sound: true };
   const FONTS = { book: '"Cormorant", Georgia, serif', classic: 'Georgia, "Times New Roman", serif', sans: '-apple-system, "Helvetica Neue", Arial, sans-serif', mono: 'ui-monospace, "SF Mono", Menlo, monospace' };
   const THEMES = { night: "Night", ink: "Ink", sepia: "Sepia", paper: "Paper" };
   const REACT = [["heart", "♥", "Loved it"], ["dread", "☾", "Dread"], ["tears", "≋", "Tears"], ["chills", "❄", "Chills"], ["awe", "✶", "Awe"]];
@@ -50,20 +50,22 @@
       $$("[data-solo-inmersivo]", root).forEach((x) => (x.hidden = !inm));
       const ml = $("[data-modo-lbl]", root); if (ml) ml.textContent = inm ? "Immersive" : "Classic";
       const sw = $("[data-cambiar-modo]", root); if (sw) sw.setAttribute("aria-checked", String(inm));
-      window.Vivo?.sync(inm ? { ...s, sound: true } : { ...s, sound: false, particles: false, voices: false, moments: false, focus: false, guide: false });
+      $$("[data-sw]", root).forEach((b) => b.setAttribute("aria-checked", String(b.dataset.sw === "mode" ? inm : !!s[b.dataset.sw])));
+      window.Vivo?.sync(inm ? s : { ...s, sound: false, particles: false, voices: false, moments: false, focus: false, guide: false });
       $$("[data-rango]", root).forEach((i) => { i.value = s[i.dataset.rango]; const o = $(`[data-out="${i.dataset.rango}"]`, root); if (o) o.textContent = i.dataset.rango === "line" ? (+s.line).toFixed(2) : i.dataset.rango === "volume" ? Math.round(s.volume * 100) + "%" : s[i.dataset.rango]; });
     }
     on(root, "click", (ev) => {
       const b = ev.target.closest("[data-set]"); if (!b) return;
       const k = b.dataset.set, v = b.dataset.val; s[k] = v === "true" ? true : v === "false" ? false : v; apply();
     });
+    on(root, "click", (ev) => { const b = ev.target.closest("[data-sw]"); if (!b) return; const k = b.dataset.sw; if (k === "mode") s.mode = s.mode === "classic" ? "immersive" : "classic"; else s[k] = !s[k]; apply(); b.classList.remove("pulso"); void b.offsetWidth; b.classList.add("pulso"); });
     on(root, "click", (ev) => { if (!ev.target.closest("[data-cambiar-modo]")) return; s.mode = s.mode === "classic" ? "immersive" : "classic"; apply(); const sw = ev.target.closest("[data-cambiar-modo]"); sw.classList.remove("pulso"); void sw.offsetWidth; sw.classList.add("pulso"); });
     on(root, "input", (ev) => { const i = ev.target.closest("[data-rango]"); if (!i) return; s[i.dataset.rango] = +i.value; apply(); });
     window.Vivo?.mount(root, e, s);
     apply();
 
     // ---------- panels ----------
-    const panels = { ajustes: $("[data-panel=ajustes]", root), indice: $("[data-panel=indice]", root), parrafo: $("[data-panel=parrafo]", root) };
+    const panels = { ajustes: $("[data-panel=ajustes]", root), inmersion: $("[data-panel=inmersion]", root), indice: $("[data-panel=indice]", root), parrafo: $("[data-panel=parrafo]", root) };
     let openPanel = null;
     function show(name) {
       Object.entries(panels).forEach(([k, p]) => { p.hidden = k !== name; });
@@ -307,20 +309,21 @@
       <div class="ajuste"><span>Alignment</span><div class="seg"><button type="button" data-set="align" data-val="left">Left</button><button type="button" data-set="align" data-val="justify">Justified</button></div></div>
       <div class="ajuste"><span>Paragraphs</span><div class="seg"><button type="button" data-set="indent" data-val="false">Spaced</button><button type="button" data-set="indent" data-val="true">Indented</button></div></div>
       <div class="ajuste"><span>Comment bubbles</span><div class="seg"><button type="button" data-set="bubbles" data-val="true">Show</button><button type="button" data-set="bubbles" data-val="false">Hide</button></div></div>
-      <p class="ajuste__titulo rotulo">Reading mode</p>
-      <div class="modos" role="radiogroup" aria-label="Reading mode">
-        <button type="button" class="modo" data-set="mode" data-val="classic"><b>Classic</b><small>Just the text, like any web novel</small></button>
-        <button type="button" class="modo" data-set="mode" data-val="immersive"><b>Immersive</b><small>Sound, particles and marked voices that follow the story. The switch in the reading bar does the same</small></button>
-      </div>
-      <div class="solo-inmersivo" data-solo-inmersivo>
+      <p class="ajuste__nota">Shortcuts: ← → chapters · + − text size · Esc closes.</p>
+    </div>`;
+    const immersion = `<div class="panel" data-panel="inmersion" hidden role="dialog" aria-label="Immersive reading">
+      <div class="panel__cab"><b>Immersive reading</b><button class="panel__cerrar" type="button" data-cerrar aria-label="Close">×</button></div>
+      <div class="ajuste ajuste--sw ajuste--modo"><span>Immersive mode <small>Off is classic reading: just the text, like any web novel</small></span><button type="button" class="interruptor" role="switch" data-sw="mode" aria-checked="false"><span class="interruptor__pista"><span class="interruptor__perilla"></span></span></button></div>
+      <div data-solo-inmersivo>
+      <div class="ajuste ajuste--sw"><span>Sound <small>Real recordings that follow what happens in the text</small></span><button type="button" class="interruptor interruptor--chico" role="switch" data-sw="sound" aria-checked="false"><span class="interruptor__pista"><span class="interruptor__perilla"></span></span></button></div>
       <label class="ajuste"><span>Volume <output data-out="volume"></output></span><input type="range" min="0.1" max="1" step="0.05" data-rango="volume"></label>
-      <div class="ajuste"><span>Particles <small>Wind, ash, water and sparks drawn behind the text</small></span><div class="seg"><button type="button" data-set="particles" data-val="true">On</button><button type="button" data-set="particles" data-val="false">Off</button></div></div>
-      <div class="ajuste"><span>Reading line <small>A faint band where sound and particles change. Keep your eyes there</small></span><div class="seg"><button type="button" data-set="guide" data-val="true">Show</button><button type="button" data-set="guide" data-val="false">Hide</button></div></div>
-      <div class="ajuste"><span>Voices <small>Mark thoughts and spoken lines</small></span><div class="seg"><button type="button" data-set="voices" data-val="true">On</button><button type="button" data-set="voices" data-val="false">Off</button></div></div>
-      <div class="ajuste"><span>Moments <small>Give very short lines room to land</small></span><div class="seg"><button type="button" data-set="moments" data-val="true">On</button><button type="button" data-set="moments" data-val="false">Off</button></div></div>
-      <div class="ajuste"><span>Focus <small>Only the paragraph you are reading stays lit</small></span><div class="seg"><button type="button" data-set="focus" data-val="false">Off</button><button type="button" data-set="focus" data-val="true">On</button></div></div>
+      <div class="ajuste ajuste--sw"><span>Particles <small>Wind, ash, water and sparks behind the text</small></span><button type="button" class="interruptor interruptor--chico" role="switch" data-sw="particles" aria-checked="false"><span class="interruptor__pista"><span class="interruptor__perilla"></span></span></button></div>
+      <div class="ajuste ajuste--sw"><span>Reading line <small>A faint band where sound and particles change</small></span><button type="button" class="interruptor interruptor--chico" role="switch" data-sw="guide" aria-checked="false"><span class="interruptor__pista"><span class="interruptor__perilla"></span></span></button></div>
+      <div class="ajuste ajuste--sw"><span>Animated lines <small>Very short lines fade in and get room to land</small></span><button type="button" class="interruptor interruptor--chico" role="switch" data-sw="moments" aria-checked="false"><span class="interruptor__pista"><span class="interruptor__perilla"></span></span></button></div>
+      <div class="ajuste ajuste--sw"><span>Marked voices <small>Thoughts in violet, spoken lines in amber</small></span><button type="button" class="interruptor interruptor--chico" role="switch" data-sw="voices" aria-checked="false"><span class="interruptor__pista"><span class="interruptor__perilla"></span></span></button></div>
+      <div class="ajuste ajuste--sw"><span>Focus <small>Only the paragraph you are reading stays lit</small></span><button type="button" class="interruptor interruptor--chico" role="switch" data-sw="focus" aria-checked="false"><span class="interruptor__pista"><span class="interruptor__perilla"></span></span></button></div>
       </div>
-      <p class="ajuste__nota">Select any line to make a quote card. Shortcuts: ← → chapters · + − text size · Esc closes.</p>
+      <p class="ajuste__nota">Select any line to make a quote card.</p>
     </div>`;
     const index = `<div class="panel" data-panel="indice" hidden role="dialog" aria-label="Chapters">
       <div class="panel__cab"><b>Chapters</b><button class="panel__cerrar" type="button" data-cerrar aria-label="Close">×</button></div>
@@ -354,7 +357,8 @@
         <span class="lbar__tit"><b>${e.number}</b> ${esc(e.title)}</span>
         <span class="lbar__meta" data-tip="How much of this chapter you have read"><span data-pct>0%</span> · <span data-left></span></span>
         <button class="lbar__btn" type="button" data-auto aria-pressed="false" aria-label="Auto scroll" data-tip="Auto scroll: the page moves by itself. Scroll to pause"><span class="ico">⇣</span><span class="lbl">Auto</span></button>
-        <button class="interruptor" type="button" role="switch" aria-checked="true" data-cambiar-modo aria-label="Immersive reading" data-tip="Immersive reading: sound, particles and marked voices. Turn off for classic reading"><span class="interruptor__txt" data-modo-lbl>Immersive</span><span class="interruptor__pista"><span class="interruptor__perilla"></span></span></button>
+        <button class="interruptor" type="button" role="switch" aria-checked="true" data-cambiar-modo aria-label="Immersive reading" data-tip="Immersive reading: sound, particles and marked voices. Off is classic reading"><span class="interruptor__txt" data-modo-lbl>Immersive</span><span class="interruptor__pista"><span class="interruptor__perilla"></span></span></button>
+        <button class="lbar__btn lbar__engranaje" type="button" data-abrir="inmersion" aria-expanded="false" aria-label="Immersive settings" data-tip="Immersive settings: sound, volume, particles, reading line…"><span class="ico">⚙</span><span class="lbl">Immersion</span></button>
         <button class="lbar__btn" type="button" data-marcar aria-pressed="false" aria-label="Bookmark" data-tip="Bookmark this place"><span class="ico">☆</span><span class="lbl">Mark</span></button>
         <button class="lbar__btn" type="button" data-compartir aria-label="Share" data-tip="Share this chapter"><span class="ico">↗</span><span class="lbl">Share</span></button>
         <button class="lbar__btn" type="button" data-abrir="indice" aria-expanded="false" aria-label="Chapters and bookmarks" data-tip="Chapters and bookmarks"><span class="ico">☰</span><span class="lbl">Chapters</span></button>
@@ -378,7 +382,7 @@
         ${ctx.next ? `<a class="pasos__sig" href="#/e/${ctx.next.id}"><span class="rotulo">Next chapter</span><b>${esc(ctx.next.title)}</b></a>` : `<a class="pasos__sig" href="#/novel"><span class="rotulo">The novel</span><b>All chapters</b></a>`}
       </nav>
       <div class="velo" aria-hidden="true"></div>
-      ${settings}${index}${para}
+      ${settings}${immersion}${index}${para}
       <div class="tostada" role="status" hidden></div>
     </article>`;
   }

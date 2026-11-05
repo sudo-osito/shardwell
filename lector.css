@@ -272,3 +272,15 @@ html[data-lectura="paper"] .guia-lectura, html[data-lectura="sepia"] .guia-lectu
 .interruptor.espera .interruptor__perilla { animation: espera 1.6s ease-in-out infinite; }
 html[data-lectura="paper"] .interruptor__pista, html[data-lectura="sepia"] .interruptor__pista { background: rgba(40,30,20,.15); }
 @media (max-width: 700px) { .interruptor__txt { display: none; } }
+/* immersive settings panel: every option is a switch */
+.ajuste--sw { display: flex !important; align-items: center; justify-content: space-between; gap: 14px; }
+.ajuste--sw > span { flex: 1; }
+.interruptor--chico { height: auto; padding: 4px; }
+.ajuste--modo { padding-bottom: 16px; margin-bottom: 6px; border-bottom: 1px solid rgba(217,213,204,.14); }
+.ajuste--modo > span { font-size: 1.05em; }
+[data-solo-inmersivo][hidden] { display: none; }
+.lbar__engranaje .ico { font-size: 1.05rem; }
+.modo-clasico .lbar__engranaje { display: none; }
+.ajuste--sw > span { display: grid !important; gap: 4px; text-align: left; justify-content: start !important; }
+.ajuste--sw > span small { text-align: left; margin: 0; }
+.ajuste--modo > span { font-size: inherit; }
