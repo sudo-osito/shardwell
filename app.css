@@ -1442,7 +1442,6 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
 /* bone: ghostly flames flickering upward */
 /* abyssal: the void turns, deep and slow */
 /* crown: a slow radiant halo, rays pulsing */
-.avatar-w:not(.avatar--g):not(.avatar--xl) .aura img { animation: none !important; }
 @keyframes aura-gira { from { rotate: 0deg; } to { rotate: 360deg; } }
 @keyframes aura-gira-r { from { rotate: 0deg; } to { rotate: -360deg; } }
 @keyframes aura-respira { 0%, 100% { scale: 1; opacity: .85; } 50% { scale: 1.07; opacity: 1; } }
@@ -1565,5 +1564,5 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
 .cuenta__yo .aura--moonlight img:first-child { animation: aura-gira 9s linear infinite !important; } .cuenta__yo .aura--endro img:first-child { animation: aura-gira 22s linear infinite !important; }
 .cuenta__yo .aura--godblood img:first-child { animation: aura-latido 1.6s ease-in-out infinite !important; } .cuenta__yo .aura--ghostfire img:first-child { animation: aura-llama 2.4s ease-in-out infinite !important; }
 .cuenta__yo .aura--void img:first-child { animation: aura-gira 26s linear infinite !important; } .cuenta__yo .aura--radiance img:first-child { animation: aura-gira 60s linear infinite, aura-rayos 3.6s ease-in-out infinite !important; }
-.cuenta__yo .avatar-w .aura:not(.aura--css) { width: calc(var(--fw) * 1.75) !important; height: calc(var(--fw) * 1.75) !important; opacity: 1 !important; }
-.cuenta__yo .avatar-w .aura--css { width: calc(var(--fw) * 1.5) !important; height: calc(var(--fw) * 1.5) !important; opacity: 1 !important; }
+.cuenta__yo .avatar-w .aura:not(.aura--css) { width: calc(var(--fw) * 1.52) !important; height: calc(var(--fw) * 1.52) !important; opacity: .95 !important; -webkit-mask: radial-gradient(closest-side, transparent 55%, #000 66%, #000 82%, transparent 100%) !important; mask: radial-gradient(closest-side, transparent 55%, #000 66%, #000 82%, transparent 100%) !important; }
+.cuenta__yo .avatar-w .aura--css { width: calc(var(--fw) * 1.3) !important; height: calc(var(--fw) * 1.3) !important; opacity: 1 !important; }
