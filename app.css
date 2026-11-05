@@ -1724,3 +1724,6 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
 .carta figcaption b { font: 600 1.02rem/1.15 var(--f-text); letter-spacing: .02em; }
 .dash-meses div { max-width: 70px; }
 .dash-meses { justify-content: flex-start; }
+.concurso { display: flex; gap: 16px; align-items: center; margin-bottom: 18px; padding: 16px 20px; border: 1px solid #8f7445; background: linear-gradient(90deg, rgba(227,195,142,.1), transparent); }
+.concurso img { width: 56px; height: 56px; opacity: 1; } .concurso b { display: block; font-size: 1.3rem; } .concurso span { color: var(--text-2); }
+.nav-discord { margin-top: 10px; justify-content: center; }

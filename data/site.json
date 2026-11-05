@@ -1,1 +1,5 @@
-{ "_note": "Site settings. discord: the invite link shown in the Codex (leave empty to hide the button).", "discord": "" }
+{
+ "_note": "Site settings. discord: the invite link (Codex and forum show a button when set). contest: this month's fan art theme (theme, ends YYYY-MM-DD, prize); leave theme empty to hide it.",
+ "discord": "",
+ "contest": { "theme": "", "ends": "", "prize": "a frame of its own" }
+}

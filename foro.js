@@ -226,6 +226,11 @@
       CTX.after?.();
       const sem = $("[data-semana]", root); if (sem) call("/forum/week").then((d) => { if (!d.theory) return; sem.hidden = false; sem.innerHTML = `<h2 class="rotulo">Theory of the week</h2><a class="semana__t" href="#/forum/p/${d.theory.id}"><b>${esc(d.theory.title)}</b><span>${esc(d.theory.name)} · ${d.theory.score} ▲${d.theory.interesting ? " · ✦ the author found it interesting" : ""}</span></a>`; }).catch(() => {});
       if (b === "b" && c === "art") root.querySelector(".posts")?.classList.add("posts--galeria");
+      fetch("data/site.json").then((r) => r.json()).then((cfg) => {
+        const t = cfg.contest || {};
+        if (b === "b" && c === "art" && t.theme) root.querySelector(".foro")?.insertAdjacentHTML("afterbegin", `<div class="concurso"><img src="img/ui/ic-art.png" alt=""><div><p class="rotulo">This month's theme</p><b>${esc(t.theme)}</b><span>${t.ends ? "Until " + new Date(t.ends).toLocaleDateString("en-GB", { day: "numeric", month: "long" }) + ". " : ""}The most upvoted piece wins ${esc(t.prize || "a frame of its own")}.</span></div></div>`);
+        const nav = root.querySelector(".foro2__nav"); if (nav && cfg.discord && !nav.querySelector(".nav-discord")) nav.insertAdjacentHTML("beforeend", `<a class="boton boton--quieto nav-discord" href="${esc(cfg.discord)}" target="_blank" rel="noopener">Join the Discord</a>`);
+      }).catch(() => {});
     } catch (x) { root.innerHTML = shell(`<p class="vacio-foro">${esc(x.message)}</p>`, CTX); }
   }
   // a small reward toast
