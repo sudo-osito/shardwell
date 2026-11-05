@@ -248,6 +248,17 @@
         <label class="cx-campo"><span>Caption</span><input name="ib_caption" value="${esc(s.infobox.caption || "")}" maxlength="200"></label>
         <div class="cx-filas" data-cx-filas>${rows.map(([k, val]) => `<div class="cx-fila"><input name="ib_k" value="${esc(k)}" placeholder="Field" maxlength="60"><input name="ib_v" value="${esc(val)}" placeholder="Value (you can use [[links]])" maxlength="400"><button type="button" data-cx-quitar aria-label="Remove field">×</button></div>`).join("")}</div>
         <button class="boton boton--chico boton--quieto" type="button" data-cx-fila>Add a field</button></div></details>`}
+      <div class="ed-modos" role="tablist"><button type="button" data-ed-modo="visual" aria-selected="true">Visual</button><button type="button" data-ed-modo="fuente" aria-selected="false">Source</button></div>
+      <div class="ed-visual" data-ed-visual>
+        <div class="ed-barra" role="toolbar" aria-label="Formatting">
+          <span class="ed-grupo"><button type="button" data-ed="b" title="Bold"><b>B</b></button><button type="button" data-ed="i" title="Italic"><i>I</i></button><button type="button" data-ed="h2" title="Section heading">Heading</button><button type="button" data-ed="h3" title="Subheading">Subheading</button><button type="button" data-ed="ul" title="Bulleted list">• List</button><button type="button" data-ed="ol" title="Numbered list">1. List</button><button type="button" data-ed="blockquote" title="Quoted text">“ Quote</button></span>
+          <span class="ed-grupo"><button type="button" data-ed="link" title="Link to a Codex page">Link a page</button><button type="button" data-ed="cite" title="Cite a chapter">Cite chapter</button></span>
+          <span class="ed-grupo ed-grupo--bloques"><button type="button" data-ed="image" title="Insert an image">Image</button><button type="button" data-ed="gallery" title="A gallery of images">Gallery</button><button type="button" data-ed="table" title="A table">Table</button><button type="button" data-ed="tabs" title="Tabs">Tabs</button><button type="button" data-ed="spoiler" title="Hide a part until a chapter">Spoiler</button><button type="button" data-ed="tquote" title="A quote with who said it">Quote card</button><button type="button" data-ed="note" title="A note box">Note</button><button type="button" data-ed="navbox" title="A box of links to other pages">Nav box</button><button type="button" data-ed="map" title="A map with pins">Map</button><button type="button" data-ed="poll" title="A poll readers vote on">Poll</button><button type="button" data-ed="line" title="A divider line">Divider</button></span>
+        </div>
+        <div class="ed-doc cx-texto" contenteditable="true" spellcheck="true" data-ed-doc data-ph="Start writing what the chapters show…"></div>
+        <label class="cx-campo ed-cats"><span>Categories <small>separated by commas</small></span><input data-ed-cats placeholder="Characters, Kayaba"></label>
+      </div>
+      <div class="ed-fuente" data-ed-fuente hidden>
       <div class="cx-editor__barra" role="toolbar" aria-label="Formatting">
         <button type="button" data-ins="**§**" title="Bold"><b>B</b></button><button type="button" data-ins="*§*" title="Italic"><i>I</i></button>
         <button type="button" data-ins="\n## §\n" title="Section heading">H2</button><button type="button" data-ins="\n### §\n" title="Subheading">H3</button>
@@ -260,9 +271,9 @@
         <button type="button" data-ins="\n{{quote|§|Who|Chapter 1}}\n" title="Quote template">Quote</button><button type="button" data-ins="\n{{note|§}}\n" title="Note box">Note</button>
         <button type="button" data-ins="\n{{navbox|§Title|[[Page]] · [[Page]]}}\n" title="Navigation box">Navbox</button><button type="button" data-ins="\n::map{img=img/mar.jpg}\n50, 50 | §Label | [[Page]]\n::\n" title="Map with pins (x, y in %)">Map</button>
         <button type="button" data-ins="\n::poll{id=poll-1}\n§Question?\n- Option one\n- Option two\n::\n" title="Poll">Poll</button>
-        <span class="cx-editor__modo" role="tablist"><button type="button" data-modo="escribir" aria-selected="true">Write</button><button type="button" data-modo="ver" aria-selected="false">Preview</button></span>
       </div>
       <div class="cx-editor__zona" data-modo-actual="escribir"><textarea name="body" rows="22" spellcheck="true" placeholder="Write what the chapters show. Link pages with [[Name]]; cite with {{ch|3}}.">${esc(s.body)}</textarea><div class="cx-editor__vista cx-texto" data-cx-vista></div></div>
+      </div>
       <div class="cx-editor__pie">
         <label class="cx-campo cx-campo--resumen"><span>${sugg ? "Why this change" : "Edit summary"}</span><input name="summary" maxlength="200" placeholder="${sugg ? "Tell the Archivists what you changed and why" : "What did you change?"}"></label>
         ${sugg ? "" : `<label class="cx-chk"><input type="checkbox" name="minor"> Minor edit</label>`}
@@ -386,6 +397,7 @@
     const ta = $("textarea[name=body]", f), vista = $("[data-cx-vista]", f), zona = $(".cx-editor__zona", f), key = f.dataset.key;
     const save = () => { try { localStorage.setItem(key, JSON.stringify({ base: +f.dataset.base, body: ta.value, title: f.title.value, type: f.type?.value, spoiler: +(f.spoiler?.value || 0) })); } catch {} };
     let tm = 0; ta.addEventListener("input", () => { clearTimeout(tm); tm = setTimeout(save, 600); if (zona.dataset.modoActual === "lado") paint(); });
+    edWire(f, () => { clearTimeout(tm); tm = setTimeout(save, 600); });
     const paint = async () => { vista.innerHTML = md(ta.value, await pagesKnown(), { reveal: 1 }) || '<p class="nota">Nothing to preview.</p>'; };
     $$("[data-modo]", f).forEach((b) => b.addEventListener("click", () => { zona.dataset.modoActual = b.dataset.modo; $$("[data-modo]", f).forEach((x) => x.setAttribute("aria-selected", String(x === b))); if (b.dataset.modo === "ver") paint(); }));
     $$("[data-ins]", f).forEach((b) => b.addEventListener("mousedown", (ev) => ev.preventDefault()));
@@ -398,6 +410,7 @@
     f.addEventListener("click", (ev) => { const q = ev.target.closest("[data-cx-quitar]"); if (q) q.parentElement.remove(); if (ev.target.closest("[data-cx-descartar]")) { try { localStorage.removeItem(key); } catch {} render(); } });
     f.addEventListener("submit", async (ev) => {
       ev.preventDefault();
+      f._sync?.();
       const err = $(".fform__err", f), btn = $("button[type=submit]", f), title = f.title.value.trim(), slug = f.dataset.slug || slugOf(title);
       if (!slug) { err.textContent = "Give the page a title."; err.hidden = false; return; }
       btn.disabled = true; err.hidden = true;
@@ -415,6 +428,224 @@
         err.hidden = false; btn.disabled = false;
       }
     });
+  }
+
+  // ---------- visual editor: the page is edited as it will look; it still saves the same wiki text ----------
+  const chipLink = (p, l) => `<a class="ed-link" contenteditable="false" data-page="${p}" title="Codex page: ${p}">${l}</a>`;
+  const chipCh = (n) => `<span class="ed-ch" contenteditable="false" data-ch="${n}">Ch. ${n}</span>`;
+  const noPipe = (t) => String(t).replace(/\|/g, "/").replace(/\n+/g, " ").trim();
+  function edInline(s) {
+    return esc(s)
+      .replace(/\{\{ch\|(\d{1,4})\}\}/g, (_, n) => chipCh(n))
+      .replace(/\[\[([^\]|]+?)(?:\|([^\]]+))?\]\]/g, (_, p, l) => chipLink(p.trim(), (l || p).trim()))
+      .replace(/\[([^\]]+)\]\((https:\/\/[^\s)]+)\)/g, '<a class="ed-url" href="$2">$1</a>')
+      .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<i>$2</i>");
+  }
+  function edOut(node) {
+    let o = "";
+    [...node.childNodes].forEach((n) => {
+      if (n.nodeType === 3) { o += n.nodeValue.replace(/ /g, " ").replace(/​/g, ""); return; }
+      if (n.nodeType !== 1) return;
+      if (n.classList.contains("ed-link")) { const p = n.dataset.page, l = n.textContent.trim(); o += l && l !== p ? `[[${p}|${l}]]` : `[[${p}]]`; return; }
+      if (n.classList.contains("ed-ch")) { o += `{{ch|${n.dataset.ch}}}`; return; }
+      if (n.tagName === "BR") { o += " "; return; }
+      const inner = edOut(n), t = n.tagName;
+      if ((t === "B" || t === "STRONG") && inner.trim()) o += `**${inner}**`;
+      else if ((t === "I" || t === "EM") && inner.trim()) o += `*${inner}*`;
+      else if (t === "A" && /^https:\/\//.test(n.getAttribute("href") || "")) o += `[${inner}](${n.getAttribute("href")})`;
+      else o += inner;
+    });
+    return o.replace(/\n/g, " ");
+  }
+  const richHtml = (text) => { const ps = String(text || "").split(/\n{2,}/).map((x) => x.trim()).filter(Boolean); return ps.length ? ps.map((p) => `<p>${edInline(p.replace(/\n/g, " "))}</p>`).join("") : "<p><br></p>"; };
+  function edRich(el) {
+    const out = []; let buf = "";
+    [...el.childNodes].forEach((n) => {
+      if (n.nodeType === 1 && /^(P|DIV|H\d|LI|BLOCKQUOTE)$/.test(n.tagName)) { if (buf.trim()) out.push(buf.trim()); buf = ""; const t = edOut(n).trim(); if (t) out.push(t); }
+      else if (n.nodeType === 1 && n.tagName === "BR") { if (buf.trim()) out.push(buf.trim()); buf = ""; }
+      else buf += edOut({ childNodes: [n] });
+    });
+    if (buf.trim()) out.push(buf.trim());
+    return out.join("\n\n");
+  }
+  const fld = (name, val, ph, cls = "") => `<div class="ed-f ${cls}" contenteditable="true" data-f="${name}" data-ph="${ph}">${val}</div>`;
+  const bar = (label) => `<div class="ed-w__bar" contenteditable="false"><span>${label}</span><button type="button" data-ed-up title="Move up">↑</button><button type="button" data-ed-down title="Move down">↓</button><button type="button" data-ed-del title="Remove">×</button></div>`;
+  const wrap = (k, label, inner, attrs = "") => `<div class="ed-w ed-w--${k}" contenteditable="false" data-w="${k}" ${attrs}>${bar(label)}${inner}</div>`;
+  const chOpts = (sel) => (CTX.chapters || []).map((c) => `<option value="${c.number}"${+sel === c.number ? " selected" : ""}>Chapter ${c.number}</option>`).join("") || `<option value="${sel || 1}">Chapter ${sel || 1}</option>`;
+  const imgFig = (ref, cap) => `<figure class="ed-img" data-ref="${esc(ref)}"><img src="${imgSrc(ref)}" alt="">${fld("cap", edInline(cap || ""), "Caption")}<button type="button" class="ed-mini" data-ed-figdel title="Remove">×</button></figure>`;
+  const W = {
+    table: (d) => wrap("table", "Table", `<div class="cx-tabla-w"><table class="cx-tabla"><tbody>${d.rows.map((r, i) => `<tr>${r.map((c) => { const tg = i === 0 && d.head ? "th" : "td"; return `<${tg} contenteditable="true">${edInline(c)}</${tg}>`; }).join("")}</tr>`).join("")}</tbody></table></div>
+      <div class="ed-w__tools"><button type="button" data-ed-t="row+">+ Row</button><button type="button" data-ed-t="col+">+ Column</button><button type="button" data-ed-t="row-">− Row</button><button type="button" data-ed-t="col-">− Column</button><label><input type="checkbox" data-ed-t="head" ${d.head ? "checked" : ""}> Header row</label></div>`),
+    spoiler: (d) => wrap("spoiler", "Spoiler", `<label class="ed-w__linea">Hidden until the reader reaches <select class="sel sel--chica" data-f="ch">${chOpts(d.ch)}</select></label><div class="ed-rico cx-spoiler" contenteditable="true">${richHtml(d.text)}</div>`),
+    note: (d) => wrap("note", "Note", `<div class="ed-rico cx-nota" contenteditable="true">${richHtml(d.text)}</div>`),
+    tquote: (d) => wrap("tquote", "Quote", `<figure class="cx-cita-g">${fld("text", edInline(d.text), "The words", "ed-cita")}<figcaption>— ${fld("who", edInline(d.who), "Who said it", "ed-linea")} , ${fld("src", edInline(d.src), "Chapter 1", "ed-linea")}</figcaption></figure>`),
+    navbox: (d) => wrap("navbox", "Navigation box", `<nav class="cx-navbox"><div class="cx-navbox__t">${fld("title", edInline(d.title), "Title")}</div>${fld("links", edInline(d.links), "Links to pages (use the Link button)")}</nav>`),
+    image: (d) => wrap("image", "Image", `<div class="ed-w__linea"><button type="button" data-ed-cambiar>Change image</button><label>Position <select class="sel sel--chica" data-f="align">${["right", "left", "center", "wide"].map((a) => `<option${d.align === a ? " selected" : ""}>${a}</option>`).join("")}</select></label></div>${imgFig(d.ref, d.cap)}`),
+    gallery: (d) => wrap("gallery", "Gallery", `<div class="cx-galeria ed-galeria">${d.items.map((x) => imgFig(x.ref, x.cap)).join("")}</div><div class="ed-w__tools"><button type="button" data-ed-addimg>+ Add image</button></div>`),
+    tabs: (d) => wrap("tabs", "Tabs", `<div class="ed-tabs">${d.tabs.map((t) => `<div class="ed-tab">${fld("name", esc(t.name), "Tab name", "ed-tab__n")}<div class="ed-rico" contenteditable="true">${richHtml(t.text)}</div><button type="button" class="ed-mini" data-ed-tabdel title="Remove tab">×</button></div>`).join("")}</div><div class="ed-w__tools"><button type="button" data-ed-addtab>+ Tab</button></div>`),
+    map: (d) => wrap("map", "Map", `<div class="ed-w__linea"><button type="button" data-ed-cambiar>Change map image</button><span class="nota">Click the map to add a pin.</span></div><div class="cx-mapa__in ed-mapa" data-ref="${esc(d.img)}"><img src="${imgSrc(d.img)}" alt="" data-ed-mapclick>${d.pins.map((p, k) => `<span class="cx-pin" style="left:${p.x}%;top:${p.y}%"><i>${k + 1}</i></span>`).join("")}</div><ol class="ed-pines">${d.pins.map((p) => `<li data-x="${p.x}" data-y="${p.y}">${fld("label", esc(p.label), "Place name", "ed-linea")}<span class="ed-pin__pag">page ${fld("link", esc(p.link), "Codex page (optional)", "ed-linea")}</span><button type="button" class="ed-mini" data-ed-pindel>×</button></li>`).join("")}</ol>`),
+    poll: (d) => wrap("poll", "Poll", `<div class="cx-encuesta">${fld("q", edInline(d.q), "The question", "cx-encuesta__q")}<ul class="ed-opciones">${d.opts.map((o) => `<li>${fld("opt", edInline(o), "An option", "ed-linea")}<button type="button" class="ed-mini" data-ed-optdel>×</button></li>`).join("")}</ul><div class="ed-w__tools"><button type="button" data-ed-addopt>+ Option</button></div></div>`, `data-id="${esc(d.id)}"`),
+    line: () => wrap("line", "Divider", `<hr>`),
+  };
+  const fv = (el, f) => edOut($(`[data-f="${f}"]`, el) || { childNodes: [] }).trim();
+  const S = {
+    table: (el) => { const head = $("[data-ed-t=head]", el)?.checked; const rows = $$("tr", el).map((tr) => $$("th,td", tr).map((c) => noPipe(edOut(c)) || " ")); if (!rows.length) return ""; const L = rows.map((r) => `| ${r.join(" | ")} |`); if (head) L.splice(1, 0, `|${rows[0].map(() => "---").join("|")}|`); return L.join("\n"); },
+    spoiler: (el) => `::spoiler{ch=${$("[data-f=ch]", el).value}}\n${edRich($(".ed-rico", el))}\n::`,
+    note: (el) => `::note\n${edRich($(".ed-rico", el))}\n::`,
+    tquote: (el) => `{{quote|${noPipe(fv(el, "text"))}|${noPipe(fv(el, "who"))}|${noPipe(fv(el, "src"))}}}`,
+    navbox: (el) => `{{navbox|${noPipe(fv(el, "title"))}|${fv(el, "links").replace(/\[\[([^\]|]+)\|[^\]]+\]\]/g, "[[$1]]")}}}`,
+    image: (el) => { const f = $(".ed-img", el); return `{{image|${f.dataset.ref}|${noPipe(fv(f, "cap"))}|${$("[data-f=align]", el).value}}}`; },
+    gallery: (el) => `::gallery\n${$$(".ed-img", el).map((f) => `${f.dataset.ref} | ${noPipe(fv(f, "cap"))}`).join("\n")}\n::`,
+    tabs: (el) => `::tabs\n${$$(".ed-tab", el).map((t) => `== ${noPipe(fv(t, "name")) || "Tab"} ==\n${edRich($(".ed-rico", t))}`).join("\n")}\n::`,
+    map: (el) => `::map{img=${$(".ed-mapa", el).dataset.ref}}\n${$$(".ed-pines li", el).map((li) => { const pg = fv(li, "link").replace(/^\[\[|\]\]$/g, ""); return `${li.dataset.x}, ${li.dataset.y} | ${noPipe(fv(li, "label"))}${pg ? ` | [[${noPipe(pg)}]]` : ""}`; }).join("\n")}\n::`,
+    poll: (el) => `::poll{id=${el.dataset.id}}\n${noPipe(fv(el, "q"))}\n${$$(".ed-opciones li", el).map((li) => "- " + noPipe(fv(li, "opt"))).filter((x) => x.length > 2).join("\n")}\n::`,
+    line: () => "---",
+  };
+  function edParse(src) {
+    const cats = [];
+    src = String(src || "").replace(/\r/g, "").replace(/\[\[category:([^\]|]+)\]\]/gi, (_, c) => { cats.push(c.trim()); return ""; });
+    const L = src.split("\n"), out = []; let i = 0, para = [], m;
+    const flush = () => { if (para.length) { out.push(`<p>${edInline(para.join(" "))}</p>`); para = []; } };
+    const until = () => { const a = []; i++; while (i < L.length && !/^::\s*$/.test(L[i])) a.push(L[i++]); i++; return a; };
+    while (i < L.length) {
+      const l = L[i];
+      if ((m = l.match(/^::spoiler\{ch=(\d{1,4})\}\s*$/))) { flush(); out.push(W.spoiler({ ch: +m[1], text: until().join("\n") })); continue; }
+      if ((m = l.match(/^::(gallery|tabs|map|poll|note)(?:\{([a-z]+)=([^}]+)\})?\s*$/))) {
+        flush(); const k = m[1], arg = m[3] || "", ls = until();
+        if (k === "note") out.push(W.note({ text: ls.join("\n") }));
+        if (k === "gallery") out.push(W.gallery({ items: ls.filter((x) => x.trim()).map((x) => { const [ref, cap = ""] = x.split("|").map((y) => y.trim()); return { ref, cap }; }) }));
+        if (k === "tabs") { const tabs = []; let c = null; for (const x of ls) { const t = x.match(/^==\s*(.+?)\s*==\s*$/); if (t) { c = { name: t[1], lines: [] }; tabs.push(c); } else if (c) c.lines.push(x); } out.push(W.tabs({ tabs: tabs.map((t) => ({ name: t.name, text: t.lines.join("\n") })) })); }
+        if (k === "map") out.push(W.map({ img: arg, pins: ls.map((x) => x.split("|").map((y) => y.trim())).filter((p) => /^\d+(\.\d+)?\s*,\s*\d+(\.\d+)?$/.test(p[0] || "")).map(([xy, label = "", link = ""]) => { const [x, y] = xy.split(",").map((n) => +n); return { x, y, label, link: link.replace(/^\[\[|\]\]$/g, "") }; }) }));
+        if (k === "poll") out.push(W.poll({ id: arg || "poll-" + Math.random().toString(36).slice(2, 7), q: ls.find((x) => x.trim() && !/^\s*-\s+/.test(x)) || "", opts: ls.filter((x) => /^\s*-\s+/.test(x)).map((x) => x.replace(/^\s*-\s+/, "")) }));
+        continue;
+      }
+      if ((m = l.match(/^\{\{(quote|note|navbox|image)\|(.+)\}\}\s*$/))) {
+        flush(); const a = m[2].split("|").map((x) => x.trim());
+        if (m[1] === "quote") out.push(W.tquote({ text: a[0] || "", who: a[1] || "", src: a[2] || "" }));
+        if (m[1] === "note") out.push(W.note({ text: a.join(" | ") }));
+        if (m[1] === "navbox") out.push(W.navbox({ title: a[0] || "", links: a.slice(1).join(" · ") }));
+        if (m[1] === "image") out.push(W.image({ ref: a[0] || "", cap: a[1] || "", align: a[2] || "right" }));
+        i++; continue;
+      }
+      if (/^\|.*\|\s*$/.test(l)) {
+        flush(); const rows = []; while (i < L.length && /^\|.*\|\s*$/.test(L[i])) rows.push(L[i++]);
+        const cells = (r) => r.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+        const sep = rows[1] && /^\|[\s:|-]+\|$/.test(rows[1].trim());
+        out.push(W.table({ head: !!sep, rows: (sep ? [rows[0], ...rows.slice(2)] : rows).map(cells) })); continue;
+      }
+      if ((m = l.match(/^(#{2,4})\s+(.+)$/))) { flush(); out.push(m[1].length === 2 ? `<h2>${edInline(m[2])}</h2>` : `<h3>${edInline(m[2])}</h3>`); i++; continue; }
+      if (/^-{3,}\s*$/.test(l)) { flush(); out.push(W.line()); i++; continue; }
+      if (/^>\s?/.test(l)) { flush(); const q = []; while (i < L.length && /^>\s?/.test(L[i])) q.push(L[i++].replace(/^>\s?/, "")); out.push(`<blockquote>${edInline(q.join(" "))}</blockquote>`); continue; }
+      if (/^\s*[-*]\s+/.test(l)) { flush(); const it = []; while (i < L.length && /^\s*[-*]\s+/.test(L[i])) it.push(L[i++].replace(/^\s*[-*]\s+/, "")); out.push(`<ul>${it.map((x) => `<li>${edInline(x)}</li>`).join("")}</ul>`); continue; }
+      if (/^\s*\d+[.)]\s+/.test(l)) { flush(); const it = []; while (i < L.length && /^\s*\d+[.)]\s+/.test(L[i])) it.push(L[i++].replace(/^\s*\d+[.)]\s+/, "")); out.push(`<ol>${it.map((x) => `<li>${edInline(x)}</li>`).join("")}</ol>`); continue; }
+      if (!l.trim()) { flush(); i++; continue; }
+      para.push(l); i++;
+    }
+    flush();
+    if (!out.length || /data-w=/.test(out[out.length - 1])) out.push("<p><br></p>");
+    return { html: out.join(""), cats };
+  }
+  function edSerialize(doc) {
+    const out = [];
+    [...doc.childNodes].forEach((n) => {
+      if (n.nodeType === 3) { if (n.nodeValue.trim()) out.push(n.nodeValue.trim()); return; }
+      if (n.nodeType !== 1) return;
+      if (n.dataset.w && S[n.dataset.w]) { const x = S[n.dataset.w](n); if (x) out.push(x); return; }
+      const t = n.tagName;
+      if (t === "H2" || t === "H3") { const x = edOut(n).trim(); if (x) out.push((t === "H2" ? "## " : "### ") + x); }
+      else if (t === "UL" || t === "OL") { const it = [...n.children].map((li) => edOut(li).trim()).filter(Boolean); if (it.length) out.push(it.map((x, k) => (t === "UL" ? "- " : `${k + 1}. `) + x).join("\n")); }
+      else if (t === "BLOCKQUOTE") { const x = edOut(n).trim(); if (x) out.push("> " + x); }
+      else if (t === "HR") out.push("---");
+      else { const x = edOut(n).trim(); if (x) out.push(x); }
+    });
+    return out.join("\n\n");
+  }
+  function edWire(f, onChange) {
+    const ta = $("textarea[name=body]", f), doc = $("[data-ed-doc]", f), cats = $("[data-ed-cats]", f), vis = $("[data-ed-visual]", f), src = $("[data-ed-fuente]", f);
+    if (!doc) return;
+    let mode = "visual", lastRange = null, tm = 0;
+    const load = () => { const r = edParse(ta.value); doc.innerHTML = r.html; cats.value = r.cats.join(", "); empty(); };
+    const sync = () => { if (mode !== "visual") return; const c = cats.value.split(",").map((x) => x.trim()).filter(Boolean); ta.value = edSerialize(doc) + (c.length ? "\n\n" + c.map((x) => `[[Category:${x}]]`).join("\n") : ""); };
+    const empty = () => doc.classList.toggle("vacio", !doc.textContent.trim() && !doc.querySelector("[data-w], .ed-link, .ed-ch"));
+    const changed = () => { empty(); clearTimeout(tm); tm = setTimeout(() => { sync(); onChange(); }, 250); };
+    f._sync = sync;
+    load();
+    try { document.execCommand("defaultParagraphSeparator", false, "p"); } catch {}
+    doc.addEventListener("input", changed); cats.addEventListener("input", changed);
+    f.addEventListener("change", (ev) => { if (doc.contains(ev.target)) changed(); });
+    document.addEventListener("selectionchange", () => { const s = getSelection(); if (s.rangeCount && doc.contains(s.anchorNode)) lastRange = s.getRangeAt(0).cloneRange(); });
+    doc.addEventListener("paste", (ev) => { ev.preventDefault(); document.execCommand("insertText", false, (ev.clipboardData || window.clipboardData).getData("text/plain")); });
+    doc.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && ev.target.closest?.(".ed-f")) { ev.preventDefault(); } });
+    const restore = () => { doc.focus(); if (lastRange) { const s = getSelection(); s.removeAllRanges(); s.addRange(lastRange); } };
+    const block = () => { let n = lastRange?.startContainer; while (n && n.parentNode !== doc) n = n.parentNode; return n && doc.contains(n) ? n : null; };
+    function insertWidget(html) {
+      const tmp = document.createElement("div"); tmp.innerHTML = html; const w = tmp.firstElementChild, b = block();
+      if (b && b.nodeType === 1 && b.tagName === "P" && !b.textContent.trim() && !b.querySelector(".ed-link,.ed-ch")) b.replaceWith(w); else if (b) b.after(w); else doc.appendChild(w);
+      if (!w.nextElementSibling || w.nextElementSibling.dataset.w) { const p = document.createElement("p"); p.innerHTML = "<br>"; w.after(p); }
+      changed(); return w;
+    }
+    const fmt = (tag) => { restore(); const b = block(); document.execCommand("formatBlock", false, b && b.tagName === tag.toUpperCase() ? "p" : tag); changed(); };
+    // modes: Visual (default) and Source (the raw wiki text, for advanced writers)
+    $$("[data-ed-modo]", f).forEach((b) => b.addEventListener("click", () => {
+      const to = b.dataset.edModo; if (to === mode) return;
+      if (to === "fuente") { sync(); mode = "fuente"; } else { mode = "visual"; load(); }
+      vis.hidden = mode !== "visual"; src.hidden = mode !== "fuente";
+      $$("[data-ed-modo]", f).forEach((x) => x.setAttribute("aria-selected", String(x.dataset.edModo === mode)));
+    }));
+    $$("[data-ed]", f).forEach((b) => b.addEventListener("mousedown", (ev) => ev.preventDefault()));
+    $$("[data-ed]", f).forEach((b) => b.addEventListener("click", () => {
+      const k = b.dataset.ed;
+      if (k === "b" || k === "i") { restore(); document.execCommand(k === "b" ? "bold" : "italic"); changed(); return; }
+      if (k === "h2" || k === "h3" || k === "blockquote") return fmt(k);
+      if (k === "ul" || k === "ol") { restore(); document.execCommand(k === "ul" ? "insertUnorderedList" : "insertOrderedList"); changed(); return; }
+      if (k === "link") { const sel = lastRange ? lastRange.toString().trim() : ""; const pg = prompt("Link to which Codex page? (its name)", sel); if (!pg) return; restore(); document.execCommand("insertHTML", false, chipLink(esc(pg.trim()), esc(sel || pg.trim())) + "&nbsp;"); changed(); return; }
+      if (k === "cite") { const n = prompt("Cite which chapter? (number)", String(maxRead() || 1)); if (!n || !/^\d{1,4}$/.test(n.trim())) return; restore(); document.execCommand("insertHTML", false, chipCh(n.trim()) + "&nbsp;"); changed(); return; }
+      if (k === "image") return picker((ref, name) => insertWidget(W.image({ ref, cap: name || "", align: "right" })));
+      if (k === "gallery") return picker((ref, name) => insertWidget(W.gallery({ items: [{ ref, cap: name || "" }] })));
+      if (k === "map") return picker((ref) => insertWidget(W.map({ img: ref, pins: [] })));
+      if (k === "table") return insertWidget(W.table({ head: true, rows: [["", ""], ["", ""], ["", ""]] }));
+      if (k === "tabs") return insertWidget(W.tabs({ tabs: [{ name: "First", text: "" }, { name: "Second", text: "" }] }));
+      if (k === "spoiler") return insertWidget(W.spoiler({ ch: maxRead() || 1, text: "" }));
+      if (k === "tquote") return insertWidget(W.tquote({ text: "", who: "", src: "" }));
+      if (k === "note") return insertWidget(W.note({ text: "" }));
+      if (k === "navbox") return insertWidget(W.navbox({ title: "", links: "" }));
+      if (k === "poll") return insertWidget(W.poll({ id: "poll-" + Math.random().toString(36).slice(2, 7), q: "", opts: ["", ""] }));
+      if (k === "line") return insertWidget(W.line());
+    }));
+    // controls inside the blocks
+    doc.addEventListener("click", (ev) => {
+      const t = ev.target, w = t.closest("[data-w]"); if (!w) return;
+      const done = () => changed();
+      if (t.closest("[data-ed-del]")) { if (confirm("Remove this block?")) { w.remove(); done(); } return; }
+      if (t.closest("[data-ed-up]")) { const p = w.previousElementSibling; if (p) { p.before(w); done(); } return; }
+      if (t.closest("[data-ed-down]")) { const n = w.nextElementSibling; if (n) { n.after(w); done(); } return; }
+      const tt = t.closest("[data-ed-t]");
+      if (tt && tt.tagName === "BUTTON") {
+        const rows = $$("tr", w), op = tt.dataset.edT, head = $("[data-ed-t=head]", w).checked;
+        if (op === "row+") { const tr = document.createElement("tr"); tr.innerHTML = $$("th,td", rows[0]).map(() => `<td contenteditable="true"></td>`).join(""); $("tbody", w).appendChild(tr); }
+        if (op === "row-" && rows.length > 1) rows[rows.length - 1].remove();
+        if (op === "col+") rows.forEach((tr, i) => { const c = document.createElement(i === 0 && head ? "th" : "td"); c.contentEditable = "true"; tr.appendChild(c); });
+        if (op === "col-" && $$("th,td", rows[0]).length > 1) rows.forEach((tr) => tr.lastElementChild.remove());
+        return done();
+      }
+      if (tt && tt.dataset.edT === "head") { const r0 = $("tr", w); $$("th,td", r0).forEach((c) => { const n = document.createElement(tt.checked ? "th" : "td"); n.contentEditable = "true"; n.innerHTML = c.innerHTML; c.replaceWith(n); }); return done(); }
+      if (t.closest("[data-ed-addimg]")) return picker((ref, name) => { $(".ed-galeria", w).insertAdjacentHTML("beforeend", imgFig(ref, name || "")); done(); });
+      if (t.closest("[data-ed-figdel]")) { const fg = t.closest(".ed-img"); if (w.dataset.w === "image") { w.remove(); } else fg.remove(); return done(); }
+      if (t.closest("[data-ed-cambiar]")) return picker((ref) => { if (w.dataset.w === "image") { const fg = $(".ed-img", w); fg.dataset.ref = ref; $("img", fg).src = imgSrc(ref); } else { const m = $(".ed-mapa", w); m.dataset.ref = ref; $("img", m).src = imgSrc(ref); } done(); });
+      if (t.closest("[data-ed-addtab]")) { $(".ed-tabs", w).insertAdjacentHTML("beforeend", `<div class="ed-tab">${fld("name", "New tab", "Tab name", "ed-tab__n")}<div class="ed-rico" contenteditable="true"><p><br></p></div><button type="button" class="ed-mini" data-ed-tabdel title="Remove tab">×</button></div>`); return done(); }
+      if (t.closest("[data-ed-tabdel]")) { if ($$(".ed-tab", w).length > 1) t.closest(".ed-tab").remove(); return done(); }
+      if (t.closest("[data-ed-addopt]")) { $(".ed-opciones", w).insertAdjacentHTML("beforeend", `<li>${fld("opt", "", "An option", "ed-linea")}<button type="button" class="ed-mini" data-ed-optdel>×</button></li>`); return done(); }
+      if (t.closest("[data-ed-optdel]")) { t.closest("li").remove(); return done(); }
+      const mapImg = t.closest("[data-ed-mapclick]");
+      if (mapImg) {
+        const r = mapImg.getBoundingClientRect(), x = Math.round(((ev.clientX - r.left) / r.width) * 1000) / 10, y = Math.round(((ev.clientY - r.top) / r.height) * 1000) / 10;
+        const label = prompt("Name of this place?"); if (!label) return;
+        $(".ed-pines", w).insertAdjacentHTML("beforeend", `<li data-x="${x}" data-y="${y}">${fld("label", esc(label), "Place name", "ed-linea")}<span class="ed-pin__pag">page ${fld("link", "", "Codex page (optional)", "ed-linea")}</span><button type="button" class="ed-mini" data-ed-pindel>×</button></li>`);
+        repins(w); return done();
+      }
+      if (t.closest("[data-ed-pindel]")) { t.closest("li").remove(); repins(w); return done(); }
+    });
+    const repins = (w) => { const m = $(".ed-mapa", w); $$(".cx-pin", m).forEach((p) => p.remove()); $$(".ed-pines li", w).forEach((li, k) => m.insertAdjacentHTML("beforeend", `<span class="cx-pin" style="left:${li.dataset.x}%;top:${li.dataset.y}%"><i>${k + 1}</i></span>`)); };
   }
 
   // ---------- image picker: upload (Scribes) or choose from the library ----------
