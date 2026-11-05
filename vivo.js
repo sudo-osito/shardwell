@@ -57,7 +57,19 @@
       src.connect(g).connect(filt); a.play().catch(() => {}); a.onended = () => { src.disconnect(); g.disconnect(); };
     }, k * (s.every || 1) * 1000);
   }
-  function soundStart() { ensureAudio(); ac.resume?.(); soundOn = true; cur = Math.min(cur, scenes.length - 1); master.gain.cancelScheduledValues(ac.currentTime); master.gain.setTargetAtTime(1, ac.currentTime, 0.8); const s = scenes[cur]; if (s) bed(s.bed || {}, s.under); }
+  // browsers only start audio after the reader touches the page: until then the sound waits, armed
+  let armed = false;
+  function wake() {
+    if (!soundOn || !ac) return;
+    ac.resume?.().then?.(() => { Object.values(layers).forEach((L) => { if (L.want > 0 && L.a.paused) L.a.play().catch(() => {}); }); paintWait(); });
+  }
+  function paintWait() { const b = root && $("[data-sonido]", root); if (!b) return; const waiting = soundOn && ac && ac.state !== "running"; b.classList.toggle("espera", !!waiting); b.dataset.tip = waiting ? "Sound is on: tap anywhere on the page to start it" : "Sound: recordings that follow the text"; }
+  function arm() {
+    if (armed) return; armed = true;
+    const go = () => { wake(); setTimeout(() => { if (ac?.state === "running") { ["pointerdown", "keydown", "touchend"].forEach((e) => removeEventListener(e, go, true)); armed = false; } }, 300); };
+    ["pointerdown", "keydown", "touchend"].forEach((e) => addEventListener(e, go, true));
+  }
+  function soundStart() { ensureAudio(); ac.resume?.(); soundOn = true; if (ac.state !== "running") arm(); setTimeout(paintWait, 400); cur = Math.min(cur, scenes.length - 1); master.gain.cancelScheduledValues(ac.currentTime); master.gain.setTargetAtTime(1, ac.currentTime, 0.8); const s = scenes[cur]; if (s) bed(s.bed || {}, s.under); }
   function soundStop() { soundOn = false; if (!ac) return; master.gain.cancelScheduledValues(ac.currentTime); master.gain.setTargetAtTime(0, ac.currentTime, 0.5); setTimeout(() => { if (!soundOn) Object.values(layers).forEach((L) => { L.want = 0; L.a.pause(); }); }, 2500); }
   // keep the sound alive: resume after the tab comes back, and restart any layer that stopped on its own
   document.addEventListener("visibilitychange", () => { if (!document.hidden && soundOn && ac) { ac.resume?.(); Object.values(layers).forEach((L) => { if (L.want > 0 && L.a.paused) L.a.play().catch(() => {}); }); } });

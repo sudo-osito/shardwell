@@ -254,3 +254,5 @@ html[data-lectura="paper"] .guia-lectura, html[data-lectura="sepia"] .guia-lectu
 .solo-inmersivo[hidden] { display: none; }
 .lbar__modo .lbl { min-width: 5.6em; text-align: left; }
 .modo-clasico .lbar__modo { opacity: .75; }
+.lbar__btn[data-sonido].espera { color: #e3c38e; animation: espera 1.6s ease-in-out infinite; }
+@keyframes espera { 50% { opacity: .35; } }
