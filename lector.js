@@ -87,10 +87,13 @@
     });
 
     // ---------- toolbar hides while reading down ----------
-    const bar = $(".lbar", root); let lastY = scrollY;
+    const bar = $(".lbar", root); let lastY = scrollY, upRun = 0;
     const prog = $("[data-progreso]", root), pct = $("[data-pct]", root), left = $("[data-left]", root);
     function onScroll() {
-      const y = scrollY; bar.classList.toggle("oculta", y > lastY + 2 && y > 200 && !openPanel && !autoOn()); if (Math.abs(y - lastY) > 2) lastY = y;
+      const y = scrollY, dy = y - lastY; lastY = y;
+      if (y < 140 || openPanel) { bar.classList.remove("oculta"); upRun = 0; }
+      else if (dy > 0) { bar.classList.add("oculta"); upRun = 0; }
+      else if (dy < 0) { upRun -= dy; if (upRun > 36) bar.classList.remove("oculta"); }
       const r = prosa.getBoundingClientRect(), tot = Math.max(1, r.height - innerHeight * 0.6), k = Math.min(1, Math.max(0, -r.top / tot));
       prog.style.transform = `scaleX(${k})`; pct.textContent = Math.round(k * 100) + "%";
       left.textContent = k >= 0.99 ? "Finished" : `${Math.max(1, Math.round(ctx.minutes * (1 - k)))} min left`;
@@ -116,9 +119,14 @@
     const autoBtn = $("[data-auto]", root), ctl = $(".autoctl", root);
     let speed = store.get("autoSpeed", 2), running = false, paused = false, raf = 0, acc = 0, lastT = 0, ownScroll = 0;
     const autoOn = () => running || paused;
+    let sleepT = 0;
+    const wakeCtl = () => { if (!autoOn()) return; ctl.classList.remove("dormido"); clearTimeout(sleepT); sleepT = setTimeout(() => { if (!ctl.matches(":hover")) ctl.classList.add("dormido"); }, 2000); };
+    on(window, "mousemove", (ev) => { if (ev.clientY > innerHeight - 160) wakeCtl(); }, { passive: true });
+    on(window, "touchend", (ev) => { if (!ev.target.closest(".autoctl, .lbar, a, button")) wakeCtl(); }, { passive: true });
+    on(ctl, "mouseleave", () => wakeCtl());
     function paintAuto() {
       autoBtn.setAttribute("aria-pressed", String(autoOn()));
-      ctl.hidden = !autoOn();
+      ctl.hidden = !autoOn(); if (autoOn()) wakeCtl();
       $("[data-auto-v]", ctl).textContent = speed;
       $("[data-auto-pp]", ctl).textContent = paused ? "▶" : "❚❚";
       $("[data-auto-pp]", ctl).setAttribute("aria-label", paused ? "Resume" : "Pause");
@@ -296,6 +304,21 @@
 
   function unmount() { window.Vivo?.unmount(); cleanup.forEach((f) => f()); cleanup = []; delete document.documentElement.dataset.lectura; }
 
+  // ---------- icons ----------
+  const ICON = {
+    back: '<path d="M10 4 3 12l7 8M3 12h18"/>',
+    prev: '<path d="m15 5-7 7 7 7"/>',
+    next: '<path d="m9 5 7 7-7 7"/>',
+    auto: '<path d="M12 4v13m-5-5 5 5 5-5M5 20h14"/>',
+    mark: '<path d="M6 3h12v18l-6-4-6 4z"/>',
+    book: '<path d="M3 5.5C5.5 4 8.5 4 12 6c3.5-2 6.5-2 9-.5V19c-2.5-1.5-5.5-1.5-9 .5-3.5-2-6.5-2-9-.5z"/><path d="M12 6v13.5"/><path d="M16 4.6V11l-1.5-1-1.5 1V5.4" fill="currentColor" stroke="none"/>',
+    share: '<path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/>',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>',
+    spark: '<path d="M12 3c.5 4 2 5.5 6 6-4 .5-5.5 2-6 6-.5-4-2-5.5-6-6 4-.5 5.5-2 6-6z"/><path d="M19 15c.2 1.6.8 2.2 2.4 2.4-1.6.2-2.2.8-2.4 2.4-.2-1.6-.8-2.2-2.4-2.4 1.6-.2 2.2-.8 2.4-2.4z"/>',
+    talk: '<path d="M4 5h16v11H9l-5 4z"/>',
+  };
+  const ic = (k) => `<svg class="lic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ICON[k]}</svg>`;
+
   // ---------- markup ----------
   function html(e, ctx) {
     const locked = !!e.locked && !e.unlocked;
@@ -353,17 +376,27 @@
     return `<article class="lector">
       <div class="progreso" aria-hidden="true"><i data-progreso></i></div>
       <div class="lbar">
-        <a class="lbar__btn" href="#/novel" aria-label="All chapters" data-tip="Back to all chapters">←</a>
-        <span class="lbar__tit"><b>${e.number}</b> ${esc(e.title)}</span>
+        <div class="lbar__izq">
+          <a class="lbar__btn" href="#/novel" aria-label="All chapters" data-tip="All chapters">${ic("back")}</a>
+          ${ctx.prev ? `<a class="lbar__btn lbar__paso" href="#/e/${ctx.prev.id}" aria-label="Previous chapter" data-tip="Previous: Chapter ${ctx.prev.number}">${ic("prev")}</a>` : `<span class="lbar__btn lbar__paso" aria-disabled="true">${ic("prev")}</span>`}
+          <span class="lbar__tit"><b>${e.number}</b><span>${esc(e.title)}</span></span>
+          ${ctx.next ? `<a class="lbar__btn lbar__paso" href="#/e/${ctx.next.id}" aria-label="Next chapter" data-tip="Next: Chapter ${ctx.next.number}">${ic("next")}</a>` : `<span class="lbar__btn lbar__paso" aria-disabled="true" data-tip="This is the newest chapter">${ic("next")}</span>`}
+        </div>
         <span class="lbar__meta" data-tip="How much of this chapter you have read"><span data-pct>0%</span> · <span data-left></span></span>
-        <button class="lbar__btn" type="button" data-auto aria-pressed="false" aria-label="Auto scroll" data-tip="Auto scroll: the page moves by itself. Scroll to pause"><span class="ico">⇣</span><span class="lbl">Auto</span></button>
-        <button class="interruptor" type="button" role="switch" aria-checked="true" data-cambiar-modo aria-label="Immersive reading" data-tip="Immersive reading: sound, particles and marked voices. Off is classic reading"><span class="interruptor__txt" data-modo-lbl>Immersive</span><span class="interruptor__pista"><span class="interruptor__perilla"></span></span></button>
-        <button class="lbar__btn lbar__engranaje" type="button" data-abrir="inmersion" aria-expanded="false" aria-label="Immersive settings" data-tip="Immersive settings: sound, volume, particles, reading line…"><span class="ico">⚙</span><span class="lbl">Immersion</span></button>
-        <button class="lbar__btn" type="button" data-marcar aria-pressed="false" aria-label="Bookmark" data-tip="Bookmark this place"><span class="ico">☆</span><span class="lbl">Mark</span></button>
-        <button class="lbar__btn" type="button" data-compartir aria-label="Share" data-tip="Share this chapter"><span class="ico">↗</span><span class="lbl">Share</span></button>
-        <button class="lbar__btn" type="button" data-abrir="indice" aria-expanded="false" aria-label="Chapters and bookmarks" data-tip="Chapters and bookmarks"><span class="ico">☰</span><span class="lbl">Chapters</span></button>
-        <button class="lbar__btn" type="button" data-abrir="ajustes" aria-expanded="false" aria-label="Reading settings" data-tip="Reading settings: theme, font, size"><span class="ico">Aa</span><span class="lbl">Display</span></button>
-        ${locked ? "" : `<a class="lbar__btn lbar__com" href="#/e/${e.id}" onclick="event.preventDefault();document.querySelector('.coms-cap').scrollIntoView({behavior:'smooth'})" aria-label="Comments" data-tip="Go to the comments"><span class="ico">❝ <span data-n-com>0</span></span><span class="lbl">Comments</span></a>`}
+        <div class="lbar__der">
+          <div class="lbar__grupo">
+            <button class="lbar__btn" type="button" data-auto aria-pressed="false" aria-label="Auto scroll" data-tip="Auto scroll">${ic("auto")}</button>
+            <button class="lbar__btn" type="button" data-marcar aria-pressed="false" aria-label="Bookmark this place" data-tip="Bookmark this place">${ic("mark")}</button>
+            <button class="lbar__btn" type="button" data-abrir="indice" aria-expanded="false" aria-label="Chapters and bookmarks" data-tip="Chapters and bookmarks">${ic("book")}</button>
+            ${locked ? "" : `<a class="lbar__btn lbar__com" href="#/e/${e.id}" onclick="event.preventDefault();document.querySelector('.coms-cap').scrollIntoView({behavior:'smooth'})" aria-label="Comments" data-tip="Comments">${ic("talk")}<small data-n-com>0</small></a>`}
+            <button class="lbar__btn" type="button" data-compartir aria-label="Share" data-tip="Share this chapter">${ic("share")}</button>
+            <button class="lbar__btn" type="button" data-abrir="ajustes" aria-expanded="false" aria-label="Reading settings" data-tip="Reading settings: theme, font, size">${ic("settings")}</button>
+          </div>
+          <div class="lbar__inm">
+            <button class="interruptor" type="button" role="switch" aria-checked="true" data-cambiar-modo aria-label="Immersive reading" data-tip="Immersive reading: sound, particles and marked voices. Off is classic reading"><span class="interruptor__txt" data-modo-lbl>Immersive</span><span class="interruptor__pista"><span class="interruptor__perilla"></span></span></button>
+            <button class="lbar__btn lbar__engranaje" type="button" data-abrir="inmersion" aria-expanded="false" aria-label="Immersive settings" data-tip="Immersive settings: sound, particles, reading line…">${ic("spark")}</button>
+          </div>
+        </div>
       </div>
       <div class="autoctl" hidden role="group" aria-label="Auto scroll">
         <button type="button" data-auto-menos aria-label="Slower" data-tip="Slower">−</button>
