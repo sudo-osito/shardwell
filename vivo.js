@@ -63,7 +63,7 @@
     if (!soundOn || !ac) return;
     ac.resume?.().then?.(() => { Object.values(layers).forEach((L) => { if (L.want > 0 && L.a.paused) L.a.play().catch(() => {}); }); paintWait(); });
   }
-  function paintWait() { const b = root && $("[data-sonido]", root); if (!b) return; const waiting = soundOn && ac && ac.state !== "running"; b.classList.toggle("espera", !!waiting); b.dataset.tip = waiting ? "Sound is on: tap anywhere on the page to start it" : "Sound: recordings that follow the text"; }
+  function paintWait() { const b = root && $("[data-cambiar-modo]", root); if (!b) return; const waiting = soundOn && ac && ac.state !== "running"; b.classList.toggle("espera", !!waiting); b.dataset.tip = waiting ? "Immersive is on: tap anywhere on the page to start the sound" : "Immersive reading: sound, particles and marked voices. Turn off for classic reading"; }
   function arm() {
     if (armed) return; armed = true;
     const go = () => { wake(); setTimeout(() => { if (ac?.state === "running") { ["pointerdown", "keydown", "touchend"].forEach((e) => removeEventListener(e, go, true)); armed = false; } }, 300); };
@@ -197,7 +197,6 @@
     if (!set.focus) $$(".actual", root).forEach((p) => p.classList.remove("actual"));
     fxOn(set.particles !== false);
     guideOn(set.guide !== false && (set.sound || set.particles !== false));
-    const sb = $("[data-sonido]", root); if (sb) sb.setAttribute("aria-pressed", String(!!set.sound));
     if (set.sound && !soundOn) soundStart(); else if (!set.sound && soundOn) soundStop();
     else if (soundOn) { const sc = scenes[cur]; if (sc) bed(sc.bed || {}, sc.under); }
   }

@@ -49,16 +49,15 @@
       art.classList.toggle("modo-clasico", !inm);
       $$("[data-solo-inmersivo]", root).forEach((x) => (x.hidden = !inm));
       const ml = $("[data-modo-lbl]", root); if (ml) ml.textContent = inm ? "Immersive" : "Classic";
-      const sb = $("[data-sonido]", root); if (sb) sb.hidden = !inm;
-      window.Vivo?.sync(inm ? s : { ...s, sound: false, particles: false, voices: false, moments: false, focus: false, guide: false });
+      const sw = $("[data-cambiar-modo]", root); if (sw) sw.setAttribute("aria-checked", String(inm));
+      window.Vivo?.sync(inm ? { ...s, sound: true } : { ...s, sound: false, particles: false, voices: false, moments: false, focus: false, guide: false });
       $$("[data-rango]", root).forEach((i) => { i.value = s[i.dataset.rango]; const o = $(`[data-out="${i.dataset.rango}"]`, root); if (o) o.textContent = i.dataset.rango === "line" ? (+s.line).toFixed(2) : i.dataset.rango === "volume" ? Math.round(s.volume * 100) + "%" : s[i.dataset.rango]; });
     }
     on(root, "click", (ev) => {
       const b = ev.target.closest("[data-set]"); if (!b) return;
       const k = b.dataset.set, v = b.dataset.val; s[k] = v === "true" ? true : v === "false" ? false : v; apply();
     });
-    on(root, "click", (ev) => { if (!ev.target.closest("[data-sonido]")) return; s.sound = !s.sound; apply(); });
-    on(root, "click", (ev) => { if (!ev.target.closest("[data-cambiar-modo]")) return; s.mode = s.mode === "classic" ? "immersive" : "classic"; apply(); });
+    on(root, "click", (ev) => { if (!ev.target.closest("[data-cambiar-modo]")) return; s.mode = s.mode === "classic" ? "immersive" : "classic"; apply(); const sw = ev.target.closest("[data-cambiar-modo]"); sw.classList.remove("pulso"); void sw.offsetWidth; sw.classList.add("pulso"); });
     on(root, "input", (ev) => { const i = ev.target.closest("[data-rango]"); if (!i) return; s[i.dataset.rango] = +i.value; apply(); });
     window.Vivo?.mount(root, e, s);
     apply();
@@ -311,10 +310,9 @@
       <p class="ajuste__titulo rotulo">Reading mode</p>
       <div class="modos" role="radiogroup" aria-label="Reading mode">
         <button type="button" class="modo" data-set="mode" data-val="classic"><b>Classic</b><small>Just the text, like any web novel</small></button>
-        <button type="button" class="modo" data-set="mode" data-val="immersive"><b>Immersive</b><small>Sound, particles and marked voices that follow the story</small></button>
+        <button type="button" class="modo" data-set="mode" data-val="immersive"><b>Immersive</b><small>Sound, particles and marked voices that follow the story. The switch in the reading bar does the same</small></button>
       </div>
       <div class="solo-inmersivo" data-solo-inmersivo>
-      <div class="ajuste"><span>Sound <small>Real recordings that follow what happens in the text</small></span><div class="seg"><button type="button" data-set="sound" data-val="false">Off</button><button type="button" data-set="sound" data-val="true">On</button></div></div>
       <label class="ajuste"><span>Volume <output data-out="volume"></output></span><input type="range" min="0.1" max="1" step="0.05" data-rango="volume"></label>
       <div class="ajuste"><span>Particles <small>Wind, ash, water and sparks drawn behind the text</small></span><div class="seg"><button type="button" data-set="particles" data-val="true">On</button><button type="button" data-set="particles" data-val="false">Off</button></div></div>
       <div class="ajuste"><span>Reading line <small>A faint band where sound and particles change. Keep your eyes there</small></span><div class="seg"><button type="button" data-set="guide" data-val="true">Show</button><button type="button" data-set="guide" data-val="false">Hide</button></div></div>
@@ -356,8 +354,7 @@
         <span class="lbar__tit"><b>${e.number}</b> ${esc(e.title)}</span>
         <span class="lbar__meta" data-tip="How much of this chapter you have read"><span data-pct>0%</span> · <span data-left></span></span>
         <button class="lbar__btn" type="button" data-auto aria-pressed="false" aria-label="Auto scroll" data-tip="Auto scroll: the page moves by itself. Scroll to pause"><span class="ico">⇣</span><span class="lbl">Auto</span></button>
-        <button class="lbar__btn lbar__modo" type="button" data-cambiar-modo aria-label="Reading mode" data-tip="Switch between classic and immersive reading"><span class="ico">◐</span><span class="lbl" data-modo-lbl>Immersive</span></button>
-        <button class="lbar__btn" type="button" data-sonido aria-pressed="false" aria-label="Atmosphere" data-tip="Sound: recordings that follow the text"><span class="ico">♪</span><span class="lbl">Sound</span></button>
+        <button class="interruptor" type="button" role="switch" aria-checked="true" data-cambiar-modo aria-label="Immersive reading" data-tip="Immersive reading: sound, particles and marked voices. Turn off for classic reading"><span class="interruptor__txt" data-modo-lbl>Immersive</span><span class="interruptor__pista"><span class="interruptor__perilla"></span></span></button>
         <button class="lbar__btn" type="button" data-marcar aria-pressed="false" aria-label="Bookmark" data-tip="Bookmark this place"><span class="ico">☆</span><span class="lbl">Mark</span></button>
         <button class="lbar__btn" type="button" data-compartir aria-label="Share" data-tip="Share this chapter"><span class="ico">↗</span><span class="lbl">Share</span></button>
         <button class="lbar__btn" type="button" data-abrir="indice" aria-expanded="false" aria-label="Chapters and bookmarks" data-tip="Chapters and bookmarks"><span class="ico">☰</span><span class="lbl">Chapters</span></button>
