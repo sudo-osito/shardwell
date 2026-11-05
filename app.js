@@ -106,9 +106,9 @@
   }
 
   const PLANS = [
-    { id: "reader", name: "Reader", m: 4.99, y: 49.9, line: "Read the whole novel", perks: [() => `Every chapter after ${FREE()}, one behind the newest`, "Reader badge and two avatar frames"] },
-    { id: "diver", name: "Diver", m: 8.99, y: 89.9, line: "Read first, and write the world", perks: ["Everything in Reader", "<b>The newest chapter</b> the day it is out", "<b>Write in the Codex</b>: apply to become a Scribe", "One Tithe to give each month", "More frames, the realm banners and a flair under your name"], hot: true },
-    { id: "abyssal", name: "Abyssal", m: 14.99, y: 149.9, line: "The deepest dive", perks: ["Everything in Diver", "Vote on side stories", "Your name in the credits", "Five Tithes a month", "Every frame, including the Crown"] },
+    { id: "reader", name: "Reader", m: 4.99, y: 49.9, line: "Read the whole novel", perks: [() => `Every chapter after ${FREE()}, one behind the newest`, "<b>Unlock customization</b> for your profile"] },
+    { id: "diver", name: "Diver", m: 8.99, y: 89.9, line: "Read first, and write the world", perks: ["Everything in Reader", "<b>The newest chapter</b> the day it is out", "<b>Write in the Codex</b>: apply to become a Scribe", "One Tithe to give each month", "<b>More customization</b>, and a flair under your name"], hot: true },
+    { id: "abyssal", name: "Abyssal", m: 14.99, y: 149.9, line: "The deepest dive", perks: ["Everything in Diver", "Vote on side stories", "Your name in the credits", "Five Tithes a month", "<b>Full customization</b>, everything unlocked"] },
   ];
   // The patron tier: for readers who want to carry the work. Its one extra is asking the author.
   const SOVEREIGN = { id: "sovereign", name: "Sovereign", m: 49.99, y: 499.9 };
@@ -118,7 +118,7 @@
       <header class="cabeza cabeza--centro"><p class="rotulo">How to read</p><h2 class="titulo">Free to start. Kept alive by readers.</h2></header>
       <div class="planes planes--landing">
         <div class="plan"><p class="rotulo">Free</p><b>Chapters 1 to ${FREE()}</b><ul><li>Read every chapter up to ${FREE()}</li><li>Comment, join the forum and read the Codex with a free account</li><li>Bookmarks and reading settings</li></ul><a class="boton" href="#/e/${chapters()[0].id}">Start reading</a></div>
-        <div class="plan plan--miembro"><p class="rotulo">Membership</p><b>From ${usd(PLANS[0].m)} a month</b><ul><li>Every chapter after ${FREE()}</li><li>Write in the Codex, Tithes, frames and more</li><li>Cancel anytime</li></ul><a class="boton boton--quieto" href="#/membership">See the plans</a></div>
+        <div class="plan plan--miembro"><p class="rotulo">Membership</p><b>From ${usd(PLANS[0].m)} a month</b><ul><li>Every chapter after ${FREE()}</li><li>Unlock customization and write in the Codex</li><li>Cancel anytime</li></ul><a class="boton boton--quieto" href="#/membership">See the plans</a></div>
       </div>
     </section>`;
   }
