@@ -33,7 +33,7 @@
   const minutes = (w) => Math.max(1, Math.round(w / 230));
   const crumbs = (...xs) => `<nav class="migas" aria-label="Breadcrumb">${xs.map(([t, h]) => (h ? `<a href="${h}">${t}</a>` : `<span>${t}</span>`)).join('<i aria-hidden="true">/</i>')}</nav>`;
   const unwritten = (t = "Unwritten") => `<span class="desescrito">${t}</span>`;
-  const chList = (cls = "") => `<ol class="capitulos ${cls}">${chapters().map((c) => `<li><a href="#/e/${c.id}"><span class="capitulos__n">${c.number}</span><b>${c.title}</b><span>${c.status === "Draft" ? "In progress" : minutes(c.words) + " min read"}</span></a></li>`).join("")}</ol>`;
+  const chList = (cls = "") => `<ol class="capitulos ${cls}">${chapters().map((c) => `<li><a href="#/e/${c.id}"><span class="capitulos__n">${c.number}</span><b>${c.title}</b><span>${c.release && Date.parse(c.release) > Date.now() ? "Opens " + new Date(c.release).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : c.status === "Draft" ? "In progress" : minutes(c.words) + " min read"}</span></a></li>`).join("")}</ol>`;
 
   // ---------- home: the novel's landing page ----------
   const FREE = () => window.Lector?.release?.free || 50;
@@ -262,8 +262,9 @@
     return { chapters: ch.map((c) => ({ id: c.id, number: c.number, title: c.title, status: c.status, need: c.need || "free" })), prev: ch[i - 1], next: ch[i + 1], minutes: minutes(e.words) };
   }
   function reader(e) {
-    if (e.locked && (window.Cuenta?.rank(window.Cuenta?.user) || 0) >= ({ reader: 1, diver: 2, abyssal: 3, sovereign: 4 }[e.need] || 1) && !e.intro) {
-      fetch("https://shardwell-reader.maxpino.workers.dev/chapter-text/" + e.id, { headers: { authorization: "Bearer " + window.Cuenta.token } })
+    const outNow = e.release && Date.parse(e.release) <= Date.now(), soon = e.release && !outNow;
+    if (e.locked && !soon && (outNow && e.need === "free" || (window.Cuenta?.rank(window.Cuenta?.user) || 0) >= ({ reader: 1, diver: 2, abyssal: 3, sovereign: 4 }[e.need] || 1)) && !e.intro) {
+      fetch("https://shardwell-reader.maxpino.workers.dev/chapter-text/" + e.id, { headers: window.Cuenta?.token ? { authorization: "Bearer " + window.Cuenta.token } : {} })
         .then((r) => (r.ok ? r.json() : null)).then((t) => { if (t) { Object.assign(e, t, { unlocked: true }); route(); } });
       return `<p class="cargando cargando--pagina">Opening chapter ${e.number}…</p>`;
     }
@@ -323,6 +324,8 @@
       <div class="perfil__caja"><p class="rotulo">Reading</p>${cont ? `<a class="boton" href="#/e/${cont.e.id}">${cont.label}</a>` : `<a class="boton" href="#/e/${ch[0].id}">Start reading</a>`}</div>
       <div class="perfil__caja"><p class="rotulo">Plan</p><b class="perfil__num">${C.planName(u)}</b>${u.portal ? `<a class="boton boton--quieto" href="${u.portal}" target="_blank" rel="noopener">Manage subscription</a>` : `<a class="boton boton--quieto" href="#/membership">${r ? "Change plan" : "See the plans"}</a>`}</div>
       <div class="perfil__caja"><p class="rotulo">The Codex</p><b class="perfil__num">${u.role === "admin" ? "The Author" : { scribe: "Scribe", archivist: "Archivist" }[u.wiki_role] || "Reader"}</b><p class="nota">${s.codexEdits || 0} edits · ${s.codexPages || 0} pages started</p>${u.wiki_role || u.role === "admin" ? `<a class="boton boton--quieto" href="#/codex/user/${encodeURIComponent(u.name)}">Your contributions</a>` : `<a class="boton boton--quieto" href="#/codex/apply">Apply to write</a>`}</div>
+      <div class="perfil__caja perfil__caja--ancha perfil__accesos"><a href="#/season"><img src="img/ui/pr-d7.png" alt=""><b>The Season</b><span>Climb the track, earn rewards</span></a><a href="#/cards"><img src="img/ui/ic-look.png" alt=""><b>Cards</b><span>Collect them by reading</span></a><a href="#/notes"><img src="img/ui/ic-chapters.png" alt=""><b>Your Shardwell</b><span>Highlights and notes</span></a><a href="#/forum/shop"><img src="img/ui/ic-shop.png" alt=""><b>The shop</b><span>${u.ink || 0} Ink</span></a></div>
+      <div class="perfil__caja perfil__caja--ancha"><p class="rotulo">Showcase <small>choose up to three badges for your profile and card</small></p><div class="vitrina-sel" data-vitrina>${s.badges.filter((b) => b.earned).map((b) => `<button type="button" data-vitrina-b="${b.id}" aria-pressed="${(u.showcase || []).includes(b.id)}" title="${b.name}">${C.badgeImg(b)}<small>${b.name}</small></button>`).join("") || '<p class="nota">Earn badges to show them here.</p>'}</div><p class="perfil__msg" data-vitrina-msg hidden></p></div>
       <div class="perfil__caja perfil__caja--ancha"><p class="rotulo">Badges</p>${window.Foro.badgeGrid(s.badges)}</div>
       <div class="perfil__caja perfil__caja--ancha" id="marcas"><p class="rotulo">Bookmarks</p>
         ${marks.length ? `<ul class="perfil__marcas">${marks.map((m) => `<li><a href="#/e/${m.id}"><span>${m.n}</span><b>${m.title}</b></a></li>`).join("")}</ul>` : `<p class="nota">No bookmarks yet. Use ☆ while reading.</p>`}</div>
@@ -348,16 +351,17 @@
     const [cat, mine0] = await Promise.all([C.cosmetics(), C.call("/shop").catch(() => ({ items: [] }))]), r = C.rank(u), RK = { free: 0, reader: 1, diver: 2, abyssal: 3, sovereign: 4 };
     const owned = new Set(mine0.items || []), admin = u.role === "admin";
     const fresh = (it) => it.added && Date.now() - Date.parse(it.added) < 30 * 864e5;
-    const ok = (it, kind) => it.shop ? admin || owned.has(`${kind}:${it.id}`) : r >= (RK[it.plan] || 0);
-    const saved = { avatar: u.avatar || "", frame: u.frame || "", aura: u.aura || "", banner: u.banner || "", flair: u.flair || "" };
+    const ok = (it, kind) => it.shop || it.season ? admin || owned.has(`${kind}:${it.id}`) : r >= (RK[it.plan] || 0);
+    const saved = { avatar: u.avatar || "", frame: u.frame || "", aura: u.aura || "", banner: u.banner || "", flair: u.flair || "", title: u.titleId || "" };
     let draft = { ...saved }, tab = "avatar", set = "all", mine = false, peek = null;
-    const TABS = [["avatar", "Picture", cat.avatars], ["frame", "Frame", cat.frames], ["aura", "Aura", cat.auras], ["banner", "Banner", cat.banners], ["flair", "Flair", null]];
+    const TABS = [["avatar", "Picture", cat.avatars], ["frame", "Frame", cat.frames], ["aura", "Aura", cat.auras], ["title", "Title", cat.titles || []], ["banner", "Banner", cat.banners], ["flair", "Flair", null]];
     const sets = { avatar: cat.sets.avatars, banner: cat.sets.banners, aura: cat.sets.auras, frame: [] };
-    const lock = (it, kind) => ok(it, kind) ? "" : it.shop ? `<span class="pieza__lock pieza__lock--tienda">${it.shop} Ink · shop</span>` : `<span class="pieza__lock">◆ ${C.PLAN[it.plan]}${it.plan === "sovereign" ? "" : " and up"}</span>`;
+    const lock = (it, kind) => ok(it, kind) ? "" : it.season && !it.shop ? `<span class="pieza__lock pieza__lock--tienda">Season reward</span>` : it.shop ? `<span class="pieza__lock pieza__lock--tienda">${it.shop} Ink · shop</span>` : `<span class="pieza__lock">◆ ${C.PLAN[it.plan]}${it.plan === "sovereign" ? "" : " and up"}</span>`;
     const tile = (kind, it) => {
       const id = it ? it.id : "", on = draft[kind] === id, can = !it || ok(it, kind), name = it ? it.name : "None";
       const art = kind === "avatar" ? (it ? `<img src="img/avatars/${id}.jpg" alt="" loading="lazy">` : `<span class="pieza__letra">${u.name[0].toUpperCase()}</span>`)
         : kind === "frame" ? C.avatar({ ...u, avatar: draft.avatar, frame: id, aura: draft.aura }, "avatar--xl")
+        : kind === "title" ? `<span class="pieza__titulo">${it ? it.name.replace(/</g, "&lt;") : "No title"}</span>`
         : kind === "aura" ? C.avatar({ ...u, avatar: draft.avatar, frame: draft.frame, aura: id }, "avatar--xl")
         : it ? `<img src="img/${id}.jpg" alt="" loading="lazy">` : `<span class="pieza__nada">No banner</span>`;
       return `<button type="button" class="pieza pieza--${kind}${on ? " pieza--on" : ""}${can ? "" : " pieza--cerrada"}" data-pieza="${kind}" data-id="${id}" aria-pressed="${on}" ${can ? "" : 'aria-disabled="true"'}>
@@ -366,7 +370,7 @@
     const preview = () => {
       const d = { ...draft, ...(peek || {}) }, v = { ...u, ...d };
       return `<div class="look__tarjeta">${d.banner ? `<img class="look__banner cargada" src="img/${d.banner}.jpg" alt="">` : '<div class="look__banner look__banner--vacio"></div>'}
-        <div class="look__yo">${C.avatar(v, "avatar--xl")}<div><b class="look__nombre">${u.name.replace(/</g, "&lt;")}</b><p>${C.planTag(u) || '<span class="plan-tag">Free reader</span>'}</p>${d.flair ? `<p class="flair">${d.flair.replace(/</g, "&lt;")}</p>` : ""}</div></div></div>
+        <div class="look__yo">${C.avatar(v, "avatar--xl")}<div><b class="look__nombre">${u.name.replace(/</g, "&lt;")}</b>${d.title ? `<p class="titulo-u">${((cat.titles || []).find((t) => t.id === d.title)?.name || "").replace(/</g, "&lt;")}</p>` : ""}<p>${C.planTag(u) || '<span class="plan-tag">Free reader</span>'}</p>${d.flair ? `<p class="flair">${d.flair.replace(/</g, "&lt;")}</p>` : ""}</div></div></div>
         <div class="look__usos"><p class="rotulo">In a comment</p><div class="look__com">${C.avatar(v, "")}<span><b>${u.name.replace(/</g, "&lt;")}</b>${d.flair ? ` <i>${d.flair.replace(/</g, "&lt;")}</i>` : ""}<br><small>The sun cast uncountable shadows across the ocean…</small></span></div></div>`;
     };
     const changed = () => Object.keys(saved).some((k) => saved[k] !== draft[k]);
@@ -397,7 +401,7 @@
         b.addEventListener("mouseenter", () => { peek = { [k]: id }; repaint(); });
         b.addEventListener("mouseleave", () => { peek = null; repaint(); });
         b.addEventListener("click", () => {
-          if (b.getAttribute("aria-disabled")) { const m = $("[data-look-msg]", box), shopIt = [...cat.avatars, ...cat.banners, ...cat.frames, ...cat.auras].find((x) => x.id === id && x.shop); m.innerHTML = shopIt ? `That one is in the forum shop for ${shopIt.shop} Ink. <a href="#/forum/shop">Open the shop</a>` : `That one opens with a higher plan. <a href="#/membership">See the plans</a>`; m.hidden = false; return; }
+          if (b.getAttribute("aria-disabled")) { const m = $("[data-look-msg]", box), shopIt = [...cat.avatars, ...cat.banners, ...cat.frames, ...cat.auras, ...(cat.titles || [])].find((x) => x.id === id && (x.shop || x.season)); m.innerHTML = shopIt ? `That one is in the forum shop for ${shopIt.shop} Ink. <a href="#/forum/shop">Open the shop</a>` : `That one opens with a higher plan. <a href="#/membership">See the plans</a>`; m.hidden = false; return; }
           draft[k] = id; peek = null;
           $$(`[data-pieza="${k}"]`, box).forEach((x) => { const on = x.dataset.id === id; x.classList.toggle("pieza--on", on); x.setAttribute("aria-pressed", String(on)); });
           if (k !== "avatar" && k !== "banner" && k !== "flair") draw(); else if (k === "avatar") $$('[data-pieza="frame"] .avatar img, [data-pieza="aura"] .avatar img', box).forEach((im) => (im.src = `img/avatars/${id}.jpg`));
@@ -407,7 +411,7 @@
       $("[data-deshacer]", box)?.addEventListener("click", () => { draft = { ...saved }; draw(); });
       $("[data-guardar]", box)?.addEventListener("click", async (ev) => {
         const m = $("[data-look-msg]", box), body = {};
-        for (const k of ["avatar", "frame", "aura", "banner"]) if (draft[k] !== saved[k]) body[k] = draft[k];
+        for (const k of ["avatar", "frame", "aura", "banner", "title"]) if (draft[k] !== saved[k]) body[k] = draft[k];
         if (r >= 2 && draft.flair !== saved.flair) body.flair = draft.flair;
         ev.target.disabled = true;
         try { await C.update(body); Object.assign(saved, draft); C.cardCache?.clear(); m.textContent = "Saved. This is how readers see you now."; m.hidden = false; repaint(); }
@@ -417,6 +421,12 @@
     draw();
   }
   async function accountEvents() {
+    $$("[data-vitrina-b]", vista).forEach((b) => b.addEventListener("click", async () => {
+      const on = b.getAttribute("aria-pressed") !== "true", sel = $$("[data-vitrina-b][aria-pressed=true]", vista).map((x) => x.dataset.vitrinaB);
+      if (on && sel.length >= 3) { const m = $("[data-vitrina-msg]", vista); m.textContent = "Three at most. Remove one first."; m.hidden = false; return; }
+      b.setAttribute("aria-pressed", String(on));
+      try { await window.Cuenta.update({ showcase: $$("[data-vitrina-b][aria-pressed=true]", vista).map((x) => x.dataset.vitrinaB) }); window.Cuenta.cardCache?.clear(); } catch (x) { alert(x.message); }
+    }));
     $$("[data-avatar]", vista).forEach((b) => b.addEventListener("click", async () => { try { await window.Cuenta.update({ avatar: b.dataset.avatar }); route(); } catch (x) { alert(x.message); } }));
     $$("[data-banner]", vista).forEach((b) => b.addEventListener("click", async () => { try { await window.Cuenta.update({ banner: b.dataset.banner }); window.Cuenta.cardCache?.clear(); route(); } catch (x) { alert(x.message); } }));
     $$("[data-frame]", vista).forEach((b) => b.addEventListener("click", async () => { try { await window.Cuenta.update({ frame: b.dataset.frame }); route(); } catch (x) { alert(x.message); } }));
@@ -440,12 +450,12 @@
     const [, a, b] = h.split("?")[0].split("/");
     // the vault lore is the author's Codex: only the author sees it. The public Codex is the readers' wiki (#/codex).
     const gated = LORE_ROUTES.includes(a) || (a === "e" && b && !BY.get(b)?.section?.startsWith("novel") && !isAuthor());
-    const isForum = a === "forum" || a === "u", isCodex = a === "codex", isDash = a === "admin";
-    const html = AUTHOR_ROUTES.includes(a) && !isAuthor() ? notFound() : isForum ? '<div data-foro-raiz><p class="cargando cargando--pagina">Loading…</p></div>' : isDash ? '<div data-panel-raiz><p class="cargando cargando--pagina">Loading…</p></div>' : isCodex ? '<div data-codex-raiz><p class="cargando cargando--pagina">Opening the Codex…</p></div>' : gated && !isAuthor() ? notFound() : !a ? home() : a === "account" ? account() : a === "look" ? look() : a === "e" ? article(b) : a === "c" || a === "s" ? category(b) : a === "world" ? world() : a === "novel" ? novel() : a === "glossary" ? glossary() : a === "unwritten" || a === "unknowns" ? unwrittenPage() : a === "art" ? art() : a === "membership" ? membership() : notFound();
+    const isForum = a === "forum" || a === "u", isCodex = a === "codex", isDash = a === "admin", isMundo = ["season", "cards", "notes", "reset"].includes(a);
+    const html = AUTHOR_ROUTES.includes(a) && !isAuthor() ? notFound() : isForum ? '<div data-foro-raiz><p class="cargando cargando--pagina">Loading…</p></div>' : isMundo ? '<div data-mundo-raiz></div>' : isDash ? '<div data-panel-raiz><p class="cargando cargando--pagina">Loading…</p></div>' : isCodex ? '<div data-codex-raiz><p class="cargando cargando--pagina">Opening the Codex…</p></div>' : gated && !isAuthor() ? notFound() : !a ? home() : a === "account" ? account() : a === "look" ? look() : a === "e" ? article(b) : a === "c" || a === "s" ? category(b) : a === "world" ? world() : a === "novel" ? novel() : a === "glossary" ? glossary() : a === "unwritten" || a === "unknowns" ? unwrittenPage() : a === "art" ? art() : a === "membership" ? membership() : notFound();
     window.Lector?.unmount();
     vista.innerHTML = html;
     const e = a === "e" && BY.get(b);
-    const names = { admin: "Dashboard", codex: "The Codex", look: "Your look", forum: "Forum", u: "Profile", account: "Account", membership: "Membership", world: "World", novel: "The Novel", glossary: "Glossary", unwritten: "Unwritten", art: "Art" };
+    const names = { season: "The Season", cards: "Cards", notes: "Your Shardwell", reset: "Reset", admin: "Dashboard", codex: "The Codex", look: "Your look", forum: "Forum", u: "Profile", account: "Account", membership: "Membership", world: "World", novel: "The Novel", glossary: "Glossary", unwritten: "Unwritten", art: "Art" };
     document.title = e ? `${e.title} · Shardwell` : a === "c" ? `${cat(b)?.name || "World"} · Shardwell` : a ? `${names[a] || "Shardwell"} · Shardwell` : "Shardwell";
     document.body.dataset.ruta = a || "home";
     const here = isDash ? "admin" : isCodex ? "codex" : isForum ? "forum" : e ? (e.section === "novel" ? "novel" : e.id === "fishing-game" ? "game" : e.section === "characters" ? "characters" : "world") : a === "c" ? (b === "characters" ? "characters" : "world") : a || "";
@@ -456,7 +466,8 @@
     if (a === "account") accountEvents();
     if (a === "look") lookEvents();
     if (a === "membership") membershipEvents();
-    if (isDash) window.Panel.mount($("[data-panel-raiz]", vista), { crumbs, after: () => after() });
+    if (isMundo) window.Mundo.mount($("[data-mundo-raiz]", vista), a, b, { crumbs, chapters: chapters().map((c) => ({ id: c.id, number: c.number, title: c.title })), after: () => after() });
+    if (isDash) window.Panel.mount($("[data-panel-raiz]", vista), { crumbs, chapters: chapters().map((c) => ({ id: c.id, number: c.number, title: c.title })), after: () => after() });
     if (isCodex) window.Codex.mount($("[data-codex-raiz]", vista), { crumbs, chapters: chapters().map((c) => ({ id: c.id, number: c.number, title: c.title })), after: () => after() });
     if (isForum) window.Foro.mount($("[data-foro-raiz]", vista), { crumbs, chapters: chapters().map((c) => ({ id: c.id, number: c.number, title: c.title })), boards: { announcements: "Announcements", chapters: "Chapters", theories: "Theories", art: "Fan Art", general: "General", ask: "Ask the Author", stories: "Side Stories" }, after: () => after() });
   }
@@ -562,6 +573,7 @@
       try { const r = await fetch("https://shardwell-reader.maxpino.workers.dev/lore", { headers: { authorization: "Bearer " + window.Cuenta.token } }); if (r.ok) { const full = await r.json(); d = { ...full, extras: PUB.extras }; } } catch {}
     }
     D = d; BY = new Map(d.entries.map((e) => [e.id, e])); window.Lector?.setRelease(PUB.release);
+    window.__chapterText = Object.fromEntries(d.entries.filter((e) => e.section === "novel" && (e.intro || e.html)).map((e) => [e.id, ((e.intro || "") + " " + (e.html || "")).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ")]));
     $("[data-nav]").innerHTML = [["novel", "#/novel", "Read"], ["forum", "#/forum", "Forum"], ["codex", "#/codex", "The Codex"]].map(([k, h, t]) => `<a href="${h}" data-k="${k}">${t}</a>`).join("")
       + (isAuthor() ? `<a class="nav-ic" href="#/world" data-k="world" title="Author's Codex" aria-label="Author's Codex"><img src="img/ui/ic-authors.png" alt=""></a><a class="nav-ic" href="#/admin" data-k="admin" title="Dashboard" aria-label="Dashboard"><img src="img/ui/ic-dashboard.png" alt=""></a>` : "");
   }

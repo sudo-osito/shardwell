@@ -1,0 +1,12 @@
+{
+ "_note": "Collectible cards. A card unlocks when the reader finishes its chapter. Art in img/cards/<id>.jpg (portrait 488x744). rarity: common, rare, epic.",
+ "cards": [
+  { "id": "card-kalfu", "name": "Kalfu", "chapter": "chapter-1", "rarity": "epic", "line": "He had been running for six hours. This was where the running ended." },
+  { "id": "card-hinata", "name": "The Girl with the Lamp", "chapter": "chapter-1", "rarity": "rare", "line": "You’re late. I wasn’t waiting. I was studying." },
+  { "id": "card-seven", "name": "The Seven in Grey", "chapter": "chapter-1", "rarity": "common", "line": "They watched. They only had to wait." },
+  { "id": "card-last-floor", "name": "The Last Floor", "chapter": "chapter-1", "rarity": "common", "line": "Above him there was nothing but sky." },
+  { "id": "card-still-water", "name": "Still Water", "chapter": "chapter-2", "rarity": "rare", "line": "A city, with the water already in it." },
+  { "id": "card-chrona", "name": "Chrona", "chapter": "chapter-2", "rarity": "epic", "line": "The word came from nowhere." },
+  { "id": "card-lit-door", "name": "The Lit Door", "chapter": "chapter-2", "rarity": "rare", "line": "It was the only thing in the whole bright city that cast a shadow." }
+ ]
+}

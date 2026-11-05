@@ -27,7 +27,7 @@
     const ids = new Set([...local, ...server]);
     return chapters.filter((c) => ids.has(c.id)).reduce((m, c) => Math.max(m, c.number), 0);
   }
-  const who = (a, size = "") => a ? `<a class="quien" href="#/u/${encodeURIComponent(a.name)}" data-user="${esc(a.name)}">${C().avatar(a, size)}<b>${esc(a.name)}</b>${a.lv ? `<span class="lv" title="Forum level">Lv ${a.lv}</span>` : ""}${C().planTag(a)}${a.flair ? `<span class="flair">${esc(a.flair)}</span>` : ""}</a>` : `<span class="quien quien--borrado">[deleted]</span>`;
+  const who = (a, size = "") => a ? `<a class="quien" href="#/u/${encodeURIComponent(a.name)}" data-user="${esc(a.name)}">${C().avatar(a, size)}<b>${esc(a.name)}</b>${a.lv ? `<span class="lv" title="Forum level">Lv ${a.lv}</span>` : ""}${C().planTag(a)}${a.title ? `<span class="titulo-u">${esc(a.title)}</span>` : ""}${a.flair ? `<span class="flair">${esc(a.flair)}</span>` : ""}</a>` : `<span class="quien quien--borrado">[deleted]</span>`;
   const tithesRow = (t) => { const k = Object.entries(t || {}); return k.length ? `<span class="tithes">${k.map(([kind, n]) => `<span class="tithe tithe--${kind}" title="${TITHE[kind]?.name} Tithe">${TITHE[kind]?.ic}${n > 1 ? `<small>${n}</small>` : ""}</span>`).join("")}</span>` : ""; };
   const voteBox = (type, id, score, vote) => `<div class="voto" data-voto="${type}:${id}"><button type="button" data-v="1" aria-pressed="${vote === 1}" aria-label="Upvote" data-tip="Upvote">▲</button><b>${score}</b><button type="button" data-v="-1" aria-pressed="${vote === -1}" aria-label="Downvote" data-tip="Downvote">▼</button></div>`;
   const spoilerOk = (upto, ctx) => !upto || upto <= maxRead(ctx.chapters);
@@ -38,6 +38,7 @@
       <h1 class="titulo titulo--xl">${esc(title)}</h1><p class="bajada">${sub}</p></header>
       <div class="foro" data-foro>${inner}</div>`;
   }
+  const artSrc = (r) => /^cx:[a-f0-9]{24}$/.test(r || "") ? "https://shardwell-reader.maxpino.workers.dev/cximg/" + r.slice(3) : "";
   const loading = '<p class="cargando">Loading…</p>';
 
   const BOARD_IC = { announcements: "✦", chapters: "❡", theories: "⌖", art: "✎", general: "≋", ask: "♛", stories: "❦" };
@@ -50,7 +51,7 @@
         <nav class="foro2__nav" aria-label="Boards"><h2 class="rotulo">Boards</h2>
           <ul>${d.boards.map((b) => `<li><a href="#/forum/b/${b.id}"><img class="ic" src="img/ui/ic-${{ art: "art" }[b.id] || b.id}.png" alt="" loading="lazy"><span><b>${esc(b.name)}</b><small>${b.n} post${b.n === 1 ? "" : "s"}${b.post !== "free" ? ` · ${b.post === "admin" ? "author only" : C().PLAN[b.post] + " asks"}` : ""}</small></span></a></li>`).join("")}</ul>
           <h2 class="rotulo foro__sub">Yours</h2>
-          <ul><li><a href="#/forum/shop"><img class="ic" src="img/ui/ic-shop.png" alt="" loading="lazy"><span><b>The shop</b><small>Spend your Ink</small></span></a></li><li><a href="#/look"><img class="ic" src="img/ui/ic-look.png" alt="" loading="lazy"><span><b>Your look</b><small>Picture, frame, banner</small></span></a></li><li><a href="#/codex"><img class="ic" src="img/ui/ic-codex.png" alt="" loading="lazy"><span><b>The Codex</b><small>The readers' wiki</small></span></a></li></ul>
+          <ul><li><a href="#/season"><img class="ic" src="img/ui/pr-d7.png" alt="" loading="lazy"><span><b>The Season</b><small>Climb the track</small></span></a></li><li><a href="#/cards"><img class="ic" src="img/ui/ic-look.png" alt="" loading="lazy"><span><b>Cards</b><small>Collected by reading</small></span></a></li><li><a href="#/forum/shop"><img class="ic" src="img/ui/ic-shop.png" alt="" loading="lazy"><span><b>The shop</b><small>Spend your Ink</small></span></a></li><li><a href="#/look"><img class="ic" src="img/ui/ic-look.png" alt="" loading="lazy"><span><b>Your look</b><small>Picture, frame, banner</small></span></a></li><li><a href="#/codex"><img class="ic" src="img/ui/ic-codex.png" alt="" loading="lazy"><span><b>The Codex</b><small>The readers' wiki</small></span></a></li></ul>
         </nav>
         <section class="foro2__feed">
           ${me ? `<a class="redactar" href="#/forum/new/general">${C().avatar(me, "")}<span>Share a theory, a moment, a drawing…</span><b class="boton boton--chico">New post</b></a>` : ""}
@@ -60,6 +61,7 @@
         <aside class="foro2__lado">
           ${me && r ? rewardsCards(r) : `<div class="caja-lado"><p>Sign in to check in every day, complete missions and earn Ink for the shop.</p><button class="boton" type="button" data-entrar>Sign in</button></div>`}
           ${me ? meCard(me) : ""}
+          <div class="caja-lado semana" data-semana hidden></div>
           <div class="caja-lado"><h2 class="rotulo">Top voices this month</h2>${d.top.length ? `<ol class="top">${d.top.map((u) => `<li>${who(u)}<span>${u.n} ▲</span></li>`).join("")}</ol>` : `<p class="nota">Nobody yet. Be the first.</p>`}</div>
           <div class="caja-lado"><h2 class="rotulo">Tithes</h2><ul class="leyenda-tithes">${Object.entries(TITHE).map(([k, t]) => `<li><span class="tithe tithe--${k}">${t.ic}</span><b>${t.name}</b><span>${t.desc}${t.min !== "free" ? ` · ${C().PLAN[t.min]}+` : ""}</span></li>`).join("")}</ul>
             <p class="nota">Diver members get one Tithe a month, Abyssal and Sovereign five. A 7-day reading streak earns one more, and the shop sells Shard Tithes for Ink.</p></div>
@@ -104,9 +106,9 @@
     if (!posts.length) return `<p class="vacio-foro">Nothing here yet.</p>`;
     return `<ol class="posts">${posts.map((p) => {
       const hide = !spoilerOk(p.upto, ctx);
-      return `<li class="post${p.pinned ? " post--fijo" : ""}">${voteBox("post", p.id, p.score, p.vote)}
+      return `<li class="post${p.pinned ? " post--fijo" : ""}${p.image && !hide ? " post--img" : ""}">${voteBox("post", p.id, p.score, p.vote)}${p.image && !hide ? `<a class="post__img" href="#/forum/p/${p.id}"><img src="${artSrc(p.image)}" alt="" loading="lazy"></a>` : ""}
         <a class="post__cuerpo" href="#/forum/p/${p.id}">
-          <span class="post__meta">${p.pinned ? '<i class="fijo">Pinned</i>' : ""}${showBoard ? `<i>${esc(ctx.boards?.[p.board] || p.board)}</i>` : ""}${p.chapter ? `<i>Chapter ${p.chapter}</i>` : ""}${p.upto ? `<i class="spoiler-tag">Spoilers to ch. ${p.upto}</i>` : ""}${p.poll ? '<i>Poll</i>' : ""}</span>
+          <span class="post__meta">${p.pinned ? '<i class="fijo">Pinned</i>' : ""}${p.interesting ? '<i class="interesante">✦ The author found this interesting</i>' : ""}${showBoard ? `<i>${esc(ctx.boards?.[p.board] || p.board)}</i>` : ""}${p.chapter ? `<i>Chapter ${p.chapter}</i>` : ""}${p.upto ? `<i class="spoiler-tag">Spoilers to ch. ${p.upto}</i>` : ""}${p.poll ? '<i>Poll</i>' : ""}</span>
           <b class="post__titulo${hide ? " borroso" : ""}">${esc(p.title)}</b>
           ${hide ? `<span class="post__aviso">Hidden until you read chapter ${p.upto}</span>` : p.body ? `<span class="post__ext">${esc(p.body.slice(0, 180))}${p.body.length > 180 ? "…" : ""}</span>` : ""}
           <span class="post__pie">${tithesRow(p.tithes)}<span>${esc(p.author.name)} · ${ago(p.created)} · ${p.ncom} comment${p.ncom === 1 ? "" : "s"}</span></span>
@@ -141,8 +143,8 @@
           <h2 class="hilo__titulo">${esc(p.title)}</h2>
           <div class="hilo__autor">${who(p.author)}<time>${ago(p.created)}${p.edited ? " · edited" : ""}</time>${tithesRow(p.tithes)}</div></div></div>
         <div class="hilo__cuerpo${hide ? " oculto" : ""}">${hide ? `<div class="aviso-spoiler"><p>This post has spoilers up to chapter ${p.upto}. You have not read that far.</p><button class="boton boton--quieto boton--chico" type="button" data-ver-igual>Show it anyway</button></div>` : ""}
-          ${p.body ? `<div class="texto-foro"><p>${txt(p.body)}</p></div>` : ""}${p.link ? `<p><a class="enlace-ext" href="${esc(p.link)}" target="_blank" rel="noopener nofollow ugc">${esc(p.link)}</a></p>` : ""}${poll}</div>
-        <div class="hilo__acc">${me ? `<button type="button" data-dar="post:${p.id}">◈ Give a Tithe</button>${p.author.id === me.id || me.role === "admin" ? `<button type="button" data-borrar="post:${p.id}">Delete</button>` : `<button type="button" data-reportar="p${p.id}">Report</button>`}${me.role === "admin" ? `<button type="button" data-admin="pin:${p.pinned ? 0 : 1}">${p.pinned ? "Unpin" : "Pin"}</button><button type="button" data-admin="lock:${p.locked ? 0 : 1}">${p.locked ? "Unlock" : "Lock"}</button>` : ""}` : ""}<button type="button" data-copiar>Copy link</button></div>
+          ${p.image ? `<figure class="hilo__img"><img src="${artSrc(p.image)}" alt=""></figure>` : ""}${p.interesting ? `<p class="interesante interesante--grande">✦ The author found this interesting</p>` : ""}${p.body ? `<div class="texto-foro"><p>${txt(p.body)}</p></div>` : ""}${p.link ? `<p><a class="enlace-ext" href="${esc(p.link)}" target="_blank" rel="noopener nofollow ugc">${esc(p.link)}</a></p>` : ""}${poll}</div>
+        <div class="hilo__acc">${me ? `<button type="button" data-dar="post:${p.id}">◈ Give a Tithe</button>${p.author.id === me.id || me.role === "admin" ? `<button type="button" data-borrar="post:${p.id}">Delete</button>` : `<button type="button" data-reportar="p${p.id}">Report</button>`}${me.role === "admin" ? `${p.board === "theories" ? `<button type="button" data-admin="interesting:${p.interesting ? 0 : 1}">${p.interesting ? "Not interesting" : "✦ Interesting"}</button>` : ""}<button type="button" data-admin="pin:${p.pinned ? 0 : 1}">${p.pinned ? "Unpin" : "Pin"}</button><button type="button" data-admin="lock:${p.locked ? 0 : 1}">${p.locked ? "Unlock" : "Lock"}</button>` : ""}` : ""}<button type="button" data-copiar>Copy link</button></div>
       </article>
       <section class="hilo__coms"><h2 class="rotulo">${d.comments.filter((c) => !c.hidden).length} comments</h2>
         ${me ? (p.locked && me.role !== "admin" ? `<p class="nota">This thread is locked.</p>` : `<form class="fform" data-fcomentar><textarea name="body" rows="3" maxlength="3000" placeholder="Add a comment" required></textarea><div class="fform__pie"><span class="nota">Links are fine. Be kind; mark spoilers.</span><button class="boton boton--chico" type="submit">Comment</button></div><p class="fform__err" hidden></p></form>`) : `<div class="caja-lado"><p>Sign in to comment.</p><button class="boton boton--chico" type="button" data-entrar>Sign in</button></div>`}
@@ -157,7 +159,8 @@
         <label><span>Title</span><input name="title" maxlength="140" required></label>
         ${boardId === "chapters" ? `<label><span>Chapter</span><select class="sel" name="chapter" required>${ctx.chapters.map((c) => `<option value="${c.number}">Chapter ${c.number} · ${esc(c.title)}</option>`).join("")}</select></label>` : ""}
         <label><span>Text</span><textarea name="body" rows="8" maxlength="10000"></textarea></label>
-        ${boardId === "art" ? `<label><span>Link to your art (https://)</span><input name="link" type="url" placeholder="https://"></label>` : ""}
+        <div class="fform__img" data-subir-img><input type="hidden" name="image"><button class="boton boton--chico boton--quieto" type="button" data-elegir-img>${boardId === "art" ? "Upload your art" : "Add an image"}</button><input type="file" accept="image/*" hidden data-archivo-img><img alt="" hidden data-vista-img><small class="nota">${boardId === "art" ? "Your drawing, painting or edit. It is compressed before it is sent." : "Optional."}</small></div>
+        ${boardId === "art" ? `<label><span>Or a link to your art (https://)</span><input name="link" type="url" placeholder="https://"></label>` : ""}
         <label><span>Spoilers</span><select class="sel" name="upto"><option value="0">No spoilers</option>${ctx.chapters.map((c) => `<option value="${c.number}"${boardId === "chapters" ? "" : ""}>Spoilers up to chapter ${c.number}</option>`).join("")}</select></label>
         ${admin && boardId === "stories" ? `<label><span>Poll options (one per line)</span><textarea name="poll" rows="4"></textarea></label><label><span>Who can vote</span><select class="sel" name="pollMin"><option value="sovereign">Sovereign</option><option value="abyssal">Abyssal and up</option><option value="diver">Diver and up</option><option value="reader">Reader and up</option><option value="free">Everyone with an account</option></select></label>` : ""}
         <p class="fform__err" hidden></p>
@@ -169,8 +172,9 @@
     const groups = [...new Set(s.badges.map((b) => b.group))];
     return `<header class="perfil-portada">${u.banner ? `<img class="perfil-portada__img cargada" src="img/${u.banner}.jpg" alt="">` : ""}
         <div class="perfil-portada__in">${ctx.crumbs(["Shardwell", "#/"], ["Forum", "#/forum"], [u.name])}
-        <div class="perfil__cab">${C().avatar(u, "avatar--xl")}<div><h1 class="titulo titulo--xl">${esc(u.name)}</h1><p class="perfil__meta">${C().planTag(u) || '<span class="plan-tag">Free reader</span>'}${u.flair ? `<span class="flair">${esc(u.flair)}</span>` : ""}<span>Joined ${new Date(u.created).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</span></p>
+        <div class="perfil__cab">${C().avatar(u, "avatar--xl")}<div><h1 class="titulo titulo--xl">${esc(u.name)}</h1>${u.title ? `<p class="titulo-u titulo-u--grande">${esc(u.title)}</p>` : ""}<p class="perfil__meta">${C().planTag(u) || '<span class="plan-tag">Free reader</span>'}${u.flair ? `<span class="flair">${esc(u.flair)}</span>` : ""}<span>Joined ${new Date(u.created).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</span></p>
           ${u.bio ? `<p class="perfil__bio">${esc(u.bio)}</p>` : ""}${u.link ? `<a class="perfil__link" href="${esc(u.link)}" target="_blank" rel="noopener nofollow ugc">${esc(u.link.replace(/^https:\/\//, ""))}</a>` : ""}</div></div></div></header>
+      ${(u.showcase || []).length ? `<section class="bloque bloque--pegado vitrina"><p class="rotulo">Showcase</p><div class="vitrina__ins">${s.badges.filter((b) => u.showcase.includes(b.id)).map((b) => `<figure class="vitrina__it"><span class="insignia">${C().badgeImg(b)}</span><figcaption><b>${esc(b.name)}</b><small>${esc(b.desc)}</small></figcaption></figure>`).join("")}</div></section>` : ""}
       <section class="bloque bloque--pegado">
         <div class="cifras-perfil">
           <div><i>☾</i><b>${s.readStreak.current}</b><span>reading streak · best ${s.readStreak.best}</span></div>
@@ -220,6 +224,8 @@
         root.innerHTML = shell(v.html, CTX, v.title, v.sub);
       }
       CTX.after?.();
+      const sem = $("[data-semana]", root); if (sem) call("/forum/week").then((d) => { if (!d.theory) return; sem.hidden = false; sem.innerHTML = `<h2 class="rotulo">Theory of the week</h2><a class="semana__t" href="#/forum/p/${d.theory.id}"><b>${esc(d.theory.title)}</b><span>${esc(d.theory.name)} · ${d.theory.score} ▲${d.theory.interesting ? " · ✦ the author found it interesting" : ""}</span></a>`; }).catch(() => {});
+      if (b === "b" && c === "art") root.querySelector(".posts")?.classList.add("posts--galeria");
     } catch (x) { root.innerHTML = shell(`<p class="vacio-foro">${esc(x.message)}</p>`, CTX); }
   }
   // a small reward toast
@@ -257,6 +263,20 @@
     if (t.closest("[data-copiar]")) { try { await navigator.clipboard.writeText(location.href); t.closest("[data-copiar]").textContent = "Copied"; } catch {} }
   });
   document.addEventListener("change", (ev) => { const s = ev.target.closest("[data-filtro-cap]"); if (s) location.hash = `#/forum/b/chapters${s.value ? "?chapter=" + s.value : ""}`; });
+  async function shrink(file) {
+    const bmp = await createImageBitmap(file), k = Math.min(1, 1800 / Math.max(bmp.width, bmp.height)), cv = document.createElement("canvas");
+    cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k); cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
+    let data = cv.toDataURL("image/webp", 0.85); if (!data.startsWith("data:image/webp")) data = cv.toDataURL("image/jpeg", 0.88);
+    return { data, w: cv.width, h: cv.height };
+  }
+  document.addEventListener("click", (ev) => { const b = ev.target.closest("[data-elegir-img]"); if (b) $("[data-archivo-img]", b.parentElement).click(); });
+  document.addEventListener("change", async (ev) => {
+    const inp = ev.target.closest("[data-archivo-img]"); if (!inp || !inp.files[0]) return;
+    const box = inp.parentElement, btn = $("[data-elegir-img]", box); btn.disabled = true; btn.textContent = "Uploading…";
+    try { const r = await call("/forum/upload", { ...(await shrink(inp.files[0])), name: inp.files[0].name }); $("[name=image]", box).value = r.ref; const im = $("[data-vista-img]", box); im.src = artSrc(r.ref); im.hidden = false; btn.textContent = "Change image"; }
+    catch (x) { alert(x.message); btn.textContent = "Add an image"; }
+    btn.disabled = false;
+  });
   document.addEventListener("submit", async (ev) => {
     const f = ev.target; if (!root || !root.contains(f)) return;
     if (f.matches("[data-fcomentar]")) {

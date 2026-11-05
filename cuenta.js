@@ -53,6 +53,16 @@
   const planName = (u) => (u?.role === "admin" ? "The Author" : PLAN[u?.plan] || PLAN.free);
   const planTag = (u) => (rank(u) >= 1 ? `<span class="plan-tag plan-tag--${u.role === "admin" ? "author" : u.plan}">${planName(u)}</span>` : "");
 
+  // forgot password: we email a link that opens #/reset/<token>
+  document.addEventListener("click", async (ev) => {
+    const b = ev.target.closest("[data-olvide]"); if (!b) return;
+    const f = b.closest("form") || document, email = (f.querySelector?.('input[name="email"]')?.value || "").trim() || prompt("Your account email:");
+    if (!email) return;
+    b.disabled = true;
+    try { const r = await call("/auth/forgot", { email }); b.outerHTML = `<span class="acceso__ok">${r.mail ? "If that email has an account, a reset link is on its way. Check your inbox." : "Reset emails are not switched on yet. Write to us and we will help you."}</span>`; }
+    catch (x) { alert(x.message); b.disabled = false; }
+  });
+
   // ---------- top bar ----------
   const slot = $("[data-cuenta]");
   function paintBar() {
@@ -100,7 +110,7 @@
         <label><span>Password</span><input name="password" type="password" minlength="8" autocomplete="${mode === "register" ? "new-password" : "current-password"}" required placeholder="${mode === "register" ? "At least 8 characters" : ""}"></label>
         <p class="acceso__err" hidden></p>
         <button class="boton" type="submit">${mode === "register" ? "Create account" : "Sign in"}</button>
-        <p class="acceso__nota">${mode === "register" ? "With an account you can comment, keep your bookmarks and become a member." : "Forgot your password? Write to us and we will help you while password reset is being built."}</p>
+        <p class="acceso__nota">${mode === "register" ? "With an account you can comment, keep your bookmarks and become a member." : `<button type="button" class="acceso__olvide" data-olvide>Forgot your password?</button>`}</p>
       </form>`;
     if (!dlg.open) dlg.showModal();
     $("input", dlg).focus();
@@ -152,10 +162,10 @@
       const { user: u, stats: s } = await cardData(name); if (anchor !== el) return;
       card.innerHTML = `<div class="tarjeta-u__banner">${u.banner ? `<img src="img/${u.banner}.jpg" alt="">` : ""}</div>
         <div class="tarjeta-u__cuerpo"><div class="tarjeta-u__av">${avatar(u, "avatar--g")}</div>
-          <p class="tarjeta-u__nombre"><b>${esc(u.name)}</b>${planTag(u)}</p>${u.flair ? `<p class="flair">${esc(u.flair)}</p>` : ""}
+          <p class="tarjeta-u__nombre"><b>${esc(u.name)}</b>${planTag(u)}</p>${u.title ? `<p class="titulo-u">${esc(u.title)}</p>` : ""}${u.flair ? `<p class="flair">${esc(u.flair)}</p>` : ""}
           ${u.bio ? `<p class="tarjeta-u__bio">${esc(u.bio)}</p>` : ""}
           <dl class="tarjeta-u__cifras"><div><dt>☾</dt><dd>${s.readStreak.current}</dd></div><div><dt>♥</dt><dd>${s.likes}</dd></div><div><dt>◇</dt><dd>${s.reads}</dd></div><div><dt>✦</dt><dd>${s.badges.length}</dd></div></dl>
-          ${s.badges.length ? `<div class="tarjeta-u__ins">${s.badges.slice(-7).map((b) => `<span title="${esc(b.name)}">${badgeImg(b)}</span>`).join("")}</div>` : ""}
+          ${s.badges.length ? `<div class="tarjeta-u__ins">${[...s.badges.filter((b) => (u.showcase || []).includes(b.id)), ...s.badges.filter((b) => !(u.showcase || []).includes(b.id)).slice(-7)].slice(0, 7).map((b) => `<span title="${esc(b.name)}">${badgeImg(b)}</span>`).join("")}</div>` : ""}
           <p class="tarjeta-u__pie">Joined ${new Date(u.created).toLocaleDateString("en-GB", { month: "short", year: "numeric" })} · <span>View profile →</span></p></div>`;
       card.dataset.n = u.name; card.hidden = false; placeCard(el); requestAnimationFrame(() => card.classList.add("on"));
     } catch {}

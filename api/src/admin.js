@@ -63,6 +63,7 @@ export async function adminRoute(req, env, url, p, me, h) {
       if (until) st.push(env.DB.prepare("DELETE FROM sessions WHERE user = ?").bind(u.id));
     }
     if (!st.length) return bad(req, "Nothing to change.");
+    st.push(env.DB.prepare("INSERT INTO modlog (admin, action, target, note, created) VALUES (?, ?, ?, ?, ?)").bind(me.id, b.ban !== undefined ? (+b.ban === 0 ? "lift suspension" : "suspend " + (+b.ban < 0 ? "for good" : b.ban + " days")) : "change reader", u.name, clean(b.reason || JSON.stringify(b).slice(0, 200), 300), t));
     await env.DB.batch(st);
     return json(req, { ok: true });
   }
@@ -70,6 +71,7 @@ export async function adminRoute(req, env, url, p, me, h) {
     const r = await env.DB.prepare("SELECT * FROM reports WHERE id = ?").bind(+b.id).first();
     if (!r) return bad(req, "Not found");
     const st = [env.DB.prepare("UPDATE reports SET resolved = 1 WHERE id = ? OR (target = ? AND resolved = 0)").bind(r.id, r.target)];
+    st.push(env.DB.prepare("INSERT INTO modlog (admin, action, target, note, created) VALUES (?, ?, ?, ?, ?)").bind(me.id, b.action === "hide" ? "hide reported" : "dismiss report", r.target, r.reason, t));
     if (b.action === "hide") { const id = +String(r.target).slice(1); st.push(env.DB.prepare(`UPDATE ${r.target[0] === "p" ? "posts" : "fcomments"} SET hidden = 1 WHERE id = ?`).bind(id)); }
     await env.DB.batch(st);
     return json(req, { ok: true });

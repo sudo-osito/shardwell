@@ -1,0 +1,15 @@
+{
+ "_note": "The current season. Points: each check-in and each claimed daily mission inside the dates. Free rewards for everyone; the member row needs any paid plan. Reward kinds: ink, item {kind, id}, title.",
+ "id": "s1", "name": "Season of Still Water", "line": "The first season. The water is clear, the city is silent, and something turns over in its sleep.",
+ "start": "2026-11-05", "end": "2027-01-05", "points": { "checkin": 10, "mission": 15 },
+ "tiers": [
+  { "need": 30, "free": { "ink": 40 }, "member": { "ink": 80 } },
+  { "need": 80, "free": { "title": "still-water" }, "member": { "ink": 120 } },
+  { "need": 150, "free": { "ink": 60 }, "member": { "item": { "kind": "avatar", "id": "diver" } } },
+  { "need": 240, "free": { "ink": 80 }, "member": { "title": "clear-as-glass" } },
+  { "need": 350, "free": { "item": { "kind": "banner", "id": "still-water" } }, "member": { "ink": 200 } },
+  { "need": 480, "free": { "ink": 100 }, "member": { "item": { "kind": "avatar", "id": "lantern" } } },
+  { "need": 640, "free": { "ink": 120 }, "member": { "ink": 300 } },
+  { "need": 820, "free": { "title": "climber" }, "member": { "item": { "kind": "aura", "id": "tide" } } }
+ ]
+}

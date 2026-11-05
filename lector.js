@@ -12,7 +12,7 @@
     set(k, v) { try { localStorage.setItem("sw:" + k, JSON.stringify(v)); } catch {} },
   };
   const reader = (() => { let r = store.get("reader"); if (!r) { r = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(36).padStart(2, "0")).join("").slice(0, 24); store.set("reader", r); } return r; })();
-  const DEF = { size: 21, font: "book", line: 1.78, width: 34, align: "left", theme: "night", bubbles: true, indent: false, focus: false, moments: true, voices: true, particles: true, volume: 0.7, guide: true, mode: "immersive", sound: true };
+  const DEF = { size: 21, font: "book", line: 1.78, width: 34, align: "left", theme: "night", bubbles: true, indent: false, focus: false, moments: true, voices: true, particles: true, volume: 0.7, guide: true, mode: "immersive", sound: true, codexLinks: true };
   const FONTS = { book: '"Cormorant", Georgia, serif', classic: 'Georgia, "Times New Roman", serif', sans: '-apple-system, "Helvetica Neue", Arial, sans-serif', mono: 'ui-monospace, "SF Mono", Menlo, monospace' };
   const THEMES = { night: "Night", ink: "Ink", sepia: "Sepia", paper: "Paper" };
   const REACT = [["heart", "♥", "Loved it"], ["dread", "☾", "Dread"], ["tears", "≋", "Tears"], ["chills", "❄", "Chills"], ["awe", "✶", "Awe"]];
@@ -62,6 +62,7 @@
     on(root, "click", (ev) => { if (!ev.target.closest("[data-cambiar-modo]")) return; s.mode = s.mode === "classic" ? "immersive" : "classic"; apply(); const sw = ev.target.closest("[data-cambiar-modo]"); sw.classList.remove("pulso"); void sw.offsetWidth; sw.classList.add("pulso"); });
     on(root, "input", (ev) => { const i = ev.target.closest("[data-rango]"); if (!i) return; s[i.dataset.rango] = +i.value; apply(); });
     window.Vivo?.mount(root, e, s);
+    window.Lectura?.mount(root, e, ctx, s);
     apply();
 
     // ---------- panels ----------
@@ -304,7 +305,7 @@
   }
   let refreshForms = () => {};
 
-  function unmount() { window.Vivo?.unmount(); cleanup.forEach((f) => f()); cleanup = []; delete document.documentElement.dataset.lectura; }
+  function unmount() { window.Lectura?.unmount(); window.Vivo?.unmount(); cleanup.forEach((f) => f()); cleanup = []; delete document.documentElement.dataset.lectura; }
 
   // ---------- icons ----------
   const ICON = {
@@ -321,6 +322,9 @@
   };
   const ic = (k) => `<svg class="lic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ICON[k]}</svg>`;
 
+  // countdowns for scheduled chapters
+  setInterval(() => document.querySelectorAll("[data-cuenta-atras]").forEach((el) => { const ms = +el.dataset.cuentaAtras - Date.now(); if (ms <= 0) { el.textContent = "It is out. Refresh the page."; return; } const d = Math.floor(ms / 864e5), h = Math.floor((ms % 864e5) / 36e5), m = Math.floor((ms % 36e5) / 6e4), sec = Math.floor((ms % 6e4) / 1e3); el.textContent = `${d ? d + "d " : ""}${h}h ${String(m).padStart(2, "0")}m ${String(sec).padStart(2, "0")}s`; }), 1000);
+
   // ---------- markup ----------
   function html(e, ctx) {
     const locked = !!e.locked && !e.unlocked;
@@ -334,6 +338,7 @@
       <div class="ajuste"><span>Alignment</span><div class="seg"><button type="button" data-set="align" data-val="left">Left</button><button type="button" data-set="align" data-val="justify">Justified</button></div></div>
       <div class="ajuste"><span>Paragraphs</span><div class="seg"><button type="button" data-set="indent" data-val="false">Spaced</button><button type="button" data-set="indent" data-val="true">Indented</button></div></div>
       <div class="ajuste"><span>Comment bubbles</span><div class="seg"><button type="button" data-set="bubbles" data-val="true">Show</button><button type="button" data-set="bubbles" data-val="false">Hide</button></div></div>
+      <div class="ajuste"><span>Codex names <small>Names with a Codex page become quiet links</small></span><div class="seg"><button type="button" data-set="codexLinks" data-val="true">On</button><button type="button" data-set="codexLinks" data-val="false">Off</button></div></div>
       <p class="ajuste__nota">Shortcuts: ← → chapters · + − text size · Esc closes.</p>
     </div>`;
     const immersion = `<div class="panel" data-panel="inmersion" hidden role="dialog" aria-label="Immersive reading">
@@ -348,7 +353,9 @@
       <div class="ajuste ajuste--sw"><span>Marked voices <small>Thoughts in violet, spoken lines in amber</small></span><button type="button" class="interruptor interruptor--chico" role="switch" data-sw="voices" aria-checked="false"><span class="interruptor__pista"><span class="interruptor__perilla"></span></span></button></div>
       <div class="ajuste ajuste--sw"><span>Focus <small>Only the paragraph you are reading stays lit</small></span><button type="button" class="interruptor interruptor--chico" role="switch" data-sw="focus" aria-checked="false"><span class="interruptor__pista"><span class="interruptor__perilla"></span></span></button></div>
       </div>
-      <p class="ajuste__nota">Select any line to make a quote card.</p>
+      <div class="ajuste ajuste--sw"><span>Narration <small>Your device reads the chapter aloud from where you are</small></span><button type="button" class="interruptor interruptor--chico" role="switch" data-escuchar aria-checked="false"><span class="interruptor__pista"><span class="interruptor__perilla"></span></span></button></div>
+      ${window.Cuenta?.user?.role === "admin" ? `<div class="ajuste ajuste--sw ajuste--autor"><span>Edit scenes <small>Author only: click any paragraph to set the sound, particles and tone that start there</small></span><button type="button" class="interruptor interruptor--chico" role="switch" data-editar-escenas aria-checked="false"><span class="interruptor__pista"><span class="interruptor__perilla"></span></span></button></div>` : ""}
+      <p class="ajuste__nota">Select any line to highlight it, leave a note or make a quote card.</p>
     </div>`;
     const index = `<div class="panel" data-panel="indice" hidden role="dialog" aria-label="Chapters">
       <div class="panel__cab"><b>Chapters</b><button class="panel__cerrar" type="button" data-cerrar aria-label="Close">×</button></div>
@@ -364,7 +371,7 @@
     const end = locked ? "" : `<section class="fin">
       <p class="rotulo">End of chapter ${e.number}</p>
       <div class="reacciones" data-reacciones></div>
-      <p class="fin__lecturas" data-lecturas></p><div class="fin__racha" data-racha></div><div class="fin__codex" data-fin-codex></div><a class="boton boton--quieto fin__hilo" data-fin-hilo href="#/forum/b/chapters?chapter=${e.number}" hidden>Discuss this chapter in the forum</a>
+      <p class="fin__lecturas" data-lecturas></p><div class="fin__racha" data-racha></div><div class="pred" data-prediccion hidden></div><div class="fin__codex" data-fin-codex></div><a class="boton boton--quieto fin__hilo" data-fin-hilo href="#/forum/b/chapters?chapter=${e.number}" hidden>Discuss this chapter in the forum</a>
       <div class="fin__sig">${ctx.next ? `<a class="boton" href="#/e/${ctx.next.id}">${ctx.next.need && ctx.next.need !== "free" ? "Unlock" : "Next"}: Chapter ${ctx.next.number} · ${esc(ctx.next.title)}</a>` : `<p class="fin__nada">You have reached the latest chapter. New chapters are on the way.</p><a class="boton boton--quieto" href="#/novel">All chapters</a>`}</div>
       <div class="coms-cap"><div class="coms-cap__cab"><h2 class="titulo">Comments <span data-n-com>0</span></h2>
         <div class="seg seg--chico"><button type="button" data-orden="new" aria-pressed="true">Newest</button><button type="button" data-orden="top" aria-pressed="false">Top</button><button type="button" data-orden="old" aria-pressed="false">Oldest</button></div></div>
@@ -372,7 +379,8 @@
     </section>`;
     const need = e.need || "reader";
     const WHO = { reader: "Reader and up", diver: "Diver and up", abyssal: "Abyssal and up", sovereign: "Sovereign" };
-    const paywall = locked ? `<div class="muro"><p class="rotulo">Chapter ${e.number} · ${WHO[need]}</p><h2 class="titulo">${need === "diver" ? "The newest chapter reaches Diver members first" : "Members are reading ahead"}</h2>
+    const opens = e.release && Date.parse(e.release) > Date.now() ? new Date(e.release) : null;
+    const paywall = locked && opens ? `<div class="muro muro--pronto"><p class="rotulo">Chapter ${e.number} · coming soon</p><h2 class="titulo">Opens ${opens.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })} at ${opens.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</h2><p class="cuenta-atras" data-cuenta-atras="${opens.getTime()}"></p><a class="boton boton--quieto" href="#/novel">Back to the chapters</a></div>` : locked ? `<div class="muro"><p class="rotulo">Chapter ${e.number} · ${WHO[need]}</p><h2 class="titulo">${need === "diver" ? "The newest chapter reaches Diver members first" : "Members are reading ahead"}</h2>
       <p>Chapters 1 to ${REL.free} are free. After that, Reader members read every chapter but the newest; Diver and up read the newest the day it is out. This chapter is open to <b>${WHO[need]}</b>.</p>
       <a class="boton" href="#/membership">See membership</a><a class="boton boton--quieto" href="#/novel">Back to the chapters</a></div>` : "";
     return `<article class="lector">
@@ -408,6 +416,7 @@
         <button type="button" data-auto-stop aria-label="Stop auto scroll" data-tip="Stop auto scroll">×</button>
       </div>
       <div class="reanudar" hidden><span>Continue where you left off?</span><button type="button" class="boton boton--chico" data-reanudar>Continue</button><button type="button" class="lbar__btn" data-desde-inicio aria-label="Start from the top">×</button></div>
+      <aside class="previo" data-previo hidden></aside>
       <header class="lector__cabeza"><p class="rotulo">Chapter ${e.number}${e.status === "Draft" ? " · Draft" : ""}</p><h1 class="titulo titulo--xl">${esc(e.title)}</h1>
         <p class="lector__min">${ctx.minutes} min read</p></header>
       <div class="texto texto--prosa${locked ? " texto--muro" : ""}">${locked ? (e.intro ? e.intro.split("</p>").slice(0, 4).join("</p>") + "</p>" : "<p>…</p>") : e.intro + e.html}</div>

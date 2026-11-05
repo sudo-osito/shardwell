@@ -1,0 +1,17 @@
+-- Notifications, password reset, predictions, reading depth, moderation, notes, seasons, titles and showcase.
+CREATE TABLE notifs (id INTEGER PRIMARY KEY AUTOINCREMENT, user INTEGER NOT NULL, kind TEXT NOT NULL, text TEXT NOT NULL, link TEXT NOT NULL DEFAULT '', created INTEGER NOT NULL, seen INTEGER NOT NULL DEFAULT 0);
+CREATE INDEX notifs_user ON notifs(user, id);
+CREATE TABLE reset_tokens (token TEXT PRIMARY KEY, user INTEGER NOT NULL, expires INTEGER NOT NULL);
+CREATE TABLE predictions (id INTEGER PRIMARY KEY AUTOINCREMENT, chapter TEXT NOT NULL, q TEXT NOT NULL, options TEXT NOT NULL, answer INTEGER, created INTEGER NOT NULL);
+CREATE INDEX predictions_ch ON predictions(chapter);
+CREATE TABLE prediction_votes (pred INTEGER NOT NULL, user INTEGER NOT NULL, opt INTEGER NOT NULL, created INTEGER NOT NULL, PRIMARY KEY (pred, user));
+CREATE TABLE depth (chapter TEXT NOT NULL, reader TEXT NOT NULL, para INTEGER NOT NULL, total INTEGER NOT NULL, updated INTEGER NOT NULL, PRIMARY KEY (chapter, reader));
+CREATE TABLE modlog (id INTEGER PRIMARY KEY AUTOINCREMENT, admin INTEGER NOT NULL, action TEXT NOT NULL, target TEXT NOT NULL DEFAULT '', note TEXT NOT NULL DEFAULT '', created INTEGER NOT NULL);
+CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE notes (id INTEGER PRIMARY KEY AUTOINCREMENT, user INTEGER NOT NULL, chapter TEXT NOT NULL, para INTEGER NOT NULL, text TEXT NOT NULL, note TEXT NOT NULL DEFAULT '', created INTEGER NOT NULL);
+CREATE INDEX notes_user ON notes(user, chapter);
+CREATE TABLE season_claims (user INTEGER NOT NULL, season TEXT NOT NULL, tier INTEGER NOT NULL, track TEXT NOT NULL, created INTEGER NOT NULL, PRIMARY KEY (user, season, tier, track));
+ALTER TABLE users ADD COLUMN title TEXT NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN showcase TEXT NOT NULL DEFAULT '';
+ALTER TABLE posts ADD COLUMN interesting INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE posts ADD COLUMN image TEXT NOT NULL DEFAULT '';

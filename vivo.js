@@ -17,7 +17,7 @@
     if (!on && guide) { guide.remove(); guide = null; }
   }
   let gen = 0, root = null, entry = null, off = [], io = null, set = {}, scenes = [], cur = -1, seen = new Set(), AMB = null;
-  const amb = async () => AMB || (AMB = await fetch("data/ambience.json").then((r) => r.json()).catch(() => ({})));
+  const amb = async () => AMB || (AMB = await Promise.all([fetch("data/ambience.json").then((r) => r.json()).catch(() => ({})), fetch("https://shardwell-reader.maxpino.workers.dev/ambience").then((r) => r.json()).catch(() => ({}))]).then(([f, w]) => ({ ...f, ...w })));
   const clean = (p) => { const c = p.cloneNode(true); c.querySelectorAll("button, [aria-hidden=true]").forEach((x) => x.parentNode.removeChild(x)); return c.textContent.replace(/\s+/g, " ").trim(); };
 
   // ---------- sound ----------
@@ -126,11 +126,17 @@
     if (!on && cv) { cancelAnimationFrame(raf); raf = 0; cv.remove(); cv = null; parts = []; fxType = "none"; }
   }
 
+  // ---------- tone: a soft colour wash per scene ----------
+  let toneEl = null;
+  function tone(t) {
+    if (!toneEl) { toneEl = document.createElement("div"); toneEl.className = "tono-capa"; toneEl.setAttribute("aria-hidden", "true"); document.body.appendChild(toneEl); }
+    toneEl.dataset.tono = set.particles === false && !set.sound ? "" : t || "";
+  }
   // ---------- scenes follow the reading line ----------
   async function loadScenes() {
     const all = (await amb())[entry.id] || [], ps = $$(".texto--prosa > p", root);
     scenes = all.map((s) => ({ ...s, el: ps.find((p) => clean(p).startsWith(s.at)) })).filter((s) => s.el);
-    const on = () => { if (!scenes.length) return; const line = innerHeight * LINE; let k = -1; scenes.forEach((s, i) => { if (s.el.getBoundingClientRect().top < line) k = i; }); if (k === cur) return; const fwd = k > cur; cur = k; const s = scenes[k]; if (!s) { bed({}, false); fx({ type: "none" }); return; } bed(s.bed || {}, s.under); fx(s.fx); if (fwd && !seen.has(k)) { seen.add(k); sfx(s.sfx); } };
+    const on = () => { if (!scenes.length) return; const line = innerHeight * LINE; let k = -1; scenes.forEach((s, i) => { if (s.el.getBoundingClientRect().top < line) k = i; }); if (k === cur) return; const fwd = k > cur; cur = k; const s = scenes[k]; if (!s) { bed({}, false); fx({ type: "none" }); tone(""); return; } bed(s.bed || {}, s.under); fx(s.fx); tone(s.tone); if (fwd && !seen.has(k)) { seen.add(k); sfx(s.sfx); } };
     addEventListener("scroll", on, { passive: true }); off.push(() => removeEventListener("scroll", on)); on();
   }
 
@@ -156,13 +162,13 @@
   // ---------- quote cards ----------
   let qbtn = null;
   function quoteButton() {
-    qbtn = document.createElement("button"); qbtn.type = "button"; qbtn.className = "cita-btn"; qbtn.textContent = "Quote card"; qbtn.hidden = true; document.body.appendChild(qbtn);
+    qbtn = document.createElement("div"); qbtn.className = "cita-btn"; qbtn.hidden = true; qbtn.innerHTML = '<button type="button" data-sel="mark">Highlight</button><button type="button" data-sel="note">Note</button><button type="button" data-sel="card">Quote card</button>'; document.body.appendChild(qbtn);
     const textOf = (frag) => { const c = document.createElement("div"); c.appendChild(frag); return clean(c); };
-    const sel = () => { const s = getSelection(); if (!s || !s.rangeCount || !root?.contains(s.anchorNode) || !s.anchorNode.parentElement?.closest(".texto--prosa")) { qbtn.hidden = true; return; } const t = textOf(s.getRangeAt(0).cloneContents()); if (t.length < 8) { qbtn.hidden = true; return; } const r = s.getRangeAt(0).getBoundingClientRect(); qbtn.style.left = Math.max(10, Math.min(innerWidth - 130, r.left + r.width / 2 - 60)) + "px"; qbtn.style.top = (r.top + scrollY - 44) + "px"; qbtn.hidden = false; qbtn.dataset.t = t.slice(0, 420); };
+    const sel = () => { const s = getSelection(); if (!s || !s.rangeCount || !root?.contains(s.anchorNode) || !s.anchorNode.parentElement?.closest(".texto--prosa")) { qbtn.hidden = true; return; } const t = textOf(s.getRangeAt(0).cloneContents()); if (t.length < 8) { qbtn.hidden = true; return; } const r = s.getRangeAt(0).getBoundingClientRect(); qbtn.style.left = Math.max(10, Math.min(innerWidth - 290, r.left + r.width / 2 - 140)) + "px"; qbtn.style.top = (r.top + scrollY - 48) + "px"; qbtn.hidden = false; qbtn.dataset.t = t.slice(0, 420); qbtn.dataset.p = s.anchorNode.parentElement.closest(".texto--prosa > p")?.dataset.p || 0; };
     const up = () => setTimeout(sel, 10);
     document.addEventListener("mouseup", up); document.addEventListener("touchend", up);
     qbtn.addEventListener("mousedown", (e) => e.preventDefault());
-    qbtn.addEventListener("click", () => { card(qbtn.dataset.t); qbtn.hidden = true; });
+    qbtn.addEventListener("click", (ev) => { const k = ev.target.closest("[data-sel]")?.dataset.sel; if (!k) return; if (k === "card") card(qbtn.dataset.t); else window.Lectura?.saveNote(qbtn.dataset.t, +qbtn.dataset.p, k === "note"); qbtn.hidden = true; getSelection().removeAllRanges(); });
     off.push(() => { document.removeEventListener("mouseup", up); document.removeEventListener("touchend", up); qbtn.remove(); qbtn = null; });
   }
   function wrap(g, text, maxW) { const words = text.split(/\s+/), lines = []; let c = ""; for (const w of words) { const t = c ? c + " " + w : w; if (g.measureText(t).width > maxW && c) { lines.push(c); c = w; } else c = t; } if (c) lines.push(c); return lines; }
@@ -200,6 +206,7 @@
     if (set.sound && !soundOn) soundStart(); else if (!set.sound && soundOn) soundStop();
     else if (soundOn) { const sc = scenes[cur]; if (sc) bed(sc.bed || {}, sc.under); }
   }
-  function unmount() { gen++; guideOn(false); off.forEach((f) => f()); off = []; io?.disconnect(); io = null; fxOn(false); soundStop(); scenes = []; root = null; entry = null; }
-  window.Vivo = { mount, sync, unmount };
+  function unmount() { gen++; guideOn(false); toneEl?.remove(); toneEl = null; off.forEach((f) => f()); off = []; io?.disconnect(); io = null; fxOn(false); soundStop(); scenes = []; root = null; entry = null; }
+  async function reload() { AMB = null; if (!root || !entry) return; const r = root, e = entry, st = set; await mount(r, e, st); }
+  window.Vivo = { mount, sync, unmount, reload };
 })();

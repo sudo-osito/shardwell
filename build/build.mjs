@@ -247,7 +247,7 @@ for (const n of notes) {
     id: slug(n.title), title, subtitle, vault: n.title, section: n.section,
     status: STATUS[n.fm.status] || "Canon", type: n.fm.type || "",
     summary, intro: leadHtml, html: sectionsHtml, toc, edited: edited(n.rel),
-    info: (INFO[n.title] || []).map(([k, v]) => [k, v === "?" ? null : v]), membersUntil: n.fm.members_until || null, number: isChapter ? +((subtitle.match(/\d+/) || [0])[0]) : null,
+    info: (INFO[n.title] || []).map(([k, v]) => [k, v === "?" ? null : v]), membersUntil: n.fm.members_until || null, release: n.fm.release ? String(n.fm.release) : null, recap: n.fm.recap ? String(n.fm.recap) : null, number: isChapter ? +((subtitle.match(/\d+/) || [0])[0]) : null,
     unknowns: unknowns.map((u) => plain(inline(clean(u)))).filter((u) => u.length > 3),
     links: [...links].map(slug), image: ART[n.title] || null,
     words: plain(leadHtml + sectionsHtml).split(" ").length,
@@ -293,11 +293,13 @@ const needOf = (e) => {
   for (const plan of ["reader", "diver", "abyssal"]) if (e.number <= LATEST - RELEASE.behind[plan]) return plan;
   return "abyssal";
 };
-const isLocked = (e) => needOf(e) !== "free";
+// a chapter with a future release date (frontmatter "release: 2026-12-01T18:00") stays locked for everyone until then
+const scheduled = (e) => e.release && Date.parse(e.release) > Date.now();
+const isLocked = (e) => needOf(e) !== "free" || scheduled(e);
 const novelEntries = entries.filter((e) => e.section === "novel");
 const pubEntries = novelEntries.filter((e) => !isLocked(e) && e.status !== "Draft").map((e) => ({ ...e, links: [], backlinks: [] }));
-const locked = novelEntries.filter((e) => isLocked(e) && e.status !== "Draft").map((e) => ({ id: e.id, title: e.title, number: e.number, section: "novel", status: e.status, words: e.words, locked: true, need: needOf(e), membersUntil: e.membersUntil || null, early: e.number <= FREE }));
-fs.writeFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "out", "chapters.json"), JSON.stringify(Object.fromEntries(novelEntries.filter(isLocked).map((e) => [e.id, { intro: e.intro, html: e.html, need: needOf(e) }]))));
+const locked = novelEntries.filter((e) => isLocked(e) && e.status !== "Draft").map((e) => ({ id: e.id, title: e.title, number: e.number, section: "novel", status: e.status, words: e.words, locked: true, need: needOf(e), membersUntil: e.membersUntil || null, early: e.number <= FREE, release: scheduled(e) ? e.release : null, recap: e.recap || null }));
+fs.writeFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "out", "chapters.json"), JSON.stringify(Object.fromEntries(novelEntries.filter(isLocked).map((e) => [e.id, { intro: e.intro, html: e.html, need: needOf(e), release: scheduled(e) ? e.release : null }]))));
 const extras = { "fishing-game": entries.find((e) => e.id === "fishing-game")?.info || [] };
 fs.writeFileSync(path.join(path.dirname(OUT), "novel.json"), JSON.stringify({ built: data.built, release: { free: RELEASE.free, behind: RELEASE.behind, latest: LATEST }, sections: pubSections, entries: [...pubEntries, ...locked], extras }));
 // two Codex versions: "lore" = only confirmed information (what readers and members see); "lore-admin" = everything, for the author

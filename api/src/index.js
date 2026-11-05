@@ -1,6 +1,7 @@
 import { codexRoute } from "./codex.js";
 import { rewardsRoute, levelOf } from "./rewards.js";
 import { adminRoute } from "./admin.js";
+import { extraRoute, notify, notifyAll, censor, modlog, titleName } from "./extra.js";
 import COS from "../../data/cosmetics.json"; // one catalog for the site and the Worker
 // Shardwell API (Cloudflare Worker + D1 + KV).
 // Novel:     GET /chapter/:id · GET /chapter/:id/para/:n · GET /chapter-text/:id (early access / members)
@@ -14,7 +15,7 @@ const ORIGINS = ["https://sudo-osito.github.io", "http://127.0.0.1:4815", "http:
 const KINDS = ["heart", "dread", "tears", "chills", "awe"];
 const AVATARS = ["", ...COS.avatars.map((a) => a.id)];
 const AVATAR_PLAN = Object.fromEntries(COS.avatars.map((a) => [a.id, a.plan || "free"]));
-const SHOP = new Set([...COS.avatars.filter((a) => a.shop).map((a) => "avatar:" + a.id), ...COS.banners.filter((b) => b.shop).map((b) => "banner:" + b.id), ...COS.frames.filter((f) => f.shop).map((f) => "frame:" + f.id), ...COS.auras.filter((a) => a.shop).map((a) => "aura:" + a.id)]);
+const SHOP = new Set([...COS.avatars.filter((a) => a.shop || a.season).map((a) => "avatar:" + a.id), ...COS.banners.filter((b) => b.shop || b.season).map((b) => "banner:" + b.id), ...COS.frames.filter((f) => f.shop || f.season).map((f) => "frame:" + f.id), ...COS.auras.filter((a) => a.shop || a.season).map((a) => "aura:" + a.id)]);
 async function mayWear(env, me, kind, id, plan) {
   if (!id) return true;
   if (SHOP.has(kind + ":" + id)) return me.role === "admin" || !!(await env.DB.prepare("SELECT 1 FROM user_items WHERE user = ? AND kind = ? AND item = ?").bind(me.id, kind, id).first());
@@ -27,6 +28,7 @@ const PLAN_NAME = { free: "Free reader", reader: "Reader", diver: "Diver", abyss
 // avatar frames, the plan they need
 const FRAMES = { "": "free", ...Object.fromEntries(COS.frames.map((f) => [f.id, f.plan])) };
 // auras: a cosmetic of their own, worn with any frame
+const TITLES = Object.fromEntries((COS.titles || []).map((t) => [t.id, t]));
 const AURAS = { "": "free", ...Object.fromEntries(COS.auras.map((a) => [a.id, a.plan])) };
 // Tithes: awards (in-world offerings). Monthly allowance by plan; a 7-day reading streak adds one.
 const TITHES = { shard: { name: "Shard", min: "free" }, endro: { name: "Endro", min: "diver" }, crown: { name: "Crown", min: "abyssal" } };
@@ -96,7 +98,7 @@ async function session(env, req) {
 async function newSession(env, userId) {
   const t = token(); await env.DB.prepare("INSERT INTO sessions (token, user, created, expires) VALUES (?, ?, ?, ?)").bind(t, userId, now(), now() + 1000 * 60 * 60 * 24 * 90).run(); return t;
 }
-const userPub = (u) => ({ lv: levelOf(u.exp || 0).level, id: u.id, name: u.name, avatar: u.avatar, frame: u.frame || "", aura: u.aura || "", flair: u.flair || "", plan: u.plan || "free", role: u.role || "", bio: u.bio || "", banner: u.banner || "", link: u.link || "" });
+const userPub = (u) => ({ lv: levelOf(u.exp || 0).level, id: u.id, name: u.name, avatar: u.avatar, frame: u.frame || "", aura: u.aura || "", title: titleName(u.title), showcase: (u.showcase || "").split(",").filter(Boolean).slice(0, 3), flair: u.flair || "", plan: u.plan || "free", role: u.role || "", bio: u.bio || "", banner: u.banner || "", link: u.link || "" });
 
 // ---------- streaks, stats, badges ----------
 function streaks(days, tz) {
@@ -180,7 +182,7 @@ async function mark(env, u, kind, tz) { await env.DB.prepare("INSERT OR IGNORE I
 async function meOut(env, u, tz) {
   const s = await stats(env, u, tz);
   const reads = (await env.DB.prepare("SELECT chapter FROM user_reads WHERE user = ?").bind(u.id).all()).results.map((r) => r.chapter);
-  return { id: u.id, email: u.email, name: u.name, avatar: u.avatar, frame: u.frame || "", aura: u.aura || "", flair: u.flair || "", bio: u.bio || "", banner: u.banner || "", link: u.link || "", plan: u.plan || "free", role: u.role || "", wiki_role: u.wiki_role || "", ink: u.ink || 0, level: levelOf(u.exp || 0), member: rank(u) >= 1, portal: u.portal || "", created: u.created, reads, stats: s };
+  return { id: u.id, email: u.email, name: u.name, avatar: u.avatar, frame: u.frame || "", aura: u.aura || "", title: titleName(u.title), titleId: u.title || "", showcase: (u.showcase || "").split(",").filter(Boolean).slice(0, 3), flair: u.flair || "", bio: u.bio || "", banner: u.banner || "", link: u.link || "", plan: u.plan || "free", role: u.role || "", wiki_role: u.wiki_role || "", ink: u.ink || 0, level: levelOf(u.exp || 0), member: rank(u) >= 1, portal: u.portal || "", created: u.created, reads, stats: s };
 }
 
 // ---------- Lemon Squeezy ----------
@@ -197,7 +199,7 @@ async function applySubscriptions(env, userId) {
 }
 
 // ---------- forum ----------
-const POST_COLS = "p.*, u.name uname, u.avatar uavatar, u.frame uframe, u.aura uaura, u.flair uflair, u.plan uplan, u.role urole, u.exp uexp";
+const POST_COLS = "p.*, u.name uname, u.avatar uavatar, u.frame uframe, u.aura uaura, u.title utitle, u.flair uflair, u.plan uplan, u.role urole, u.exp uexp";
 // One discussion thread per published chapter, made by the site under the author's name.
 // The chapter list comes from the public site (data/novel.json); checked at most every 10 minutes per isolate.
 const SITE = "https://sudo-osito.github.io/shardwell";
@@ -212,15 +214,15 @@ async function chapterThreads(env) {
     const have = new Set((await env.DB.prepare("SELECT auto FROM posts WHERE auto LIKE 'chapter:%'").all()).results.map((r) => r.auto));
     const t = now(), st = [];
     chs.forEach((c, i) => { if (have.has("chapter:" + c.id)) return; st.push(env.DB.prepare("INSERT OR IGNORE INTO posts (board, user, title, body, chapter, upto, created, auto) VALUES ('chapters', ?, ?, ?, ?, ?, ?, ?)").bind(author.id, `Chapter ${c.number}: ${c.title} · Discussion`, `Talk about Chapter ${c.number} here: what hit you, what you noticed, what you think comes next. Spoilers up to this chapter are fine. Mark anything from later chapters.`, c.number, c.number, t + i, "chapter:" + c.id)); });
-    if (st.length) await env.DB.batch(st);
+    if (st.length) { await env.DB.batch(st); const fresh = chs.filter((c) => !have.has("chapter:" + c.id)); if (have.size) for (const c of fresh) await notifyAll(env, "chapter", `Chapter ${c.number} is out: ${c.title}`, "#/e/" + c.id); }
   } catch { threadsAt = 0; }
 }
 function postOut(p, my = {}) {
   return {
     id: p.id, board: p.board, title: p.title, body: p.body, link: p.link, chapter: p.chapter, upto: p.upto, score: p.score, ncom: p.ncom,
-    pinned: !!p.pinned, locked: !!p.locked, created: p.created, edited: p.edited, auto: p.auto || "",
+    pinned: !!p.pinned, locked: !!p.locked, created: p.created, edited: p.edited, auto: p.auto || "", interesting: !!p.interesting, image: p.image || "",
     poll: p.poll ? parseJSON(p.poll, null) : null, pollMin: p.poll_min || "",
-    author: { id: p.user, name: p.uname, avatar: p.uavatar, frame: p.uframe, aura: p.uaura || "", flair: p.uflair, plan: p.uplan, role: p.urole, lv: levelOf(p.uexp || 0).level },
+    author: { id: p.user, name: p.uname, avatar: p.uavatar, frame: p.uframe, aura: p.uaura || "", title: titleName(p.utitle), flair: p.uflair, plan: p.uplan, role: p.urole, lv: levelOf(p.uexp || 0).level },
     vote: my.votes?.get(p.id) || 0, tithes: my.tithes?.get("p" + p.id) || {},
   };
 }
@@ -266,6 +268,8 @@ export default {
         return new Response(o.value, { headers: { "content-type": o.metadata?.type || "image/webp", "cache-control": "public, max-age=31536000, immutable", "x-content-type-options": "nosniff", "access-control-allow-origin": "*" } });
       }
       if (me && req.method === "GET" && p[0] === "codex" && p[1] === "p" && p[2] && !p[3]) await mark(env, me, "codex", tz);
+      const ex = await extraRoute(req, env, url, p, me, tz, { json, bad, clean, now, can, rank, hashPass, limited, userPub, ipHash, cors });
+      if (ex) return ex;
       const ad = await adminRoute(req, env, url, p, me, { json, bad, clean, now, userPub, RANK });
       if (ad) return ad;
       if (me && me.banned_until > now() && req.method === "POST" && !(p[0] === "auth" && p[1] === "logout")) return bad(req, `Your account is suspended${me.banned_until < 4e12 ? " until " + new Date(me.banned_until).toISOString().slice(0, 10) : ""}.${me.ban_reason ? " " + me.ban_reason : ""}`, 403);
@@ -295,7 +299,8 @@ export default {
         if (p[0] === "chapter-text" && okId(p[1])) {
           const all = parseJSON(await env.LORE.get("chapters"), {}), ch = all[p[1]];
           if (!ch) return bad(req, "Not found", 404);
-          if (!can(me, ch.need || "reader")) return bad(req, `${PLAN_NAME[ch.need || "reader"]} members only`, 401);
+          if (ch.release && Date.parse(ch.release) > now() && me?.role !== "admin") return bad(req, `This chapter opens on ${ch.release}.`, 403);
+          if (ch.need !== "free" && !can(me, ch.need || "reader")) return bad(req, `${PLAN_NAME[ch.need || "reader"]} members only`, 401);
           return json(req, ch);
         }
         if (p[0] === "chapter" && okId(p[1])) {
@@ -420,6 +425,8 @@ export default {
         if (b.bio !== undefined) await env.DB.prepare("UPDATE users SET bio = ? WHERE id = ?").bind(clean(b.bio, 300), me.id).run();
         if (b.link !== undefined) { const l = clean(b.link, 200); if (!okLink(l)) return bad(req, "The link must start with https://"); await env.DB.prepare("UPDATE users SET link = ? WHERE id = ?").bind(l, me.id).run(); }
         if (b.banner !== undefined) { if (!(b.banner in BANNERS)) return bad(req, "banner"); if (!(await mayWear(env, me, "banner", b.banner, BANNERS[b.banner]))) return bad(req, SHOP.has("banner:" + b.banner) ? "Get that banner in the shop first." : "That banner needs a higher plan.", 403); await env.DB.prepare("UPDATE users SET banner = ? WHERE id = ?").bind(b.banner, me.id).run(); }
+        if (b.title !== undefined) { const t = TITLES[b.title]; if (b.title && !t) return bad(req, "title"); if (b.title && !(t.shop || t.season ? me.role === "admin" || await env.DB.prepare("SELECT 1 FROM user_items WHERE user = ? AND kind = 'title' AND item = ?").bind(me.id, b.title).first() : can(me, t.plan))) return bad(req, t.shop ? "Get that title in the shop first." : t.season ? "That title is a season reward." : "That title needs a higher plan.", 403); await env.DB.prepare("UPDATE users SET title = ? WHERE id = ?").bind(b.title || "", me.id).run(); }
+        if (b.showcase !== undefined) { const ids = (Array.isArray(b.showcase) ? b.showcase : []).map((x) => String(x).replace(/[^a-z0-9-]/g, "").slice(0, 40)).filter(Boolean).slice(0, 3); await env.DB.prepare("UPDATE users SET showcase = ? WHERE id = ?").bind(ids.join(","), me.id).run(); }
         if (b.flair !== undefined) { if (!can(me, "diver")) return bad(req, "Flair is for Diver members and above.", 403); await env.DB.prepare("UPDATE users SET flair = ? WHERE id = ?").bind(clean(b.flair, 24), me.id).run(); }
         if (b.newPassword !== undefined) {
           if (!(await checkPass(String(b.oldPassword || ""), me.pass))) return bad(req, "Your current password is wrong.", 401);
@@ -435,7 +442,7 @@ export default {
         if (b.website) return json(req, { ok: true });
         if (!me) return bad(req, "Sign in to comment.", 401);
         if (!okId(b.chapter) || !okReader(b.reader)) return bad(req, "chapter/reader");
-        const body = clean(b.body, 2000); if (body.length < 2) return bad(req, "The comment is empty.");
+        const body = await censor(env, clean(b.body, 2000)); if (body.length < 2) return bad(req, "The comment is empty.");
         const para = b.para === null || b.para === undefined ? null : +b.para;
         if (para !== null && (!Number.isInteger(para) || para < 0 || para > 5000)) return bad(req, "para");
         const ih = await ipHash(req);
@@ -443,6 +450,7 @@ export default {
         const r = await env.DB.prepare("INSERT INTO comments (chapter, para, parent, name, body, spoiler, reader, ip_hash, created, user) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, created")
           .bind(b.chapter, para, b.parent ? +b.parent : null, me.name, body, b.spoiler ? 1 : 0, b.reader, ih, now(), me.id).first();
         await mark(env, me, "post", tz);
+        if (b.parent) { const par = await env.DB.prepare("SELECT user FROM comments WHERE id = ?").bind(+b.parent).first(); if (par?.user && par.user !== me.id) await notify(env, par.user, "reply", `${me.name} answered your comment on a chapter`, "#/e/" + b.chapter); }
         return json(req, { ok: true, id: r.id, created: r.created });
       }
       if (p[0] === "like") {
@@ -486,7 +494,7 @@ export default {
           const board = BOARDS[b.board]; if (!board) return bad(req, "board");
           if (!can(me, board.post)) return bad(req, board.post === "sovereign" ? "Only Sovereign members can ask here." : "Only the author posts here.", 403);
           if (await limited(env, "fp:" + me.id, 5, 10 * 60 * 1000)) return bad(req, "Slow down a little: wait a few minutes before posting again.", 429);
-          const title = clean(b.title, 140), body = clean(b.body, 10000), link = clean(b.link, 500);
+          const title = await censor(env, clean(b.title, 140)), body = await censor(env, clean(b.body, 10000)), link = clean(b.link, 500), image = /^cx:[a-f0-9]{24}$/.test(b.image || "") ? b.image : "";
           if (title.length < 3) return bad(req, "Write a title (3 characters or more).");
           if (!okLink(link)) return bad(req, "The link must start with https://");
           const chapter = b.board === "chapters" ? Math.max(1, Math.min(9999, +b.chapter || 0)) : null;
@@ -498,8 +506,8 @@ export default {
             const opts = b.poll.map((o) => clean(o, 120)).filter(Boolean).slice(0, 8); if (opts.length < 2) return bad(req, "A poll needs at least two options.");
             poll = JSON.stringify(opts); pollMin = RANK[b.pollMin] !== undefined ? b.pollMin : "free";
           }
-          const r = await env.DB.prepare("INSERT INTO posts (board, user, title, body, link, chapter, upto, poll, poll_min, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id")
-            .bind(b.board, me.id, title, body, link, chapter, upto, poll, pollMin, now()).first();
+          const r = await env.DB.prepare("INSERT INTO posts (board, user, title, body, link, chapter, upto, poll, poll_min, created, image) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id")
+            .bind(b.board, me.id, title, body, link, chapter, upto, poll, pollMin, now(), image).first();
           await env.DB.prepare("INSERT OR IGNORE INTO post_votes (post, user, v) VALUES (?, ?, 1)").bind(r.id, me.id).run();
           await env.DB.prepare("UPDATE posts SET score = 1 WHERE id = ?").bind(r.id).run();
           await mark(env, me, "post", tz);
@@ -510,10 +518,13 @@ export default {
           if (!post) return bad(req, "This post does not exist.", 404);
           if (post.locked && !admin) return bad(req, "This thread is locked.", 403);
           if (await limited(env, "fc:" + me.id, 15, 10 * 60 * 1000)) return bad(req, "Too many comments. Wait a few minutes.", 429);
-          const body = clean(b.body, 3000); if (body.length < 2) return bad(req, "The comment is empty.");
+          const body = await censor(env, clean(b.body, 3000)); if (body.length < 2) return bad(req, "The comment is empty.");
           const parent = b.parent ? +b.parent : null;
           const r = await env.DB.prepare("INSERT INTO fcomments (post, parent, user, body, created) VALUES (?, ?, ?, ?, ?) RETURNING id").bind(post.id, parent, me.id, body, now()).first();
           await env.DB.prepare("UPDATE posts SET ncom = ncom + 1 WHERE id = ?").bind(post.id).run();
+          const par = parent ? await env.DB.prepare("SELECT user FROM fcomments WHERE id = ?").bind(parent).first() : null;
+          if (par && par.user !== me.id) await notify(env, par.user, "reply", `${me.name} answered your comment on "${post.title}"`, "#/forum/p/" + post.id);
+          if (post.user !== me.id && (!par || par.user !== post.user)) await notify(env, post.user, "reply", `${me.name} commented on "${post.title}"`, "#/forum/p/" + post.id);
           await mark(env, me, "post", tz);
           return json(req, { id: r.id });
         }
@@ -547,6 +558,7 @@ export default {
           const s = await stats(env, me, tz);
           if (s.tithesLeft < 1) return bad(req, rank(me) < 2 ? "You have no Tithes left. Diver members and above get Tithes every month, and a 7-day reading streak earns one." : "You have given all your Tithes this month.", 403);
           await env.DB.prepare("INSERT INTO tithes (giver, receiver, kind, target, created) VALUES (?, ?, ?, ?, ?)").bind(me.id, t.user, kind, (isC ? "c" : "p") + id, now()).run();
+          await notify(env, t.user, "tithe", `${me.name} gave you a ${TITHES[kind].name} Tithe`, isC ? "" : "#/forum/p/" + id);
           return json(req, { ok: true, left: s.tithesLeft - 1 });
         }
         if (p[1] === "report") {
@@ -584,8 +596,10 @@ export default {
         if (p[1] === "role") { const r = await env.DB.prepare("UPDATE users SET role = ? WHERE email = ?").bind(b.role === "admin" ? "admin" : "", clean(b.email, 200).toLowerCase()).run(); return json(req, { ok: !!r.meta.changes }); }
         if (p[1] === "hide") { await env.DB.prepare("UPDATE comments SET hidden = 1 WHERE id = ?").bind(+b.id).run(); return json(req, { ok: true }); }
         if (p[1] === "post") {
-          const f = { pin: "pinned", lock: "locked", hide: "hidden" }[b.action]; if (!f) return bad(req, "action");
-          await env.DB.prepare(`UPDATE posts SET ${f} = ? WHERE id = ?`).bind(b.on ? 1 : 0, +b.id).run(); return json(req, { ok: true });
+          const f = { pin: "pinned", lock: "locked", hide: "hidden", interesting: "interesting" }[b.action]; if (!f) return bad(req, "action");
+          await env.DB.prepare(`UPDATE posts SET ${f} = ? WHERE id = ?`).bind(b.on ? 1 : 0, +b.id).run(); await modlog(env, me?.id, `${b.on ? "" : "un"}${b.action}`, "post " + b.id);
+          if (b.action === "interesting" && b.on) { const pp = await env.DB.prepare("SELECT user, title FROM posts WHERE id = ?").bind(+b.id).first(); if (pp) await notify(env, pp.user, "interesting", `The author found your theory interesting: "${pp.title}"`, "#/forum/p/" + b.id); }
+          return json(req, { ok: true });
         }
         if (p[1] === "reports") return json(req, { reports: (await env.DB.prepare("SELECT r.*, u.name FROM reports r JOIN users u ON u.id = r.user WHERE r.resolved = 0 ORDER BY r.created DESC LIMIT 200").all()).results });
         return bad(req, "not found", 404);

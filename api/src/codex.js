@@ -89,12 +89,12 @@ export async function codexRoute(req, env, url, p, me, h) {
     }
     if (p[1] === "cat" && p[2]) {
       const cat = decodeURIComponent(p[2]);
-      const rows = (await env.DB.prepare("SELECT pg.slug, pg.title, pg.type, pg.spoiler FROM wiki_cats c JOIN wiki_pages pg ON pg.slug = c.slug AND pg.hidden = 0 WHERE c.cat = ? COLLATE NOCASE ORDER BY pg.title").bind(cat).all()).results;
+      const rows = (await env.DB.prepare("SELECT pg.slug, pg.title, pg.type, pg.spoiler, pg.sealed FROM wiki_cats c JOIN wiki_pages pg ON pg.slug = c.slug AND pg.hidden = 0 WHERE c.cat = ? COLLATE NOCASE ORDER BY pg.title").bind(cat).all()).results;
       const info = await env.DB.prepare("SELECT cover, blurb FROM wiki_catinfo WHERE cat = ? COLLATE NOCASE").bind(cat).first();
       return json(req, { cat, pages: rows, cover: info?.cover || "", blurb: info?.blurb || "", canEdit: wr >= 1 });
     }
     if (p[1] === "all") {
-      const rows = (await env.DB.prepare("SELECT slug, title, type, spoiler, updated FROM wiki_pages WHERE hidden = 0 ORDER BY title COLLATE NOCASE LIMIT 2000").all()).results;
+      const rows = (await env.DB.prepare("SELECT slug, title, type, spoiler, updated, sealed FROM wiki_pages WHERE hidden = 0 ORDER BY title COLLATE NOCASE LIMIT 2000").all()).results;
       return json(req, { pages: rows });
     }
     if (p[1] === "search") {
@@ -189,7 +189,9 @@ export async function codexRoute(req, env, url, p, me, h) {
       env.DB.prepare("INSERT OR IGNORE INTO wiki_watch (user, slug, created) VALUES (?, ?, ?)").bind(me.id, slug, t),
     ];
     await env.DB.batch(st);
-    return json(req, { ok: true, slug, rev });
+    let bounty = 0;
+    if (!pg) { const wanted = (await env.DB.prepare("SELECT COUNT(*) n FROM wiki_links WHERE dst = ? AND src != ?").bind(slug, slug).first()).n; if (wanted >= 2) { bounty = 100; await env.DB.batch([env.DB.prepare("UPDATE users SET ink = ink + 100 WHERE id = ?").bind(me.id), env.DB.prepare("INSERT INTO ink_log (user, delta, reason, created) VALUES (?, 100, ?, ?)").bind(me.id, "Wanted page written: " + title, t)]); } }
+    return json(req, { ok: true, slug, rev, bounty });
   }
 
   if (p[1] === "p" && p[2] && p[3]) {
@@ -287,6 +289,7 @@ export async function codexRoute(req, env, url, p, me, h) {
     await env.DB.batch([
       env.DB.prepare("UPDATE wiki_apps SET status = ?, decided_by = ?, note = ? WHERE id = ?").bind(yes ? "accepted" : "declined", me.id, clean(b.note, 500), a.id),
       ...(yes ? [env.DB.prepare("UPDATE users SET wiki_role = 'scribe' WHERE id = ? AND wiki_role = ''").bind(a.user)] : []),
+      env.DB.prepare("INSERT INTO notifs (user, kind, text, link, created) VALUES (?, 'codex', ?, '#/codex', ?)").bind(a.user, yes ? "You are a Scribe now. Welcome to the Codex." : "Your application to write in the Codex was not accepted this time.", now()),
     ]);
     return json(req, { ok: true });
   }

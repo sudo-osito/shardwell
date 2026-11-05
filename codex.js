@@ -212,6 +212,17 @@
     const head = `<div class="cx-catcab">${cover ? `<img src="${cover}" alt="">` : ""}<div><p>${d.blurb ? esc(d.blurb) : `<span class="nota">${d.pages.length} page${d.pages.length === 1 ? "" : "s"} in this category.</span>`}</p>${d.canEdit ? `<button class="boton boton--chico boton--quieto" type="button" data-cx-catedit="${esc(name)}" data-blurb="${esc(d.blurb)}" data-cover="${esc(d.cover)}">Edit this category</button>` : ""}</div></div>`;
     return (await listView(esc(name), "", d.pages, [["Categories", "#/codex/cats"], [name]])).replace('<div class="cx" data-cx>', '<div class="cx" data-cx>' + head);
   }
+  // the same words in the chapters you have read and in the forum
+  function searchMore(q, posts) {
+    const read = maxRead(), low = q.toLowerCase(), hits = [];
+    for (const c of CTX.chapters || []) {
+      if (c.number > read) continue;
+      const txt = (window.__chapterText || {})[c.id]; if (!txt) continue;
+      const i = txt.toLowerCase().indexOf(low); if (i >= 0) hits.push({ c, snip: txt.slice(Math.max(0, i - 80), i + 120) });
+    }
+    return `<section class="cx-mas-res"><h2 class="rotulo">In the chapters you have read</h2>${hits.length ? `<ul class="cx-lista">${hits.map((h) => `<li><a href="#/e/${h.c.id}"><b>Chapter ${h.c.number} · ${esc(h.c.title)}</b></a><p>…${esc(h.snip)}…</p></li>`).join("")}</ul>` : `<p class="nota">Nothing in the chapters you have read.</p>`}
+      <h2 class="rotulo">In the forum</h2>${posts.length ? `<ul class="cx-lista">${posts.filter((p) => !p.upto || p.upto <= read).map((p) => `<li><a href="#/forum/p/${p.id}"><b>${esc(p.title)}</b></a><p>${esc(p.body)}</p></li>`).join("")}</ul>` : `<p class="nota">Nothing in the forum.</p>`}</section>`;
+  }
   async function recentView() {
     const d = await call("/codex");
     return shell("Recent edits", "Every change to the Codex, newest first.", d.recent.length ? `<ol class="cx-cambios">${d.recent.map((r) => `<li><p class="cx-cambios__t"><a href="#/codex/p/${r.slug}">${esc(r.title)}</a> ${delta(r.delta)}</p><span>${who(r.user)} · ${ago(r.created)}${r.summary ? ` · <i>${esc(r.summary)}</i>` : ""} · <a href="#/codex/rev/${r.id}">see the change</a></span></li>`).join("")}</ol>` : `<p class="nota">No edits yet.</p>`, [["Recent edits"]]);
@@ -335,7 +346,7 @@
   }
   async function listView(title, sub, rows, crumbs) {
     const read = maxRead();
-    const inner = rows.length ? `<ul class="cx-lista">${rows.map((p) => `<li><a href="#/codex/p/${p.slug}"><b>${esc(p.title)}</b></a><span>${esc(kindName(p.type))}${p.spoiler ? ` · ${p.spoiler > read ? "spoilers past where you are" : "spoilers to ch. " + p.spoiler}` : ""}</span>${p.body ? `<p>${esc(p.body.replace(/\[\[(?:[^\]|]+\|)?([^\]]+)\]\]/g, "$1").replace(/[#*>{}:]/g, "").slice(0, 200))}…</p>` : ""}</li>`).join("")}</ul>` : `<div class="cx-vacia"><p>No pages here yet.</p><a class="boton boton--quieto" href="#/codex/new">Write the first one</a></div>`;
+    const inner = rows.length ? `<ul class="cx-lista">${rows.map((p) => `<li><a href="#/codex/p/${p.slug}"><b>${esc(p.title)}</b>${p.sealed ? ' <span class="cx-sello cx-sello--mini" title="Confirmed by the author">✦ Confirmed</span>' : ""}</a><span>${esc(kindName(p.type))}${p.spoiler ? ` · ${p.spoiler > read ? "spoilers past where you are" : "spoilers to ch. " + p.spoiler}` : ""}</span>${p.body ? `<p>${esc(p.body.replace(/\[\[(?:[^\]|]+\|)?([^\]]+)\]\]/g, "$1").replace(/[#*>{}:]/g, "").slice(0, 200))}…</p>` : ""}</li>`).join("")}</ul>` : `<div class="cx-vacia"><p>No pages here yet.</p><a class="boton boton--quieto" href="#/codex/new">Write the first one</a></div>`;
     return shell(title, sub, inner, crumbs);
   }
   async function applyView() {
@@ -398,7 +409,7 @@
       else if (a === "type" && b) { const d = await call("/codex/all"); html = await listView(esc(kindName(b)), "Pages of this kind.", d.pages.filter((p) => p.type === b), [[kindName(b)]]); }
       else if (a === "cats") html = await catsView();
       else if (a === "all") { const d = await call("/codex/all"); html = await listView("All pages", `${d.pages.length} pages, A to Z.`, d.pages, [["All pages"]]); }
-      else if (a === "search") { const d = await call("/codex/search?q=" + encodeURIComponent(q.get("q") || "")); const k = await pagesKnown(); const exact = k.has(slugOf(q.get("q"))); html = (await listView(`Search: ${esc(q.get("q") || "")}`, exact ? "" : `No page with that exact name. <a class="cx-link cx-link--rojo" href="#/codex/p/${slugOf(q.get("q"))}">Create “${esc(q.get("q"))}”</a>`, d.pages, [["Search"]])).replace('<div class="cx" data-cx>', `<div class="cx" data-cx>${searchBox(q.get("q") || "")}`); }
+      else if (a === "search") { const d = await call("/codex/search?q=" + encodeURIComponent(q.get("q") || "")), more = await call("/search?q=" + encodeURIComponent(q.get("q") || "")).catch(() => ({ posts: [] })); const k = await pagesKnown(); const exact = k.has(slugOf(q.get("q"))); html = (await listView(`Search: ${esc(q.get("q") || "")}`, exact ? "" : `No page with that exact name. <a class="cx-link cx-link--rojo" href="#/codex/p/${slugOf(q.get("q"))}">Create “${esc(q.get("q"))}”</a>`, d.pages, [["Search"]])).replace('<div class="cx" data-cx>', `<div class="cx" data-cx>${searchBox(q.get("q") || "")}`) + searchMore(q.get("q") || "", more.posts); }
       else if (a === "random") { const d = await call("/codex/random"); location.replace(d.slug ? "#/codex/p/" + d.slug : "#/codex"); return; }
       else if (a === "watchlist") { const d = await call("/codex/watchlist"); html = shell("Pages you follow", "Every change to the pages you follow. You follow a page when you edit it, or with Follow.", d.changes.length ? `<ol class="cx-cambios">${d.changes.map((r) => `<li><p class="cx-cambios__t"><a href="#/codex/p/${r.slug}">${esc(r.title)}</a> ${delta(r.delta)}</p><span>${who(r.user)} · ${ago(r.created)}${r.summary ? ` · <i>${esc(r.summary)}</i>` : ""} · <a href="#/codex/rev/${r.id}">changes</a></span></li>`).join("")}</ol>` : `<p class="nota">You do not follow any page yet.</p>`, [["Following"]]); }
       else if (a === "user" && b) { const d = await call("/codex/user/" + encodeURIComponent(b)); html = shell(`${esc(d.user.name)} in the Codex`, `${d.edits} edits on ${d.pages} pages · ${RANKS[d.user.role === "admin" ? 3 : { scribe: 1, archivist: 2 }[d.user.wiki_role] || 0]} · <a href="#/u/${encodeURIComponent(d.user.name)}">Profile</a>`, d.revs.length ? `<ol class="cx-cambios">${d.revs.map((r) => `<li><p class="cx-cambios__t"><a href="#/codex/p/${r.slug}">${esc(r.title)}</a> ${delta(r.delta)}</p><span>${ago(r.created)}${r.summary ? ` · <i>${esc(r.summary)}</i>` : ""} · <a href="#/codex/rev/${r.id}">changes</a></span></li>`).join("")}</ol>` : `<p class="nota">No edits yet.</p>`, [["Contributions"]]); }

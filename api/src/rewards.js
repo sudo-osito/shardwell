@@ -49,7 +49,7 @@ export async function rewardsRoute(req, env, url, p, me, tz, h) {
   };
   const shopList = () => {
     const out = [];
-    for (const [kind, list] of [["avatar", COS.avatars], ["banner", COS.banners], ["frame", COS.frames], ["aura", COS.auras]]) for (const it of list) if (it.shop) out.push({ kind, id: it.id, name: it.name, cost: it.shop, set: it.set || "" });
+    for (const [kind, list] of [["avatar", COS.avatars], ["banner", COS.banners], ["frame", COS.frames], ["aura", COS.auras], ["title", COS.titles || []]]) for (const it of list) if (it.shop) out.push({ kind, id: it.id, name: it.name, cost: it.shop, set: it.set || "" });
     out.push({ kind: "tithe", id: "shard", name: "A Shard Tithe", cost: TITHE_COST, desc: `An extra Tithe to give this month (up to ${TITHE_MAX})` });
     return out;
   };

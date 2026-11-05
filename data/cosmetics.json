@@ -35,6 +35,10 @@
    [
     "shop",
     "From the shop"
+   ],
+   [
+    "season",
+    "Season rewards"
    ]
   ],
   "auras": [
@@ -49,6 +53,10 @@
    [
     "shop",
     "From the shop"
+   ],
+   [
+    "season",
+    "Season rewards"
    ]
   ]
  },
@@ -255,7 +263,8 @@
    "set": "rare",
    "plan": "free",
    "shop": 300,
-   "added": "2026-11-04"
+   "added": "2026-11-04",
+   "season": "s1"
   },
   {
    "id": "seer",
@@ -295,7 +304,8 @@
    "set": "rare",
    "plan": "free",
    "shop": 300,
-   "added": "2026-11-04"
+   "added": "2026-11-04",
+   "season": "s1"
   },
   {
    "id": "veiled",
@@ -346,6 +356,11 @@
    "id": "crown",
    "name": "Crown",
    "plan": "abyssal"
+  },
+  {
+   "id": "sovereign",
+   "name": "Sovereign",
+   "plan": "sovereign"
   }
  ],
  "banners": [
@@ -494,6 +509,13 @@
    "set": "shop",
    "shop": 800,
    "added": "2026-11-04"
+  },
+  {
+   "id": "still-water",
+   "name": "Still Water",
+   "plan": "free",
+   "set": "season",
+   "season": "s1"
   }
  ],
  "auras": [
@@ -582,6 +604,76 @@
    "set": "shop",
    "plan": "free",
    "shop": 1200
+  },
+  {
+   "id": "tide",
+   "name": "Tide",
+   "set": "season",
+   "plan": "free",
+   "season": "s1"
+  },
+  {
+   "id": "sovereign",
+   "name": "Sovereign Flame",
+   "set": "painted",
+   "plan": "sovereign"
+  }
+ ],
+ "titles": [
+  {
+   "id": "reader-of-wells",
+   "name": "Reader of Wells",
+   "plan": "free"
+  },
+  {
+   "id": "night-reader",
+   "name": "Night Reader",
+   "plan": "reader"
+  },
+  {
+   "id": "diver-of-kayaba",
+   "name": "Diver of Kayaba",
+   "plan": "diver"
+  },
+  {
+   "id": "drowned-scholar",
+   "name": "Drowned Scholar",
+   "plan": "abyssal"
+  },
+  {
+   "id": "crowned-in-ink",
+   "name": "Crowned in Ink",
+   "plan": "sovereign"
+  },
+  {
+   "id": "keeper-of-the-rig",
+   "name": "Keeper of the Rig",
+   "shop": 600,
+   "plan": "free"
+  },
+  {
+   "id": "seer",
+   "name": "Seer",
+   "shop": 900,
+   "plan": "free"
+  },
+  {
+   "id": "still-water",
+   "name": "Still Water",
+   "season": "s1",
+   "plan": "free"
+  },
+  {
+   "id": "clear-as-glass",
+   "name": "Clear as Glass",
+   "season": "s1",
+   "plan": "free"
+  },
+  {
+   "id": "climber",
+   "name": "The Climber",
+   "season": "s1",
+   "plan": "free"
   }
  ]
 }
