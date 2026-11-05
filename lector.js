@@ -309,7 +309,7 @@
     back: '<path d="M10 4 3 12l7 8M3 12h18"/>',
     prev: '<path d="m15 5-7 7 7 7"/>',
     next: '<path d="m9 5 7 7-7 7"/>',
-    auto: '<path d="M12 4v13m-5-5 5 5 5-5M5 20h14"/>',
+    auto: '<rect x="7" y="2.5" width="10" height="14.5" rx="5"/><path d="M12 6.2v2.6"/><path d="m8.6 19.6 3.4 2.4 3.4-2.4"/>',
     mark: '<path d="M6 3h12v18l-6-4-6 4z"/>',
     book: '<path d="M3 5.5C5.5 4 8.5 4 12 6c3.5-2 6.5-2 9-.5V19c-2.5-1.5-5.5-1.5-9 .5-3.5-2-6.5-2-9-.5z"/><path d="M12 6v13.5"/><path d="M16 4.6V11l-1.5-1-1.5 1V5.4" fill="currentColor" stroke="none"/>',
     share: '<path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/>',
