@@ -10,7 +10,13 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let root = null, entry = null, off = [], io = null, set = {}, scenes = [], cur = -1, seen = new Set(), AMB = null;
+  const LINE = 0.5; // where scenes start: the reading line, at half the screen
+  let guide = null;
+  function guideOn(on) {
+    if (on && !guide) { guide = document.createElement("div"); guide.className = "guia-lectura"; guide.setAttribute("aria-hidden", "true"); guide.style.top = LINE * 100 + "vh"; document.body.appendChild(guide); }
+    if (!on && guide) { guide.remove(); guide = null; }
+  }
+  let gen = 0, root = null, entry = null, off = [], io = null, set = {}, scenes = [], cur = -1, seen = new Set(), AMB = null;
   const amb = async () => AMB || (AMB = await fetch("data/ambience.json").then((r) => r.json()).catch(() => ({})));
   const clean = (p) => { const c = p.cloneNode(true); c.querySelectorAll("button, [aria-hidden=true]").forEach((x) => x.parentNode.removeChild(x)); return c.textContent.replace(/\s+/g, " ").trim(); };
 
@@ -28,17 +34,20 @@
     const a = new Audio(`sound/${name}.mp3`); a.loop = true; a.preload = "auto"; a.crossOrigin = "anonymous";
     const src = ac.createMediaElementSource(a), g = ac.createGain(); g.gain.value = 0;
     src.connect(g).connect(filt);
-    return (layers[name] = { a, g, playing: false });
+    return (layers[name] = { a, g, want: 0, timer: 0 });
   }
   function bed(target, under) {
     if (!soundOn || !ac) return;
     const t = ac.currentTime, vol = (set.volume ?? 0.7);
     for (const [name, v] of Object.entries(target)) {
-      const L = layer(name);
-      if (!L.playing) { L.a.currentTime = Math.random() * 20; L.a.play().catch(() => {}); L.playing = true; }
+      const L = layer(name); L.want = v; clearTimeout(L.timer);
+      if (L.a.paused) { if (!L.started) { L.a.currentTime = Math.random() * 20; L.started = true; } L.a.play().catch(() => {}); }
       L.g.gain.cancelScheduledValues(t); L.g.gain.setTargetAtTime(v * vol, t, 0.9);
     }
-    for (const [name, L] of Object.entries(layers)) if (!(name in target)) { L.g.gain.cancelScheduledValues(t); L.g.gain.setTargetAtTime(0, t, 0.8); setTimeout(() => { if (L.g.gain.value < 0.01) { L.a.pause(); L.playing = false; } }, 5000); }
+    for (const [name, L] of Object.entries(layers)) if (!(name in target)) {
+      L.want = 0; L.g.gain.cancelScheduledValues(t); L.g.gain.setTargetAtTime(0, t, 0.8);
+      clearTimeout(L.timer); L.timer = setTimeout(() => { if (L.want === 0) L.a.pause(); }, 6000); // pause only if still unwanted
+    }
     filt.frequency.cancelScheduledValues(t); filt.frequency.setTargetAtTime(under ? 520 : 18000, t, 0.6);
   }
   function sfx(list) {
@@ -48,8 +57,11 @@
       src.connect(g).connect(filt); a.play().catch(() => {}); a.onended = () => { src.disconnect(); g.disconnect(); };
     }, k * (s.every || 1) * 1000);
   }
-  function soundStart() { ensureAudio(); ac.resume?.(); soundOn = true; master.gain.cancelScheduledValues(ac.currentTime); master.gain.setTargetAtTime(1, ac.currentTime, 0.8); const s = scenes[cur]; if (s) bed(s.bed || {}, s.under); }
-  function soundStop() { soundOn = false; if (!ac) return; master.gain.setTargetAtTime(0, ac.currentTime, 0.5); setTimeout(() => { if (!soundOn) Object.values(layers).forEach((L) => { L.a.pause(); L.playing = false; }); }, 2500); }
+  function soundStart() { ensureAudio(); ac.resume?.(); soundOn = true; cur = Math.min(cur, scenes.length - 1); master.gain.cancelScheduledValues(ac.currentTime); master.gain.setTargetAtTime(1, ac.currentTime, 0.8); const s = scenes[cur]; if (s) bed(s.bed || {}, s.under); }
+  function soundStop() { soundOn = false; if (!ac) return; master.gain.cancelScheduledValues(ac.currentTime); master.gain.setTargetAtTime(0, ac.currentTime, 0.5); setTimeout(() => { if (!soundOn) Object.values(layers).forEach((L) => { L.want = 0; L.a.pause(); }); }, 2500); }
+  // keep the sound alive: resume after the tab comes back, and restart any layer that stopped on its own
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && soundOn && ac) { ac.resume?.(); Object.values(layers).forEach((L) => { if (L.want > 0 && L.a.paused) L.a.play().catch(() => {}); }); } });
+  setInterval(() => { if (!soundOn || !ac) return; if (ac.state === "suspended") ac.resume?.(); Object.values(layers).forEach((L) => { if (L.want > 0 && L.a.paused) L.a.play().catch(() => {}); }); }, 3000);
 
   // ---------- particles ----------
   const SPR = {}; ["leaf", "ash", "mote", "drop", "bubble", "paper", "spark", "rain"].forEach((k) => { const i = new Image(); i.src = `img/fx/p-${k}.png`; SPR[k] = i; });
@@ -106,7 +118,7 @@
   async function loadScenes() {
     const all = (await amb())[entry.id] || [], ps = $$(".texto--prosa > p", root);
     scenes = all.map((s) => ({ ...s, el: ps.find((p) => clean(p).startsWith(s.at)) })).filter((s) => s.el);
-    const on = () => { if (!scenes.length) return; const line = innerHeight * 0.5; let k = -1; scenes.forEach((s, i) => { if (s.el.getBoundingClientRect().top < line) k = i; }); if (k === cur) return; const fwd = k > cur; cur = k; const s = scenes[k]; if (!s) { bed({}, false); fx({ type: "none" }); return; } bed(s.bed || {}, s.under); fx(s.fx); if (fwd && !seen.has(k)) { seen.add(k); sfx(s.sfx); } };
+    const on = () => { if (!scenes.length) return; const line = innerHeight * LINE; let k = -1; scenes.forEach((s, i) => { if (s.el.getBoundingClientRect().top < line) k = i; }); if (k === cur) return; const fwd = k > cur; cur = k; const s = scenes[k]; if (!s) { bed({}, false); fx({ type: "none" }); return; } bed(s.bed || {}, s.under); fx(s.fx); if (fwd && !seen.has(k)) { seen.add(k); sfx(s.sfx); } };
     addEventListener("scroll", on, { passive: true }); off.push(() => removeEventListener("scroll", on)); on();
   }
 
@@ -161,9 +173,10 @@
   }
 
   async function mount(r, e, s) {
-    unmount(); root = r; entry = e; set = s || {}; cur = -1; seen = new Set();
+    unmount(); root = r; entry = e; set = s || {}; cur = -1; seen = new Set(); const me = ++gen;
     marks(); trackFocus(); quoteButton();
-    await loadScenes(); sync(set);
+    await amb(); if (me !== gen) return; // the reader already left this chapter
+    await loadScenes(); if (me !== gen) return; sync(set);
   }
   function sync(s) {
     set = s || set; if (!root || !entry) return;
@@ -171,10 +184,11 @@
     art.classList.toggle("foco", !!set.focus); art.classList.toggle("momentos", set.moments !== false); art.classList.toggle("voces", set.voices !== false);
     if (!set.focus) $$(".actual", root).forEach((p) => p.classList.remove("actual"));
     fxOn(set.particles !== false);
+    guideOn(set.guide !== false && (set.sound || set.particles !== false));
     const sb = $("[data-sonido]", root); if (sb) sb.setAttribute("aria-pressed", String(!!set.sound));
     if (set.sound && !soundOn) soundStart(); else if (!set.sound && soundOn) soundStop();
     else if (soundOn) { const sc = scenes[cur]; if (sc) bed(sc.bed || {}, sc.under); }
   }
-  function unmount() { off.forEach((f) => f()); off = []; io?.disconnect(); io = null; fxOn(false); soundStop(); scenes = []; root = null; entry = null; }
+  function unmount() { gen++; guideOn(false); off.forEach((f) => f()); off = []; io?.disconnect(); io = null; fxOn(false); soundStop(); scenes = []; root = null; entry = null; }
   window.Vivo = { mount, sync, unmount };
 })();

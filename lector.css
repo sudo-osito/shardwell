@@ -213,7 +213,6 @@ html[data-lectura] .boton--quieto { background: transparent; color: var(--r-text
 .lbar__tit b { font-family: "Cormorant", serif; font-weight: 600; }
 /* particles: a canvas behind the text */
 .fx-capa { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; }
-.lector > *:not(.progreso):not(.lbar):not(.autoctl):not(.reanudar) { position: relative; z-index: 1; }
 html[data-lectura="paper"] .fx-capa, html[data-lectura="sepia"] .fx-capa { mix-blend-mode: multiply; opacity: .7; }
 /* voices: thoughts and spoken lines, aligned with the text */
 .voces .texto--prosa > p.voz { position: relative; padding-left: 0 !important; margin-left: 0 !important; }
@@ -243,3 +242,6 @@ html[data-lectura="paper"] .voces .texto--prosa > p.voz--habla, html[data-lectur
 .cita-modal__caja img { max-height: 76vh; max-width: 100%; opacity: 1; box-shadow: 0 30px 80px rgba(0,0,0,.7); }
 .cita-modal__acc { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 main[data-vista] { position: relative; z-index: 1; }
+/* the reading line: a faint band at the height where scenes change */
+.guia-lectura { position: fixed; left: 0; right: 0; z-index: 0; height: 7px; margin-top: -3px; pointer-events: none; border-radius: 4px; background: linear-gradient(90deg, transparent, rgba(217,213,204,.055) 18%, rgba(217,213,204,.075) 50%, rgba(217,213,204,.055) 82%, transparent); box-shadow: 0 0 14px rgba(217,213,204,.04); }
+html[data-lectura="paper"] .guia-lectura, html[data-lectura="sepia"] .guia-lectura { background: linear-gradient(90deg, transparent, rgba(40,30,20,.06) 18%, rgba(40,30,20,.08) 50%, rgba(40,30,20,.06) 82%, transparent); box-shadow: none; }
