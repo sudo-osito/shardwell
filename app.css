@@ -1425,3 +1425,49 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
 .planes--tres { margin-top: 70px; }
 .dash-cab { padding-bottom: 6px; }
 @media (max-width: 760px) { .soberano { padding-left: clamp(22px, 4vw, 48px); } }
+/* ---------- frame auras: painted energy rings, each alive in its own way ---------- */
+.avatar-w::before, .avatar-w::after { content: none !important; }
+.avatar-w .avatar__marco { animation: none !important; }
+.aura { position: absolute; z-index: 0; left: 50%; top: 50%; width: 190%; height: 190%; transform: translate(-50%, -50%); pointer-events: none; }
+.aura img { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 1 !important; mix-blend-mode: screen; will-change: transform, opacity; }
+.aura img + img { opacity: .55 !important; transform: rotate(140deg) scale(.92); }
+/* small avatars (comments, lists): a quiet, still glow */
+.avatar-w:not(.avatar--g):not(.avatar--xl) .aura { width: 165%; height: 165%; opacity: .75; }
+.avatar-w:not(.avatar--g):not(.avatar--xl) .aura img + img { display: none; }
+/* iron: forge sparks, restless */
+.avatar-w--iron .aura img { animation: aura-gira 16s linear infinite, aura-chispa 1.3s steps(3) infinite; }
+.avatar-w--iron .aura img + img { animation: aura-gira-r 11s linear infinite, aura-chispa 0.9s steps(2) infinite; }
+/* ash: smoke drifting slowly */
+.avatar-w--ash .aura img { animation: aura-gira 38s linear infinite, aura-respira 6s ease-in-out infinite; }
+.avatar-w--ash .aura img + img { animation: aura-gira-r 52s linear infinite, aura-respira 8s ease-in-out infinite reverse; }
+/* silver: moonlight arcs whirling, cold shimmer */
+.avatar-w--silver .aura img { animation: aura-gira 9s linear infinite, aura-brillo 3s ease-in-out infinite; }
+.avatar-w--silver .aura img + img { animation: aura-gira 14s linear infinite reverse, aura-brillo 4s ease-in-out infinite; }
+/* endro: violet mist swirling, breathing */
+.avatar-w--endro .aura img { animation: aura-gira 22s linear infinite, aura-respira 4.5s ease-in-out infinite; }
+.avatar-w--endro .aura img + img { animation: aura-gira-r 30s linear infinite, aura-respira 5.5s ease-in-out infinite; }
+/* godblood: a heartbeat */
+.avatar-w--godblood .aura img { animation: aura-gira 40s linear infinite, aura-latido 1.6s ease-in-out infinite; }
+.avatar-w--godblood .aura img + img { animation: aura-gira-r 55s linear infinite, aura-latido 1.6s ease-in-out .12s infinite; }
+/* bone: ghostly flames flickering upward */
+.avatar-w--bone .aura img { animation: aura-llama 2.4s ease-in-out infinite; transform-origin: 50% 60%; }
+.avatar-w--bone .aura img + img { animation: aura-llama 1.7s ease-in-out .4s infinite; }
+/* abyssal: the void turns, deep and slow */
+.avatar-w--abyssal .aura img { animation: aura-gira 26s linear infinite, aura-respira 7s ease-in-out infinite; }
+.avatar-w--abyssal .aura img + img { animation: aura-gira-r 19s linear infinite, aura-vacio 5s ease-in-out infinite; }
+/* crown: a slow radiant halo, rays pulsing */
+.avatar-w--crown .aura img { animation: aura-gira 60s linear infinite, aura-rayos 3.6s ease-in-out infinite; }
+.avatar-w--crown .aura img + img { animation: aura-gira-r 45s linear infinite, aura-rayos 3.6s ease-in-out 1.8s infinite; }
+.avatar-w:not(.avatar--g):not(.avatar--xl) .aura img { animation: none !important; }
+@keyframes aura-gira { from { rotate: 0deg; } to { rotate: 360deg; } }
+@keyframes aura-gira-r { from { rotate: 0deg; } to { rotate: -360deg; } }
+@keyframes aura-respira { 0%, 100% { scale: 1; opacity: .85; } 50% { scale: 1.07; opacity: 1; } }
+@keyframes aura-brillo { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.45) drop-shadow(0 0 6px rgba(200,225,255,.6)); } }
+@keyframes aura-latido { 0%, 100% { scale: .96; opacity: .7; } 14% { scale: 1.08; opacity: 1; } 28% { scale: .99; opacity: .8; } 42% { scale: 1.05; opacity: .95; } }
+@keyframes aura-llama { 0%, 100% { scale: 1 1; opacity: .8; } 30% { scale: .97 1.07; opacity: 1; } 55% { scale: 1.02 .97; opacity: .75; } 80% { scale: .98 1.05; opacity: .95; } }
+@keyframes aura-vacio { 0%, 100% { opacity: .35; scale: .9; } 50% { opacity: .8; scale: 1.02; } }
+@keyframes aura-rayos { 0%, 100% { opacity: .75; filter: brightness(1); scale: 1; } 50% { opacity: 1; filter: brightness(1.35); scale: 1.05; } }
+@keyframes aura-chispa { 0% { opacity: .8; } 50% { opacity: 1; } 100% { opacity: .7; } }
+@media (prefers-reduced-motion: reduce) { .aura img { animation: none !important; } }
+.look__yo > div, .perfil__cab > div, .tarjeta-u__nombre, .tarjeta-u > :not(.tarjeta-u__banner) { position: relative; z-index: 3; }
+.look__yo .avatar-w, .perfil__cab .avatar-w { z-index: 2; }
