@@ -1471,3 +1471,13 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
 @media (prefers-reduced-motion: reduce) { .aura img { animation: none !important; } }
 .look__yo > div, .perfil__cab > div, .tarjeta-u__nombre, .tarjeta-u > :not(.tarjeta-u__banner) { position: relative; z-index: 3; }
 .look__yo .avatar-w, .perfil__cab .avatar-w { z-index: 2; }
+/* auras v2: a thin halo just outside the frame; the frame sits on a dark disc so it reads solid */
+.avatar-w { --fw: 130%; }
+.avatar-w--iron { --fw: 116.5%; } .avatar-w--ash { --fw: 119.3%; } .avatar-w--silver { --fw: 126.7%; } .avatar-w--godblood { --fw: 132.8%; }
+.avatar-w--endro { --fw: 143.6%; } .avatar-w--bone { --fw: 141.2%; } .avatar-w--abyssal { --fw: 141.2%; } .avatar-w--crown { --fw: 144.5%; }
+.aura { width: calc(var(--fw) * 1.3); height: calc(var(--fw) * 1.3); opacity: .9;
+  -webkit-mask: radial-gradient(closest-side, transparent 66%, #000 76%, #000 86%, transparent 99%); mask: radial-gradient(closest-side, transparent 66%, #000 76%, #000 86%, transparent 99%); }
+.marco-fondo { position: absolute; z-index: 0; left: 50%; top: 50%; width: calc(var(--fw) * .9); height: calc(var(--fw) * .9); transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(closest-side, #0e0d0c 92%, transparent 100%); pointer-events: none; }
+.avatar-w .avatar__marco { filter: drop-shadow(0 2px 4px rgba(0,0,0,.8)) brightness(1.08) contrast(1.06); }
+/* small avatars: no aura at all, just the frame */
+.avatar-w:not(.avatar--g):not(.avatar--xl) .aura { display: none; }

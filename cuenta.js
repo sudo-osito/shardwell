@@ -43,7 +43,7 @@
   // avatar: painted image, or the initial on a stone tile
   const avatar = (u, size = "") => {
     const inner = u?.avatar && /^[a-z0-9-]+$/.test(u.avatar) ? `<span class="avatar ${size}" data-letra="${esc((u?.name || "?")[0].toUpperCase())}"><img src="img/avatars/${u.avatar}.jpg" alt="" onerror="this.parentNode.classList.add('avatar--letra');this.parentNode.textContent=this.parentNode.dataset.letra"></span>` : `<span class="avatar avatar--letra ${size}">${esc((u?.name || "?")[0].toUpperCase())}</span>`;
-    return u?.frame ? `<span class="avatar-w avatar-w--${u.frame} ${size}"><span class="aura" aria-hidden="true"><img src="img/ui/aura-${u.frame}.png" alt=""><img src="img/ui/aura-${u.frame}.png" alt=""></span>${inner}<img class="avatar__marco" src="img/ui/f-${u.frame}.png" alt=""></span>` : inner;
+    return u?.frame ? `<span class="avatar-w avatar-w--${u.frame} ${size}"><span class="aura" aria-hidden="true"><img src="img/ui/aura-${u.frame}.png" alt=""><img src="img/ui/aura-${u.frame}.png" alt=""></span><span class="marco-fondo" aria-hidden="true"></span>${inner}<img class="avatar__marco" src="img/ui/f-${u.frame}.png" alt=""></span>` : inner;
   };
   const badgeImg = (b) => `<img class="emblema" src="img/ui/b-${b.id}.png" alt="" loading="lazy">`;
   const planName = (u) => (u?.role === "admin" ? "The Author" : PLAN[u?.plan] || PLAN.free);
