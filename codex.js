@@ -171,23 +171,46 @@
   }
 
   // ---------- views ----------
-  // the six ways into the Codex, with their painted covers (img/codex/cat-*.jpg)
-  const SHELVES = [["character", "Characters", "Who they are, what they want", "characters"], ["place", "Places", "The city, the sea, the wells", "places"], ["creature", "Creatures", "What lives in the deep", "creatures"], ["faction", "Factions", "Clans, houses and companies", "factions"], ["item", "Objects", "Relics, shards and tools", "items"], ["event", "Events", "What happened, and when", "events"]];
+  // kinds and categories belong to the community; these are only suggestions and painted fallbacks
+  const kindName = (t) => TYPES[t] || (t ? t.charAt(0).toUpperCase() + t.slice(1) : "Article");
+  const FALLBACK = ["characters", "places", "creatures", "factions", "items", "events"];
+  const coverOf = (c, i) => imgSrc(c.cover) || `img/codex/cat-${FALLBACK[i % FALLBACK.length]}.jpg`;
+  let SITE = null;
+  const site = async () => SITE || (SITE = await fetch("data/site.json").then((r) => r.json()).catch(() => ({})));
   async function home() {
-    const [d, all] = await Promise.all([call("/codex"), call("/codex/all")]);
+    const [d, all, cs, ks, cfg] = await Promise.all([call("/codex"), call("/codex/all"), call("/codex/cats"), call("/codex/kinds"), site()]);
     const me = d.me, rk = me.wikiRank, pages = all.pages;
-    const count = (t) => pages.filter((p) => p.type === t).length;
     const latest = [...pages].sort((a, b) => b.updated - a.updated).slice(0, 8);
-    const write = rk >= 1 ? `<a class="boton" href="#/codex/new">Write a page</a>` : me.application === "open" ? `<p class="nota">Your application to write is waiting for review.</p>` : `<a class="boton boton--quieto" href="#/codex/apply">Apply to write</a>`;
+    const apply = rk >= 1 ? `<a class="boton" href="#/codex/new">Write a page</a>` : me.application === "open" ? `<span class="cx-espera">Your application is being reviewed</span>` : `<a class="boton" href="#/codex/apply">Apply to write</a>`;
+    const discord = cfg.discord ? `<a class="boton boton--quieto cx-discord" href="${esc(cfg.discord)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.3 5.3A16.5 16.5 0 0 0 15.2 4l-.5 1a15 15 0 0 0-5.4 0l-.5-1a16.5 16.5 0 0 0-4.1 1.3C2.1 9.2 1.4 13 1.8 16.7a16.6 16.6 0 0 0 5 2.5l1.1-1.7c-.6-.2-1.2-.5-1.7-.9l.4-.3a11.8 11.8 0 0 0 10.8 0l.4.3c-.5.4-1.1.7-1.7.9l1.1 1.7a16.5 16.5 0 0 0 5-2.5c.5-4.3-.7-8-2.9-11.4ZM8.7 14.5c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Zm6.6 0c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Z"/></svg>Join the Discord</a>` : "";
+    const shelves = cs.cats.slice(0, 9);
     const inner = `<div class="cx2">
+      <section class="cx2__que">
+        <div class="cx2__que-txt"><p class="rotulo">Built by the readers</p><h2 class="titulo">A world written together</h2>
+          <p>The Codex is Shardwell's wiki, and the readers write it. Every character, place and secret you find while reading can become a page, with spoilers hidden until others reach that chapter. Nothing here is decided in advance: the community chooses the categories, the kinds of pages and how they look.</p>
+          <ol class="cx2__pasos"><li><b>Read</b> the novel. Everything in the Codex comes from the chapters.</li><li><b>Apply</b> to become a Scribe (Diver plan or above, 10 chapters read). Archivists review every application.</li><li><b>Write</b> with the others: start pages, create categories, talk on each page, and earn Codex badges.</li></ol>
+          <div class="cx2__que-acc">${apply}${discord}<a class="mas-link" href="#/codex/help">How writing works →</a></div></div>
+        <dl class="cx2__que-num"><div><dt>Pages</dt><dd>${pages.length}</dd></div><div><dt>Categories</dt><dd>${cs.cats.length}</dd></div><div><dt>Edits this month</dt><dd>${d.top.reduce((t, x) => t + x.n, 0)}</dd></div></dl>
+      </section>
       <form class="cx2__buscar" data-cx-buscar role="search"><img src="img/ui/ic-search.png" alt=""><input name="q" placeholder="Search the Codex: a name, a place, a word…" aria-label="Search the Codex" autocomplete="off"><button class="boton" type="submit">Search</button></form>
-      <section class="cx2__estantes" aria-label="Browse the Codex">${SHELVES.map(([t, n, line, img]) => `<a class="estante" href="#/codex/type/${t}"><img src="img/codex/cat-${img}.jpg" alt="" loading="lazy"><span class="estante__txt"><b>${n}</b><small>${line}</small><i>${count(t) ? `${count(t)} page${count(t) === 1 ? "" : "s"}` : "No pages yet"}</i></span></a>`).join("")}</section>
-      <section class="cx2__como"><h2 class="rotulo">How it works</h2>
-        <ol><li><b>Read the novel</b><span>Everything here comes from the chapters.</span></li><li><b>Look things up</b><span>Search or browse. Anything past where you have read stays hidden.</span></li><li><b>Write it with us</b><span>Diver members and above can apply to become Scribes and write pages.</span>${write}</li></ol></section>
-      <section class="cx2__ultimas"><h2 class="rotulo">Latest pages</h2>${latest.length ? `<ul>${latest.map((p) => `<li><a href="#/codex/p/${p.slug}"><b>${esc(p.title)}</b><span>${TYPES[p.type] || "Article"} · ${ago(p.updated)}</span></a></li>`).join("")}</ul>` : `<p class="cx2__vacio">The Codex is brand new. ${rk >= 1 ? "Write the first page." : "The first pages are being written by the readers."}</p>`}</section>
-      <nav class="cx2__mas"><a href="#/codex/all">All pages</a><a href="#/codex/random">A random page</a><a href="#/codex/recent">Recent edits</a><a href="#/codex/watchlist">Pages you follow</a><a href="#/codex/help">Writing guide</a>${rk >= 2 ? `<a href="#/codex/queue">Review${me.queue ? ` (${me.queue})` : ""}</a>` : ""}</nav>
+      <section><h2 class="rotulo cx2__h">Shelves <small>the categories the community made</small></h2>
+        ${shelves.length ? `<div class="cx2__estantes">${shelves.map((c, i) => `<a class="estante" href="#/codex/cat/${encodeURIComponent(c.cat)}"><img src="${coverOf(c, i)}" alt="" loading="lazy"><span class="estante__txt"><b>${esc(c.cat)}</b>${c.blurb ? `<small>${esc(c.blurb)}</small>` : ""}<i>${c.n} page${c.n === 1 ? "" : "s"}</i></span></a>`).join("")}</div>${cs.cats.length > 9 ? `<p class="mas"><a href="#/codex/cats">All ${cs.cats.length} categories →</a></p>` : ""}`
+          : `<div class="cx2__vacio">No shelves yet. Shelves appear as Scribes put pages into categories, any category they want: "Characters", "The Rig", "Songs of Kayaba"…</div>`}</section>
+      ${ks.kinds.length ? `<section><h2 class="rotulo cx2__h">Kinds of pages</h2><ul class="cx-chips">${ks.kinds.map((k) => `<li><a href="#/codex/type/${encodeURIComponent(k.type)}">${esc(kindName(k.type))} <small>${k.n}</small></a></li>`).join("")}</ul></section>` : ""}
+      <section class="cx2__ultimas"><h2 class="rotulo cx2__h">Latest pages</h2>${latest.length ? `<ul>${latest.map((p) => `<li><a href="#/codex/p/${p.slug}"><b>${esc(p.title)}</b><span>${esc(kindName(p.type))} · ${ago(p.updated)}</span></a></li>`).join("")}</ul>` : `<p class="cx2__vacio">The Codex is brand new. ${rk >= 1 ? "Write the first page." : "The first pages are being written by the readers."}</p>`}</section>
+      <nav class="cx2__mas"><a href="#/codex/all">All pages</a><a href="#/codex/cats">All categories</a><a href="#/codex/random">A random page</a><a href="#/codex/recent">Recent edits</a><a href="#/codex/watchlist">Pages you follow</a><a href="#/codex/help">Writing guide</a>${rk >= 2 ? `<a href="#/codex/queue">Review${me.queue ? ` (${me.queue})` : ""}</a>` : ""}</nav>
     </div>`;
     return shell("The Codex", "The wiki of Shardwell, written by its readers as the story unfolds.", inner);
+  }
+  async function catsView() {
+    const cs = await call("/codex/cats");
+    return shell("Categories", "Every shelf the community has made.", cs.cats.length ? `<div class="cx2__estantes">${cs.cats.map((c, i) => `<a class="estante" href="#/codex/cat/${encodeURIComponent(c.cat)}"><img src="${coverOf(c, i)}" alt="" loading="lazy"><span class="estante__txt"><b>${esc(c.cat)}</b>${c.blurb ? `<small>${esc(c.blurb)}</small>` : ""}<i>${c.n} page${c.n === 1 ? "" : "s"}</i></span></a>`).join("")}</div>` : `<p class="cx2__vacio">No categories yet.</p>`, [["Categories"]]);
+  }
+  async function catView(name) {
+    const d = await call("/codex/cat/" + encodeURIComponent(name));
+    const cover = imgSrc(d.cover);
+    const head = `<div class="cx-catcab">${cover ? `<img src="${cover}" alt="">` : ""}<div><p>${d.blurb ? esc(d.blurb) : `<span class="nota">${d.pages.length} page${d.pages.length === 1 ? "" : "s"} in this category.</span>`}</p>${d.canEdit ? `<button class="boton boton--chico boton--quieto" type="button" data-cx-catedit="${esc(name)}" data-blurb="${esc(d.blurb)}" data-cover="${esc(d.cover)}">Edit this category</button>` : ""}</div></div>`;
+    return (await listView(esc(name), "", d.pages, [["Categories", "#/codex/cats"], [name]])).replace('<div class="cx" data-cx>', '<div class="cx" data-cx>' + head);
   }
   async function recentView() {
     const d = await call("/codex");
@@ -204,7 +227,7 @@
     const p = d.page, read = maxRead(), veiled = p.spoiler > read;
     const ib = p.infobox || {}, rows = ib.rows || [];
     const isrc = imgSrc(ib.image);
-    const box = (isrc || rows.length) ? `<aside class="cx-ficha"><p class="cx-ficha__tit">${esc(p.title)}</p>${isrc ? `<figure><img class="cargada" src="${isrc}" alt="">${ib.caption ? `<figcaption>${esc(ib.caption)}</figcaption>` : ""}</figure>` : ""}<p class="cx-ficha__tipo">${TYPES[p.type] || "Article"}</p>${rows.length ? `<dl>${rows.map(([k, v]) => /^#/.test(k) ? `<div class="cx-ficha__sec"><dt>${esc(k.replace(/^#+\s*/, ""))}</dt></div>` : `<div><dt>${esc(k)}</dt><dd>${inline(esc(v), ks)}</dd></div>`).join("")}</dl>` : ""}</aside>` : "";
+    const box = (isrc || rows.length) ? `<aside class="cx-ficha"><p class="cx-ficha__tit">${esc(p.title)}</p>${isrc ? `<figure><img class="cargada" src="${isrc}" alt="">${ib.caption ? `<figcaption>${esc(ib.caption)}</figcaption>` : ""}</figure>` : ""}<p class="cx-ficha__tipo">${esc(kindName(p.type))}</p>${rows.length ? `<dl>${rows.map(([k, v]) => /^#/.test(k) ? `<div class="cx-ficha__sec"><dt>${esc(k.replace(/^#+\s*/, ""))}</dt></div>` : `<div><dt>${esc(k)}</dt><dd>${inline(esc(v), ks)}</dd></div>`).join("")}</dl>` : ""}</aside>` : "";
     const tools = `<nav class="cx-herr" aria-label="Page tools">
       <a href="#/codex/p/${p.slug}" aria-current="page">Read</a>${d.can.edit ? `<a href="#/codex/edit/${p.slug}">Edit</a>` : `<a href="#/codex/edit/${p.slug}" title="Suggest a change for an Archivist to review">Suggest an edit</a>`}<a href="#/codex/history/${p.slug}">History</a><a href="#/codex/talk/${p.slug}">Talk${p.talk ? ` <small>${p.talk}</small>` : ""}</a>
       <button type="button" data-cx-seguir="${p.slug}" aria-pressed="${p.watching}">${p.watching ? "Following" : "Follow"}</button>
@@ -215,7 +238,7 @@
     const content = `<div class="cx-pagina${veiled ? " cx-pagina--velo" : ""}${ib.accent ? " cx-acc--" + ib.accent : ""}" data-slug="${p.slug}">${veiled ? `<div class="cx-velo"><p>This page has spoilers up to <b>Chapter ${p.spoiler}</b>. You have read up to Chapter ${read || "none"}.</p><a class="boton" href="#/e/${chapterId(read + 1 || 1)}">Keep reading</a><button class="boton boton--quieto" type="button" data-cx-velo>Show it anyway</button></div>` : ""}
       <div class="cx-pagina__in">${box}<div class="cx-texto">${p.body.trim() ? md(p.body, ks, { polls: d.polls || {} }) : `<p class="nota">This page is empty.</p>`}</div></div>
       ${cats}<p class="cx-pie">Last edited ${ago(p.updated)}${p.updatedBy ? ` by ${who(p.updatedBy)}` : ""} · <a href="#/codex/links/${p.slug}">What links here</a></p></div>`;
-    return shell(esc(p.title), `<span class="cx-marcas">${marks}</span>`, tools + content, [[TYPES[p.type] || "Article"]]);
+    return shell(esc(p.title), `<span class="cx-marcas">${marks}</span>`, tools + content, [[kindName(p.type)]]);
   }
 
   async function editView(slug, isNew, typed = "") {
@@ -237,7 +260,7 @@
       ${sugg ? `<p class="cx-aviso">You are suggesting an edit. An Archivist will review it before it goes live.</p>` : ""}
       <div class="cx-editor__meta">
         <label class="cx-campo cx-campo--titulo"><span>Title</span><input name="title" value="${esc(s.title)}" maxlength="120" required ${p ? "readonly" : ""}></label>
-        <label class="cx-campo"><span>Kind of page</span><select class="sel" name="type" ${sugg ? "disabled" : ""}>${Object.entries(TYPES).map(([k, n]) => `<option value="${k}"${s.type === k ? " selected" : ""}>${n}</option>`).join("")}</select></label>
+        <label class="cx-campo"><span>Kind of page <small>any kind: character, ship, song…</small></span><input name="type" list="cx-kinds" value="${esc(s.type)}" maxlength="30" ${sugg ? "readonly" : ""} autocomplete="off"><datalist id="cx-kinds" data-cx-kinds>${Object.keys(TYPES).map((k) => `<option value="${k}">`).join("")}</datalist></label>
         <label class="cx-campo"><span>Spoilers</span><select class="sel" name="spoiler" ${sugg ? "disabled" : ""}><option value="0">No spoilers</option>${chOpts}</select></label>
       </div>
       ${sugg ? "" : `<details class="cx-ficha-ed" ${rows.some((r) => r[1]) || s.infobox.image ? "open" : ""}><summary>Infobox</summary>
@@ -312,7 +335,7 @@
   }
   async function listView(title, sub, rows, crumbs) {
     const read = maxRead();
-    const inner = rows.length ? `<ul class="cx-lista">${rows.map((p) => `<li><a href="#/codex/p/${p.slug}"><b>${esc(p.title)}</b></a><span>${TYPES[p.type] || ""}${p.spoiler ? ` · ${p.spoiler > read ? "spoilers past where you are" : "spoilers to ch. " + p.spoiler}` : ""}</span>${p.body ? `<p>${esc(p.body.replace(/\[\[(?:[^\]|]+\|)?([^\]]+)\]\]/g, "$1").replace(/[#*>{}:]/g, "").slice(0, 200))}…</p>` : ""}</li>`).join("")}</ul>` : `<div class="cx-vacia"><p>No pages here yet.</p><a class="boton boton--quieto" href="#/codex/new">Write the first one</a></div>`;
+    const inner = rows.length ? `<ul class="cx-lista">${rows.map((p) => `<li><a href="#/codex/p/${p.slug}"><b>${esc(p.title)}</b></a><span>${esc(kindName(p.type))}${p.spoiler ? ` · ${p.spoiler > read ? "spoilers past where you are" : "spoilers to ch. " + p.spoiler}` : ""}</span>${p.body ? `<p>${esc(p.body.replace(/\[\[(?:[^\]|]+\|)?([^\]]+)\]\]/g, "$1").replace(/[#*>{}:]/g, "").slice(0, 200))}…</p>` : ""}</li>`).join("")}</ul>` : `<div class="cx-vacia"><p>No pages here yet.</p><a class="boton boton--quieto" href="#/codex/new">Write the first one</a></div>`;
     return shell(title, sub, inner, crumbs);
   }
   async function applyView() {
@@ -370,9 +393,10 @@
       else if (a === "rev" && b) html = await revView(+b);
       else if (a === "talk" && b) html = await talkView(b);
       else if (a === "links" && b) { const d = await call(`/codex/p/${encodeURIComponent(b)}/links`); html = await listView("What links here", `Pages that link to <a href="#/codex/p/${b}">${esc(b.replace(/-/g, " "))}</a>.`, d.pages, [["What links here"]]); }
-      else if (a === "cat" && b) { const d = await call("/codex/cat/" + encodeURIComponent(b)); html = await listView(`Category: ${esc(b)}`, `${d.pages.length} page${d.pages.length === 1 ? "" : "s"}.`, d.pages, [["Categories"], [b]]); }
+      else if (a === "cat" && b) html = await catView(b);
       else if (a === "recent") html = await recentView();
-      else if (a === "type" && b) { const d = await call("/codex/all"), sh = SHELVES.find((x) => x[0] === b); html = await listView(sh ? sh[1] : "Pages", sh ? sh[2] : "", d.pages.filter((p) => p.type === b), [[sh ? sh[1] : b]]); }
+      else if (a === "type" && b) { const d = await call("/codex/all"); html = await listView(esc(kindName(b)), "Pages of this kind.", d.pages.filter((p) => p.type === b), [[kindName(b)]]); }
+      else if (a === "cats") html = await catsView();
       else if (a === "all") { const d = await call("/codex/all"); html = await listView("All pages", `${d.pages.length} pages, A to Z.`, d.pages, [["All pages"]]); }
       else if (a === "search") { const d = await call("/codex/search?q=" + encodeURIComponent(q.get("q") || "")); const k = await pagesKnown(); const exact = k.has(slugOf(q.get("q"))); html = (await listView(`Search: ${esc(q.get("q") || "")}`, exact ? "" : `No page with that exact name. <a class="cx-link cx-link--rojo" href="#/codex/p/${slugOf(q.get("q"))}">Create “${esc(q.get("q"))}”</a>`, d.pages, [["Search"]])).replace('<div class="cx" data-cx>', `<div class="cx" data-cx>${searchBox(q.get("q") || "")}`); }
       else if (a === "random") { const d = await call("/codex/random"); location.replace(d.slug ? "#/codex/p/" + d.slug : "#/codex"); return; }
@@ -405,7 +429,9 @@
       const [pre, post = ""] = b.dataset.ins.replace(/\\n/g, "\n").split("§"), s0 = ta.selectionStart, s1 = ta.selectionEnd, sel = ta.value.slice(s0, s1);
       ta.setRangeText(pre + sel + post, s0, s1, "end"); ta.selectionStart = ta.selectionEnd = s0 + pre.length + sel.length; ta.focus(); save();
     }));
-    f.type?.addEventListener("change", () => { const box = $("[data-cx-filas]", f); if (!box) return; const have = $$("input[name=ib_k]", box).map((i) => i.value.trim()).filter(Boolean); if ($$("input[name=ib_v]", box).some((i) => i.value.trim())) return; box.innerHTML = (FIELDS[f.type.value] || []).filter((k) => !have.includes(k) || true).map((k) => `<div class="cx-fila"><input name="ib_k" value="${esc(k)}" placeholder="Field" maxlength="60"><input name="ib_v" placeholder="Value (you can use [[links]])" maxlength="400"><button type="button" data-cx-quitar aria-label="Remove field">×</button></div>`).join(""); });
+    // the kinds other writers use, with the infobox fields they gave them
+    const KF = {}; call("/codex/kinds").then((d) => { const dl = $("[data-cx-kinds]", f); d.kinds.forEach((k) => { KF[k.type] = k.fields; if (dl && !$(`option[value="${CSS.escape(k.type)}"]`, dl)) dl.insertAdjacentHTML("beforeend", `<option value="${esc(k.type)}">`); }); }).catch(() => {});
+    f.type?.addEventListener("change", () => { const box = $("[data-cx-filas]", f); if (!box) return; const have = $$("input[name=ib_k]", box).map((i) => i.value.trim()).filter(Boolean); if ($$("input[name=ib_v]", box).some((i) => i.value.trim())) return; box.innerHTML = (KF[f.type.value.trim().toLowerCase()] || FIELDS[f.type.value.trim().toLowerCase()] || []).filter((k) => !have.includes(k) || true).map((k) => `<div class="cx-fila"><input name="ib_k" value="${esc(k)}" placeholder="Field" maxlength="60"><input name="ib_v" placeholder="Value (you can use [[links]])" maxlength="400"><button type="button" data-cx-quitar aria-label="Remove field">×</button></div>`).join(""); });
     $("[data-cx-fila]", f)?.addEventListener("click", () => $("[data-cx-filas]", f).insertAdjacentHTML("beforeend", `<div class="cx-fila"><input name="ib_k" placeholder="Field" maxlength="60"><input name="ib_v" placeholder="Value" maxlength="400"><button type="button" data-cx-quitar aria-label="Remove field">×</button></div>`));
     f.addEventListener("click", (ev) => { const q = ev.target.closest("[data-cx-quitar]"); if (q) q.parentElement.remove(); if (ev.target.closest("[data-cx-descartar]")) { try { localStorage.removeItem(key); } catch {} render(); } });
     f.addEventListener("submit", async (ev) => {
@@ -680,6 +706,12 @@
     if (t.closest("[data-cx-entrar]")) { C().open("login", () => render()); return; }
     if (t.closest("[data-cx-velo]")) { t.closest(".cx-pagina").classList.remove("cx-pagina--velo"); $(".cx-velo", root)?.remove(); return; }
     const sv = t.closest("[data-ver-spoiler]"); if (sv) { sv.closest(".cx-spoiler").classList.remove("cx-spoiler--velo"); sv.remove(); return; }
+    const ce = t.closest("[data-cx-catedit]"); if (ce) {
+      const blurb = prompt("A line about this category (shown on its shelf):", ce.dataset.blurb || ""); if (blurb === null) return;
+      const save = async (cover) => { try { await call("/codex/cat/" + encodeURIComponent(ce.dataset.cxCatedit), { blurb, cover }); render(); } catch (x) { alert(x.message); } };
+      if (confirm("Choose a cover image for this category?")) picker((ref) => save(ref)); else save(ce.dataset.cover || "");
+      return;
+    }
     const tb = t.closest("[data-cx-tab]"); if (tb) { const box = tb.closest("[data-cx-tabs]"), id = tb.dataset.cxTab; $$(":scope > .cx-tabs__bar [data-cx-tab]", box).forEach((x) => x.setAttribute("aria-selected", String(x === tb))); $$(":scope > [data-cx-panel]", box).forEach((x) => (x.hidden = x.dataset.cxPanel !== id)); return; }
     const vt = t.closest("[data-cx-voto]"); if (vt && !vt.disabled) { const [pid, opt] = vt.dataset.cxVoto.split(":"), slug = t.closest("[data-slug]")?.dataset.slug; if (!slug) return; try { await call(`/codex/p/${slug}/poll`, { pid, opt: +opt }); render(); } catch (x) { alert(x.message); } return; }
     const el = t.closest("[data-cx-elegir]"); if (el) { const f = el.closest("form"); picker((ref, name) => {

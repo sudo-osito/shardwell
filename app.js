@@ -140,6 +140,7 @@
           <p class="plan__linea">${p.line}</p><ul>${p.perks.map((x) => `<li>${typeof x === "function" ? x() : x}</li>`).join("")}</ul>
           <button class="boton${p.hot ? "" : " boton--quieto"}" type="button" data-comprar="${p.id}">${r === { reader: 1, diver: 2, abyssal: 3, sovereign: 4 }[p.id] ? "Your plan" : `Choose ${p.name}`}</button></div>`).join("")}</div>
       <div class="soberano${r === 4 && window.Cuenta?.user?.role !== "admin" ? " plan--actual" : ""}">
+        <span class="soberano__marco" aria-hidden="true"></span><img class="soberano__corona" src="img/ui/sov-crown.png" alt="" aria-hidden="true">
         ${img("corazon", "", "soberano__img")}
         <img class="soberano__escudo" src="img/ui/tier-sovereign.png" alt=""><div class="soberano__txt"><p class="rotulo">Sovereign · the patron tier</p><h3 class="titulo">Carry the work</h3>
           <p>For readers who want to support Shardwell beyond reading: the writing, the art and everything it takes to keep the world growing. Sovereign members keep the author writing.</p>

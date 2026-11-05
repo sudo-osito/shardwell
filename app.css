@@ -1566,3 +1566,32 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
 .cuenta__yo .aura--void img:first-child { animation: aura-gira 26s linear infinite !important; } .cuenta__yo .aura--radiance img:first-child { animation: aura-gira 60s linear infinite, aura-rayos 3.6s ease-in-out infinite !important; }
 .cuenta__yo .avatar-w .aura:not(.aura--css) { width: calc(var(--fw) * 1.52) !important; height: calc(var(--fw) * 1.52) !important; opacity: .95 !important; -webkit-mask: radial-gradient(closest-side, transparent 55%, #000 66%, #000 82%, transparent 100%) !important; mask: radial-gradient(closest-side, transparent 55%, #000 66%, #000 82%, transparent 100%) !important; }
 .cuenta__yo .avatar-w .aura--css { width: calc(var(--fw) * 1.3) !important; height: calc(var(--fw) * 1.3) !important; opacity: 1 !important; }
+/* Codex: what it is, community shelves */
+.cx2__que { display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: start; padding: clamp(22px, 3vw, 36px); border: 1px solid #3a3348; background: radial-gradient(120% 90% at 0 0, rgba(108,92,156,.18), transparent 60%), #121114; position: relative; }
+.cx2__que::before { content: ""; position: absolute; top: -9px; left: -9px; width: 52px; height: 52px; background: url(img/ui/or-corner.png) center / contain no-repeat; }
+.cx2__que .titulo { margin: 6px 0 12px; }
+.cx2__que-txt > p:not(.rotulo) { max-width: 70ch; color: #cfcbc2; font-size: 1.12rem; }
+.cx2__pasos { margin: 16px 0 18px; padding-left: 1.3em; display: grid; gap: 6px; color: var(--text-2); }
+.cx2__pasos b { color: var(--text); }
+.cx2__que-acc { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.cx-discord { display: inline-flex; gap: 8px; align-items: center; } .cx-discord svg { width: 18px; height: 18px; color: #8f9cf0; }
+.cx-espera { padding: 10px 14px; border: 1px dashed #6c5c9c; color: #c9b8f0; }
+.cx2__que-num { margin: 0; display: grid; gap: 10px; min-width: 150px; }
+.cx2__que-num div { padding: 10px 14px; border: 1px solid var(--line); background: #0f0f10; }
+.cx2__que-num dt { font: 700 .62rem/1 var(--f-text); letter-spacing: .2em; text-transform: uppercase; color: var(--text-3); }
+.cx2__que-num dd { margin: 4px 0 0; font: 600 1.7rem/1 var(--f-text); }
+.cx2__h { margin-bottom: 14px; } .cx2__h small { letter-spacing: 0; text-transform: none; color: var(--text-3); font-size: .9rem; margin-left: 8px; }
+.cx-catcab { display: flex; gap: 18px; align-items: center; padding: 16px; border: 1px solid var(--line); background: #121212; }
+.cx-catcab img { width: 200px; aspect-ratio: 16 / 10; object-fit: cover; opacity: 1; }
+.cx-catcab p { margin: 0 0 10px; color: #cfcbc2; }
+@media (max-width: 760px) { .cx2__que { grid-template-columns: 1fr; } .cx2__que-num { grid-template-columns: repeat(3, 1fr); } .cx-catcab { flex-direction: column; align-items: start; } .cx-catcab img { width: 100%; } }
+/* Sovereign: a painted gold and crimson frame, crown on top */
+.soberano { border: 0; margin-top: 64px; box-shadow: 0 30px 80px rgba(0,0,0,.7), 0 0 90px rgba(162,56,43,.18); background: radial-gradient(120% 120% at 15% 50%, rgba(162,56,43,.16), transparent 60%), #0d0b0a; }
+.soberano__marco { position: absolute; inset: -24px; z-index: 3; pointer-events: none; border-style: solid; border-width: 92px 98px; border-image: url(img/ui/sov-frame.png) 210 225 fill / 92px 98px / 0 stretch; filter: drop-shadow(0 0 10px rgba(227,195,142,.25)); }
+.soberano__corona { position: absolute; z-index: 4; top: -40px; left: 50%; width: 250px; transform: translateX(-50%); opacity: 1 !important; pointer-events: none; filter: drop-shadow(0 0 14px rgba(255,230,180,.45)); animation: corona 5s ease-in-out infinite; }
+@keyframes corona { 50% { filter: drop-shadow(0 0 24px rgba(255,230,180,.7)); } }
+.soberano::before { inset: 0; z-index: 2; }
+.soberano__escudo { z-index: 5; }
+@media (max-width: 760px) { .soberano__marco { inset: -14px; border-width: 60px 64px; border-image-width: 60px 64px; } .soberano__corona { width: 180px; top: -28px; } .soberano__escudo { top: -70px; } .soberano { margin-top: 110px; } }
+@media (prefers-reduced-motion: reduce) { .soberano__corona { animation: none; } }
+@media (max-width: 760px) { .soberano__corona { display: none; } }

@@ -90,7 +90,8 @@ export async function codexRoute(req, env, url, p, me, h) {
     if (p[1] === "cat" && p[2]) {
       const cat = decodeURIComponent(p[2]);
       const rows = (await env.DB.prepare("SELECT pg.slug, pg.title, pg.type, pg.spoiler FROM wiki_cats c JOIN wiki_pages pg ON pg.slug = c.slug AND pg.hidden = 0 WHERE c.cat = ? COLLATE NOCASE ORDER BY pg.title").bind(cat).all()).results;
-      return json(req, { cat, pages: rows });
+      const info = await env.DB.prepare("SELECT cover, blurb FROM wiki_catinfo WHERE cat = ? COLLATE NOCASE").bind(cat).first();
+      return json(req, { cat, pages: rows, cover: info?.cover || "", blurb: info?.blurb || "", canEdit: wr >= 1 });
     }
     if (p[1] === "all") {
       const rows = (await env.DB.prepare("SELECT slug, title, type, spoiler, updated FROM wiki_pages WHERE hidden = 0 ORDER BY title COLLATE NOCASE LIMIT 2000").all()).results;
@@ -110,6 +111,18 @@ export async function codexRoute(req, env, url, p, me, h) {
     if (p[1] === "files") {
       const rows = (await env.DB.prepare("SELECT f.id, f.name, f.w, f.h, f.created, u.name uname FROM wiki_files f LEFT JOIN users u ON u.id = f.user ORDER BY f.created DESC LIMIT 200").all()).results;
       return json(req, { files: rows });
+    }
+    if (p[1] === "kinds") { // every kind in use, with the infobox fields its pages use most
+      const rows = (await env.DB.prepare("SELECT type, infobox FROM wiki_pages WHERE hidden = 0").all()).results, by = {};
+      for (const r of rows) { const k = (by[r.type] ||= { type: r.type, n: 0, f: {} }); k.n++; for (const [f] of (JSON.parse(r.infobox || "{}").rows || [])) k.f[f] = (k.f[f] || 0) + 1; }
+      return json(req, { kinds: Object.values(by).sort((a, b) => b.n - a.n).map((k) => ({ type: k.type, n: k.n, fields: Object.entries(k.f).sort((a, b) => b[1] - a[1]).slice(0, 14).map((x) => x[0]) })) });
+    }
+    if (p[1] === "cats") { // every category, with its cover and line (or the first image found in it)
+      const rows = (await env.DB.prepare("SELECT c.cat, COUNT(*) n, MAX(pg.updated) last FROM wiki_cats c JOIN wiki_pages pg ON pg.slug = c.slug AND pg.hidden = 0 GROUP BY c.cat COLLATE NOCASE ORDER BY n DESC, last DESC LIMIT 300").all()).results;
+      const info = Object.fromEntries((await env.DB.prepare("SELECT * FROM wiki_catinfo").all()).results.map((r) => [r.cat.toLowerCase(), r]));
+      const imgs = (await env.DB.prepare("SELECT c.cat, pg.infobox FROM wiki_cats c JOIN wiki_pages pg ON pg.slug = c.slug AND pg.hidden = 0 ORDER BY pg.updated DESC").all()).results, first = {};
+      for (const r of imgs) { const k = r.cat.toLowerCase(); if (first[k]) continue; const im = JSON.parse(r.infobox || "{}").image; if (im) first[k] = im; }
+      return json(req, { cats: rows.map((r) => ({ cat: r.cat, n: r.n, last: r.last, cover: info[r.cat.toLowerCase()]?.cover || first[r.cat.toLowerCase()] || "", blurb: info[r.cat.toLowerCase()]?.blurb || "" })) });
     }
     if (p[1] === "random") {
       const r = await env.DB.prepare("SELECT slug FROM wiki_pages WHERE hidden = 0 ORDER BY RANDOM() LIMIT 1").first();
@@ -155,7 +168,8 @@ export async function codexRoute(req, env, url, p, me, h) {
     if (pg?.protected && wr < 2) return bad(req, "This page is protected. Suggest the change on its talk page.", 403);
     if (pg && +b.base !== pg.rev) return json(req, { error: "Someone changed this page while you were editing. Your text is kept: compare and save again.", conflict: true, current: pageOut(pg) }, 409);
     const title = clean(b.title || pg?.title || decodeURIComponent(p[2]), 120), body = String(b.body || "").replace(/\r/g, "").slice(0, 60000);
-    const type = WIKI_TYPES.includes(b.type) ? b.type : pg?.type || "article";
+    // the kind of page is the community's choice: any short name ("character", "ship", "song"…)
+    const type = clean(b.type, 30).toLowerCase().replace(/[^a-z0-9 '-]/g, "").replace(/\s+/g, " ").trim() || pg?.type || "article";
     const ib = b.infobox && typeof b.infobox === "object" ? b.infobox : JSON.parse(pg?.infobox || "{}");
     const infobox = JSON.stringify({ image: okImage(String(ib.image || "")) ? ib.image : "", accent: ["", "endro", "ember", "gold", "sea", "bone", "moss"].includes(ib.accent) ? ib.accent : "", caption: clean(ib.caption, 200), rows: (Array.isArray(ib.rows) ? ib.rows : []).slice(0, 30).map((r) => [clean(r?.[0], 60), clean(r?.[1], 400)]).filter((r) => r[0] && (r[1] || r[0].startsWith("#"))) });
     const spoiler = b.spoiler === undefined ? pg?.spoiler || 0 : Math.max(0, Math.min(9999, Math.round(+b.spoiler || 0)));
@@ -228,6 +242,13 @@ export async function codexRoute(req, env, url, p, me, h) {
     return bad(req, "Not found", 404);
   }
 
+  // a category's cover and line (Scribes and up)
+  if (p[1] === "cat" && p[2]) {
+    if (wr < 1) return bad(req, "Only Scribes describe categories.", 403);
+    const cat = clean(decodeURIComponent(p[2]), 60), cover = okImage(String(b.cover || "")) ? b.cover : "", blurb = clean(b.blurb, 240);
+    await env.DB.prepare("INSERT INTO wiki_catinfo (cat, cover, blurb, updated, updated_by) VALUES (?, ?, ?, ?, ?) ON CONFLICT(cat) DO UPDATE SET cover = excluded.cover, blurb = excluded.blurb, updated = excluded.updated, updated_by = excluded.updated_by").bind(cat, cover, blurb, now(), me.id).run();
+    return json(req, { ok: true });
+  }
   // upload an image (Scribes and up). The site compresses it first; bytes live in KV, served at /cximg/:id
   if (p[1] === "upload") {
     if (wr < 1) return bad(req, "Only Scribes upload images.", 403);
