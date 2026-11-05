@@ -65,7 +65,6 @@
     </section>
 
     <section class="apertura" id="gancho">
-      ${img("reading-nook", "", "apertura__fondo")}
       <div class="apertura__hoja">
         <p class="rotulo">Chapter 1 · ${ch[0].title} · ${minutes(ch[0].words)} min read</p>
         <div class="apertura__txt">${(ch[0].intro || "").split("</p>").slice(0, 4).join("</p>")}</p></div>

@@ -1536,3 +1536,4 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
 .ed-opciones .ed-f { flex: 1; }
 .ed-cats small { font-size: .7rem; letter-spacing: 0; text-transform: none; color: var(--text-3); }
 .ed-fuente { display: grid; gap: 12px; }
+.apertura::before { content: none; }
