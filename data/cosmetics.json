@@ -36,6 +36,20 @@
     "shop",
     "From the shop"
    ]
+  ],
+  "auras": [
+   [
+    "simple",
+    "Simple"
+   ],
+   [
+    "painted",
+    "Painted"
+   ],
+   [
+    "shop",
+    "From the shop"
+   ]
   ]
  },
  "avatars": [
@@ -480,6 +494,94 @@
    "set": "shop",
    "shop": 800,
    "added": "2026-11-04"
+  }
+ ],
+ "auras": [
+  {
+   "id": "glow",
+   "name": "Soft Glow",
+   "set": "simple",
+   "plan": "free"
+  },
+  {
+   "id": "halo",
+   "name": "Pale Halo",
+   "set": "simple",
+   "plan": "free"
+  },
+  {
+   "id": "ember",
+   "name": "Ember",
+   "set": "simple",
+   "plan": "reader"
+  },
+  {
+   "id": "frost",
+   "name": "Frost",
+   "set": "simple",
+   "plan": "reader"
+  },
+  {
+   "id": "mist",
+   "name": "Violet Mist",
+   "set": "simple",
+   "plan": "diver"
+  },
+  {
+   "id": "motes",
+   "name": "Drifting Motes",
+   "set": "simple",
+   "plan": "diver"
+  },
+  {
+   "id": "smoke",
+   "name": "Smoke",
+   "set": "painted",
+   "plan": "diver"
+  },
+  {
+   "id": "forge",
+   "name": "Forge",
+   "set": "painted",
+   "plan": "diver"
+  },
+  {
+   "id": "moonlight",
+   "name": "Moonlight",
+   "set": "painted",
+   "plan": "abyssal"
+  },
+  {
+   "id": "endro",
+   "name": "Endro",
+   "set": "painted",
+   "plan": "abyssal"
+  },
+  {
+   "id": "void",
+   "name": "The Void",
+   "set": "painted",
+   "plan": "abyssal"
+  },
+  {
+   "id": "radiance",
+   "name": "Radiance",
+   "set": "painted",
+   "plan": "sovereign"
+  },
+  {
+   "id": "ghostfire",
+   "name": "Ghostfire",
+   "set": "shop",
+   "plan": "free",
+   "shop": 900
+  },
+  {
+   "id": "godblood",
+   "name": "Godblood",
+   "set": "shop",
+   "plan": "free",
+   "shop": 1200
   }
  ]
 }

@@ -14,7 +14,7 @@ const ORIGINS = ["https://sudo-osito.github.io", "http://127.0.0.1:4815", "http:
 const KINDS = ["heart", "dread", "tears", "chills", "awe"];
 const AVATARS = ["", ...COS.avatars.map((a) => a.id)];
 const AVATAR_PLAN = Object.fromEntries(COS.avatars.map((a) => [a.id, a.plan || "free"]));
-const SHOP = new Set([...COS.avatars.filter((a) => a.shop).map((a) => "avatar:" + a.id), ...COS.banners.filter((b) => b.shop).map((b) => "banner:" + b.id), ...COS.frames.filter((f) => f.shop).map((f) => "frame:" + f.id)]);
+const SHOP = new Set([...COS.avatars.filter((a) => a.shop).map((a) => "avatar:" + a.id), ...COS.banners.filter((b) => b.shop).map((b) => "banner:" + b.id), ...COS.frames.filter((f) => f.shop).map((f) => "frame:" + f.id), ...COS.auras.filter((a) => a.shop).map((a) => "aura:" + a.id)]);
 async function mayWear(env, me, kind, id, plan) {
   if (!id) return true;
   if (SHOP.has(kind + ":" + id)) return me.role === "admin" || !!(await env.DB.prepare("SELECT 1 FROM user_items WHERE user = ? AND kind = ? AND item = ?").bind(me.id, kind, id).first());
@@ -26,6 +26,8 @@ const BANNERS = { "": "free", ...Object.fromEntries(COS.banners.map((b) => [b.id
 const PLAN_NAME = { free: "Free reader", reader: "Reader", diver: "Diver", abyssal: "Abyssal", sovereign: "Sovereign" };
 // avatar frames, the plan they need
 const FRAMES = { "": "free", ...Object.fromEntries(COS.frames.map((f) => [f.id, f.plan])) };
+// auras: a cosmetic of their own, worn with any frame
+const AURAS = { "": "free", ...Object.fromEntries(COS.auras.map((a) => [a.id, a.plan])) };
 // Tithes: awards (in-world offerings). Monthly allowance by plan; a 7-day reading streak adds one.
 const TITHES = { shard: { name: "Shard", min: "free" }, endro: { name: "Endro", min: "diver" }, crown: { name: "Crown", min: "abyssal" } };
 const ALLOWANCE = { free: 0, reader: 0, diver: 1, abyssal: 5, sovereign: 5 };
@@ -94,7 +96,7 @@ async function session(env, req) {
 async function newSession(env, userId) {
   const t = token(); await env.DB.prepare("INSERT INTO sessions (token, user, created, expires) VALUES (?, ?, ?, ?)").bind(t, userId, now(), now() + 1000 * 60 * 60 * 24 * 90).run(); return t;
 }
-const userPub = (u) => ({ lv: levelOf(u.exp || 0).level, id: u.id, name: u.name, avatar: u.avatar, frame: u.frame || "", flair: u.flair || "", plan: u.plan || "free", role: u.role || "", bio: u.bio || "", banner: u.banner || "", link: u.link || "" });
+const userPub = (u) => ({ lv: levelOf(u.exp || 0).level, id: u.id, name: u.name, avatar: u.avatar, frame: u.frame || "", aura: u.aura || "", flair: u.flair || "", plan: u.plan || "free", role: u.role || "", bio: u.bio || "", banner: u.banner || "", link: u.link || "" });
 
 // ---------- streaks, stats, badges ----------
 function streaks(days, tz) {
@@ -178,7 +180,7 @@ async function mark(env, u, kind, tz) { await env.DB.prepare("INSERT OR IGNORE I
 async function meOut(env, u, tz) {
   const s = await stats(env, u, tz);
   const reads = (await env.DB.prepare("SELECT chapter FROM user_reads WHERE user = ?").bind(u.id).all()).results.map((r) => r.chapter);
-  return { id: u.id, email: u.email, name: u.name, avatar: u.avatar, frame: u.frame || "", flair: u.flair || "", bio: u.bio || "", banner: u.banner || "", link: u.link || "", plan: u.plan || "free", role: u.role || "", wiki_role: u.wiki_role || "", ink: u.ink || 0, level: levelOf(u.exp || 0), member: rank(u) >= 1, portal: u.portal || "", created: u.created, reads, stats: s };
+  return { id: u.id, email: u.email, name: u.name, avatar: u.avatar, frame: u.frame || "", aura: u.aura || "", flair: u.flair || "", bio: u.bio || "", banner: u.banner || "", link: u.link || "", plan: u.plan || "free", role: u.role || "", wiki_role: u.wiki_role || "", ink: u.ink || 0, level: levelOf(u.exp || 0), member: rank(u) >= 1, portal: u.portal || "", created: u.created, reads, stats: s };
 }
 
 // ---------- Lemon Squeezy ----------
@@ -195,7 +197,7 @@ async function applySubscriptions(env, userId) {
 }
 
 // ---------- forum ----------
-const POST_COLS = "p.*, u.name uname, u.avatar uavatar, u.frame uframe, u.flair uflair, u.plan uplan, u.role urole, u.exp uexp";
+const POST_COLS = "p.*, u.name uname, u.avatar uavatar, u.frame uframe, u.aura uaura, u.flair uflair, u.plan uplan, u.role urole, u.exp uexp";
 // One discussion thread per published chapter, made by the site under the author's name.
 // The chapter list comes from the public site (data/novel.json); checked at most every 10 minutes per isolate.
 const SITE = "https://sudo-osito.github.io/shardwell";
@@ -218,7 +220,7 @@ function postOut(p, my = {}) {
     id: p.id, board: p.board, title: p.title, body: p.body, link: p.link, chapter: p.chapter, upto: p.upto, score: p.score, ncom: p.ncom,
     pinned: !!p.pinned, locked: !!p.locked, created: p.created, edited: p.edited, auto: p.auto || "",
     poll: p.poll ? parseJSON(p.poll, null) : null, pollMin: p.poll_min || "",
-    author: { id: p.user, name: p.uname, avatar: p.uavatar, frame: p.uframe, flair: p.uflair, plan: p.uplan, role: p.urole, lv: levelOf(p.uexp || 0).level },
+    author: { id: p.user, name: p.uname, avatar: p.uavatar, frame: p.uframe, aura: p.uaura || "", flair: p.uflair, plan: p.uplan, role: p.urole, lv: levelOf(p.uexp || 0).level },
     vote: my.votes?.get(p.id) || 0, tithes: my.tithes?.get("p" + p.id) || {},
   };
 }
@@ -274,7 +276,7 @@ export default {
 
       // ---- public reads ----
       if (req.method === "GET") {
-        if (p[0] === "plans") return json(req, { checkout: parseJSON(env.LS_CHECKOUT, {}), allowance: ALLOWANCE, frames: FRAMES, banners: BANNERS, tithes: TITHES, boards: BOARDS });
+        if (p[0] === "plans") return json(req, { checkout: parseJSON(env.LS_CHECKOUT, {}), allowance: ALLOWANCE, frames: FRAMES, auras: AURAS, banners: BANNERS, tithes: TITHES, boards: BOARDS });
         if (p[0] === "credits") { const rows = (await env.DB.prepare("SELECT * FROM users WHERE plan IN ('abyssal', 'sovereign') ORDER BY created").all()).results; return json(req, { names: rows.map((r) => r.name), members: rows.map(userPub) }); }
         if (p[0] === "me") { if (!me) return bad(req, "Sign in first.", 401); return json(req, { user: await meOut(env, me, tz) }); }
         if (p[0] === "u" && p[1]) {
@@ -298,8 +300,8 @@ export default {
         }
         if (p[0] === "chapter" && okId(p[1])) {
           const ch = p[1], reader = url.searchParams.get("reader") || "";
-          const COLS = "c.*, u.name uname, u.avatar uavatar, u.frame uframe, u.plan uplan, u.role urole, (SELECT COUNT(*) FROM likes l WHERE l.comment = c.id) likes";
-          const pub = (c, liked) => ({ id: c.id, para: c.para, parent: c.parent, name: c.uname || c.name, avatar: c.uavatar || "", frame: c.uframe || "", plan: c.uplan || "free", role: c.urole || "", member: !!c.uplan && c.uplan !== "free", body: c.body, spoiler: !!c.spoiler, created: c.created, likes: c.likes || 0, liked: liked.has(c.id), mine: c.reader === reader || (me && c.user === me.id) });
+          const COLS = "c.*, u.name uname, u.avatar uavatar, u.frame uframe, u.aura uaura, u.plan uplan, u.role urole, (SELECT COUNT(*) FROM likes l WHERE l.comment = c.id) likes";
+          const pub = (c, liked) => ({ id: c.id, para: c.para, parent: c.parent, name: c.uname || c.name, avatar: c.uavatar || "", frame: c.uframe || "", aura: c.uaura || "", plan: c.uplan || "free", role: c.urole || "", member: !!c.uplan && c.uplan !== "free", body: c.body, spoiler: !!c.spoiler, created: c.created, likes: c.likes || 0, liked: liked.has(c.id), mine: c.reader === reader || (me && c.user === me.id) });
           if (p[2] === "para") {
             const n = +p[3]; if (!Number.isInteger(n) || n < 0 || n > 5000) return bad(req, "para");
             const { results } = await env.DB.prepare(`SELECT ${COLS} FROM comments c LEFT JOIN users u ON u.id = c.user WHERE c.chapter = ? AND c.para = ? AND c.hidden = 0 ORDER BY c.created ASC LIMIT 300`).bind(ch, n).all();
@@ -333,7 +335,7 @@ export default {
             if (sort === "top") latest = latest.filter((x) => x.created > weekAgo).sort((a, b) => b.score - a.score);
             else if (sort === "hot") latest.sort((a, b) => hot(b) - hot(a));
             latest = latest.slice(0, 30);
-            const top = (await env.DB.prepare("SELECT u.name, u.avatar, u.frame, u.plan, u.role, COUNT(v.user) n FROM post_votes v JOIN posts p ON p.id = v.post JOIN users u ON u.id = p.user WHERE v.v = 1 AND v.user != p.user AND p.created > ? GROUP BY u.id ORDER BY n DESC LIMIT 5").bind(now() - 30 * 86400000).all()).results;
+            const top = (await env.DB.prepare("SELECT u.name, u.avatar, u.frame, u.aura, u.plan, u.role, COUNT(v.user) n FROM post_votes v JOIN posts p ON p.id = v.post JOIN users u ON u.id = p.user WHERE v.v = 1 AND v.user != p.user AND p.created > ? GROUP BY u.id ORDER BY n DESC LIMIT 5").bind(now() - 30 * 86400000).all()).results;
             const votes = await myVotes(env, "post_votes", "post", latest.map((x) => x.id), me);
             const tm = await tithesFor(env, latest.map((x) => "p" + x.id));
             return json(req, { boards: Object.entries(BOARDS).map(([id, b]) => ({ id, ...b, n: counts.find((c) => c.board === id)?.n || 0, last: counts.find((c) => c.board === id)?.last || null })), latest: latest.map((x) => postOut(x, { votes, tithes: tm })), top });
@@ -352,7 +354,7 @@ export default {
           if (p[1] === "p" && Number.isInteger(+p[2])) {
             const post = await env.DB.prepare(`SELECT ${POST_COLS} FROM posts p JOIN users u ON u.id = p.user WHERE p.id = ? AND p.hidden = 0`).bind(+p[2]).first();
             if (!post) return bad(req, "This post does not exist or was removed.", 404);
-            const cs = (await env.DB.prepare("SELECT c.*, u.name uname, u.avatar uavatar, u.frame uframe, u.flair uflair, u.plan uplan, u.role urole FROM fcomments c JOIN users u ON u.id = c.user WHERE c.post = ? ORDER BY c.created ASC LIMIT 1000").bind(post.id).all()).results;
+            const cs = (await env.DB.prepare("SELECT c.*, u.name uname, u.avatar uavatar, u.frame uframe, u.aura uaura, u.flair uflair, u.plan uplan, u.role urole FROM fcomments c JOIN users u ON u.id = c.user WHERE c.post = ? ORDER BY c.created ASC LIMIT 1000").bind(post.id).all()).results;
             const votes = await myVotes(env, "post_votes", "post", [post.id], me);
             const cvotes = await myVotes(env, "fcomment_votes", "comment", cs.map((c) => c.id), me);
             const tm = await tithesFor(env, ["p" + post.id, ...cs.map((c) => "c" + c.id)]);
@@ -365,7 +367,7 @@ export default {
             return json(req, {
               post: { ...postOut(post, { votes, tithes: tm }), poll },
               comments: cs.map((c) => ({ id: c.id, parent: c.parent, body: c.hidden ? "" : c.body, hidden: !!c.hidden, score: c.score, created: c.created, vote: cvotes.get(c.id) || 0, tithes: tm.get("c" + c.id) || {},
-                author: c.hidden ? null : { id: c.user, name: c.uname, avatar: c.uavatar, frame: c.uframe, flair: c.uflair, plan: c.uplan, role: c.urole } })),
+                author: c.hidden ? null : { id: c.user, name: c.uname, avatar: c.uavatar, frame: c.uframe, aura: c.uaura || "", flair: c.uflair, plan: c.uplan, role: c.urole } })),
             });
           }
         }
@@ -414,6 +416,7 @@ export default {
         }
         if (b.avatar !== undefined) { if (!AVATARS.includes(b.avatar)) return bad(req, "avatar"); if (!(await mayWear(env, me, "avatar", b.avatar, AVATAR_PLAN[b.avatar]))) return bad(req, SHOP.has("avatar:" + b.avatar) ? "Get that picture in the shop first." : `That picture is for ${PLAN_NAME[AVATAR_PLAN[b.avatar]]} members and up.`, 403); await env.DB.prepare("UPDATE users SET avatar = ? WHERE id = ?").bind(b.avatar, me.id).run(); }
         if (b.frame !== undefined) { if (!(b.frame in FRAMES)) return bad(req, "frame"); if (!(await mayWear(env, me, "frame", b.frame, FRAMES[b.frame]))) return bad(req, SHOP.has("frame:" + b.frame) ? "Get that frame in the shop first." : "That frame needs a higher plan.", 403); await env.DB.prepare("UPDATE users SET frame = ? WHERE id = ?").bind(b.frame, me.id).run(); }
+        if (b.aura !== undefined) { if (!(b.aura in AURAS)) return bad(req, "aura"); if (!(await mayWear(env, me, "aura", b.aura, AURAS[b.aura]))) return bad(req, SHOP.has("aura:" + b.aura) ? "Get that aura in the shop first." : "That aura needs a higher plan.", 403); await env.DB.prepare("UPDATE users SET aura = ? WHERE id = ?").bind(b.aura, me.id).run(); }
         if (b.bio !== undefined) await env.DB.prepare("UPDATE users SET bio = ? WHERE id = ?").bind(clean(b.bio, 300), me.id).run();
         if (b.link !== undefined) { const l = clean(b.link, 200); if (!okLink(l)) return bad(req, "The link must start with https://"); await env.DB.prepare("UPDATE users SET link = ? WHERE id = ?").bind(l, me.id).run(); }
         if (b.banner !== undefined) { if (!(b.banner in BANNERS)) return bad(req, "banner"); if (!(await mayWear(env, me, "banner", b.banner, BANNERS[b.banner]))) return bad(req, SHOP.has("banner:" + b.banner) ? "Get that banner in the shop first." : "That banner needs a higher plan.", 403); await env.DB.prepare("UPDATE users SET banner = ? WHERE id = ?").bind(b.banner, me.id).run(); }

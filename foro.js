@@ -82,9 +82,9 @@
   async function shop(ctx) {
     const [d, cat] = await Promise.all([call("/shop"), C().cosmetics()]);
     const owned = new Set(d.items), me = C().user;
-    const art = (it) => it.kind === "avatar" ? `<img src="img/avatars/${it.id}.jpg" alt="" loading="lazy">` : it.kind === "banner" ? `<img src="img/${it.id}.jpg" alt="" loading="lazy">` : it.kind === "frame" ? C().avatar({ ...me, frame: it.id }, "avatar--xl") : `<span class="tienda__tithe">${TITHE.shard.ic}</span>`;
+    const art = (it) => it.kind === "avatar" ? `<img src="img/avatars/${it.id}.jpg" alt="" loading="lazy">` : it.kind === "banner" ? `<img src="img/${it.id}.jpg" alt="" loading="lazy">` : it.kind === "frame" ? C().avatar({ ...me, frame: it.id }, "avatar--xl") : it.kind === "aura" ? C().avatar({ ...me, aura: it.id }, "avatar--xl") : `<span class="tienda__tithe">${TITHE.shard.ic}</span>`;
     const card = (it) => { const has = owned.has(`${it.kind}:${it.id}`) && it.kind !== "tithe"; return `<li class="tienda__it tienda__it--${it.kind}${has ? " ok" : ""}"><span class="tienda__arte">${art(it)}</span><b>${esc(it.name)}</b>${it.desc ? `<small>${esc(it.desc)}</small>` : ""}${has ? `<a class="boton boton--chico boton--quieto" href="#/look">Owned · wear it</a>` : `<button class="boton boton--chico" type="button" data-comprar-tienda="${it.kind}:${it.id}" ${d.ink < it.cost ? "disabled" : ""}>${it.cost} Ink</button>`}</li>`; };
-    const groups = [["avatar", "Pictures"], ["banner", "Banners"], ["frame", "Frames"], ["tithe", "Tithes"]].map(([k, n]) => [n, d.shop.filter((x) => x.kind === k)]).filter(([, l]) => l.length);
+    const groups = [["avatar", "Pictures"], ["aura", "Auras"], ["banner", "Banners"], ["frame", "Frames"], ["tithe", "Tithes"]].map(([k, n]) => [n, d.shop.filter((x) => x.kind === k)]).filter(([, l]) => l.length);
     return { title: "The shop", sub: "Earn Ink by checking in and completing daily missions. Spend it here. Nothing in the shop is sold for money.", html: `
       <div class="tienda">
         <div class="tienda__saldo"><img src="img/ui/ic-ink.png" alt=""><span>Your Ink</span><b>${d.ink}</b><a class="boton boton--quieto boton--chico" href="#/forum">Earn more</a></div>

@@ -128,7 +128,7 @@
     const u = window.Cuenta?.user, r = window.Cuenta?.rank(u) || 0;
     const GROUPS = [["Reading", "ic-chapters", [["Chapters 1 to " + FREE(), 1, 1, 1, 1, 1], [`Chapters after ${FREE()}`, 0, 1, 1, 1, 1], ["The newest chapter, the day it is out", 0, 0, 1, 1, 1]]],
       ["The Codex", "ic-codex", [["Read the Codex, the readers' wiki", 1, 1, 1, 1, 1], ["Write in the Codex (apply as a Scribe)", 0, 0, 1, 1, 1]]],
-      ["Forum and profile", "ic-general", [["Comments, forum, streaks, badges, daily rewards", 1, 1, 1, 1, 1], ["Tithes to give each month", "—", "—", "1", "5", "5"], ["Avatar frames", "—", "2", "6", "All 8", "All 8"], ["Flair under your name", 0, 0, 1, 1, 1]]],
+      ["Forum and profile", "ic-general", [["Comments, forum, streaks, badges, daily rewards", 1, 1, 1, 1, 1], ["Tithes to give each month", "—", "—", "1", "5", "5"], ["Avatar frames", "—", "2", "6", "All 8", "All 8"], ["Auras (any aura with any frame)", "2", "4", "8", "11", "All 12"], ["Flair under your name", 0, 0, 1, 1, 1]]],
       ["Closer to the author", "ic-ask", [["Vote on side stories", 0, 0, 0, 1, 1], ["Name in the credits", 0, 0, 0, 1, 1], ["Ask the Author", 0, 0, 0, 0, 1]]]];
     const cell = (v) => v === 1 ? '<span class="si" aria-label="Yes">✓</span>' : v === 0 ? '<span class="no" aria-label="No">—</span>' : `<span class="val">${v}</span>`;
     return `<header class="pagina pagina--img">${img("borde", "", "pagina__img")}${crumbs(["Shardwell", "#/"], ["Membership"])}<h1 class="titulo titulo--xl">Membership</h1><p class="bajada">Chapters 1 to ${FREE()} are free. After that, readers keep Shardwell going.</p></header>
@@ -348,15 +348,16 @@
     const owned = new Set(mine0.items || []), admin = u.role === "admin";
     const fresh = (it) => it.added && Date.now() - Date.parse(it.added) < 30 * 864e5;
     const ok = (it, kind) => it.shop ? admin || owned.has(`${kind}:${it.id}`) : r >= (RK[it.plan] || 0);
-    const saved = { avatar: u.avatar || "", frame: u.frame || "", banner: u.banner || "", flair: u.flair || "" };
+    const saved = { avatar: u.avatar || "", frame: u.frame || "", aura: u.aura || "", banner: u.banner || "", flair: u.flair || "" };
     let draft = { ...saved }, tab = "avatar", set = "all", mine = false, peek = null;
-    const TABS = [["avatar", "Picture", cat.avatars], ["frame", "Frame", cat.frames], ["banner", "Banner", cat.banners], ["flair", "Flair", null]];
-    const sets = { avatar: cat.sets.avatars, banner: cat.sets.banners, frame: [] };
+    const TABS = [["avatar", "Picture", cat.avatars], ["frame", "Frame", cat.frames], ["aura", "Aura", cat.auras], ["banner", "Banner", cat.banners], ["flair", "Flair", null]];
+    const sets = { avatar: cat.sets.avatars, banner: cat.sets.banners, aura: cat.sets.auras, frame: [] };
     const lock = (it, kind) => ok(it, kind) ? "" : it.shop ? `<span class="pieza__lock pieza__lock--tienda">${it.shop} Ink · shop</span>` : `<span class="pieza__lock">◆ ${C.PLAN[it.plan]}${it.plan === "sovereign" ? "" : " and up"}</span>`;
     const tile = (kind, it) => {
       const id = it ? it.id : "", on = draft[kind] === id, can = !it || ok(it, kind), name = it ? it.name : "None";
       const art = kind === "avatar" ? (it ? `<img src="img/avatars/${id}.jpg" alt="" loading="lazy">` : `<span class="pieza__letra">${u.name[0].toUpperCase()}</span>`)
-        : kind === "frame" ? C.avatar({ ...u, avatar: draft.avatar, frame: id }, "avatar--xl")
+        : kind === "frame" ? C.avatar({ ...u, avatar: draft.avatar, frame: id, aura: draft.aura }, "avatar--xl")
+        : kind === "aura" ? C.avatar({ ...u, avatar: draft.avatar, frame: draft.frame, aura: id }, "avatar--xl")
         : it ? `<img src="img/${id}.jpg" alt="" loading="lazy">` : `<span class="pieza__nada">No banner</span>`;
       return `<button type="button" class="pieza pieza--${kind}${on ? " pieza--on" : ""}${can ? "" : " pieza--cerrada"}" data-pieza="${kind}" data-id="${id}" aria-pressed="${on}" ${can ? "" : 'aria-disabled="true"'}>
         <span class="pieza__arte">${art}</span>${it && fresh(it) ? '<span class="pieza__nueva">New</span>' : ""}${it ? lock(it, kind) : ""}<span class="pieza__nombre">${name}</span></button>`;
@@ -395,17 +396,17 @@
         b.addEventListener("mouseenter", () => { peek = { [k]: id }; repaint(); });
         b.addEventListener("mouseleave", () => { peek = null; repaint(); });
         b.addEventListener("click", () => {
-          if (b.getAttribute("aria-disabled")) { const m = $("[data-look-msg]", box), shopIt = [...cat.avatars, ...cat.banners, ...cat.frames].find((x) => x.id === id && x.shop); m.innerHTML = shopIt ? `That one is in the forum shop for ${shopIt.shop} Ink. <a href="#/forum/shop">Open the shop</a>` : `That one opens with a higher plan. <a href="#/membership">See the plans</a>`; m.hidden = false; return; }
+          if (b.getAttribute("aria-disabled")) { const m = $("[data-look-msg]", box), shopIt = [...cat.avatars, ...cat.banners, ...cat.frames, ...cat.auras].find((x) => x.id === id && x.shop); m.innerHTML = shopIt ? `That one is in the forum shop for ${shopIt.shop} Ink. <a href="#/forum/shop">Open the shop</a>` : `That one opens with a higher plan. <a href="#/membership">See the plans</a>`; m.hidden = false; return; }
           draft[k] = id; peek = null;
           $$(`[data-pieza="${k}"]`, box).forEach((x) => { const on = x.dataset.id === id; x.classList.toggle("pieza--on", on); x.setAttribute("aria-pressed", String(on)); });
-          if (k === "avatar") $$('[data-pieza="frame"] .avatar img', box).forEach((im) => (im.src = `img/avatars/${id}.jpg`));
+          if (k !== "avatar" && k !== "banner" && k !== "flair") draw(); else if (k === "avatar") $$('[data-pieza="frame"] .avatar img, [data-pieza="aura"] .avatar img', box).forEach((im) => (im.src = `img/avatars/${id}.jpg`));
           repaint();
         });
       });
       $("[data-deshacer]", box)?.addEventListener("click", () => { draft = { ...saved }; draw(); });
       $("[data-guardar]", box)?.addEventListener("click", async (ev) => {
         const m = $("[data-look-msg]", box), body = {};
-        for (const k of ["avatar", "frame", "banner"]) if (draft[k] !== saved[k]) body[k] = draft[k];
+        for (const k of ["avatar", "frame", "aura", "banner"]) if (draft[k] !== saved[k]) body[k] = draft[k];
         if (r >= 2 && draft.flair !== saved.flair) body.flair = draft.flair;
         ev.target.disabled = true;
         try { await C.update(body); Object.assign(saved, draft); C.cardCache?.clear(); m.textContent = "Saved. This is how readers see you now."; m.hidden = false; repaint(); }

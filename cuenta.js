@@ -41,9 +41,13 @@
   }
 
   // avatar: painted image, or the initial on a stone tile
+  const AURA_CSS = new Set(["glow", "halo", "ember", "frost", "mist", "motes"]); // simple auras drawn in CSS; the rest are painted
   const avatar = (u, size = "") => {
     const inner = u?.avatar && /^[a-z0-9-]+$/.test(u.avatar) ? `<span class="avatar ${size}" data-letra="${esc((u?.name || "?")[0].toUpperCase())}"><img src="img/avatars/${u.avatar}.jpg" alt="" onerror="this.parentNode.classList.add('avatar--letra');this.parentNode.textContent=this.parentNode.dataset.letra"></span>` : `<span class="avatar avatar--letra ${size}">${esc((u?.name || "?")[0].toUpperCase())}</span>`;
-    return u?.frame ? `<span class="avatar-w avatar-w--${u.frame} ${size}"><span class="aura" aria-hidden="true"><img src="img/ui/aura-${u.frame}.png" alt=""><img src="img/ui/aura-${u.frame}.png" alt=""></span><span class="marco-fondo" aria-hidden="true"></span>${inner}<img class="avatar__marco" src="img/ui/f-${u.frame}.png" alt=""></span>` : inner;
+    const fr = /^[a-z-]+$/.test(u?.frame || "") ? u.frame : "", au = /^[a-z-]+$/.test(u?.aura || "") ? u.aura : "";
+    if (!fr && !au) return inner;
+    const aura = !au ? "" : AURA_CSS.has(au) ? `<span class="aura aura--css aura--${au}" aria-hidden="true"><i></i><i></i><i></i></span>` : `<span class="aura aura--${au}" aria-hidden="true"><img src="img/ui/aura-${au}.png" alt=""><img src="img/ui/aura-${au}.png" alt=""></span>`;
+    return `<span class="avatar-w avatar-w--${fr || "nada"} ${size}">${aura}${fr ? '<span class="marco-fondo" aria-hidden="true"></span>' : ""}${inner}${fr ? `<img class="avatar__marco" src="img/ui/f-${fr}.png" alt="">` : ""}</span>`;
   };
   const badgeImg = (b) => `<img class="emblema" src="img/ui/b-${b.id}.png" alt="" loading="lazy">`;
   const planName = (u) => (u?.role === "admin" ? "The Author" : PLAN[u?.plan] || PLAN.free);

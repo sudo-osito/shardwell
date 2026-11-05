@@ -1435,29 +1435,13 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
 .avatar-w:not(.avatar--g):not(.avatar--xl) .aura { width: 165%; height: 165%; opacity: .75; }
 .avatar-w:not(.avatar--g):not(.avatar--xl) .aura img + img { display: none; }
 /* iron: forge sparks, restless */
-.avatar-w--iron .aura img { animation: aura-gira 16s linear infinite, aura-chispa 1.3s steps(3) infinite; }
-.avatar-w--iron .aura img + img { animation: aura-gira-r 11s linear infinite, aura-chispa 0.9s steps(2) infinite; }
 /* ash: smoke drifting slowly */
-.avatar-w--ash .aura img { animation: aura-gira 38s linear infinite, aura-respira 6s ease-in-out infinite; }
-.avatar-w--ash .aura img + img { animation: aura-gira-r 52s linear infinite, aura-respira 8s ease-in-out infinite reverse; }
 /* silver: moonlight arcs whirling, cold shimmer */
-.avatar-w--silver .aura img { animation: aura-gira 9s linear infinite, aura-brillo 3s ease-in-out infinite; }
-.avatar-w--silver .aura img + img { animation: aura-gira 14s linear infinite reverse, aura-brillo 4s ease-in-out infinite; }
 /* endro: violet mist swirling, breathing */
-.avatar-w--endro .aura img { animation: aura-gira 22s linear infinite, aura-respira 4.5s ease-in-out infinite; }
-.avatar-w--endro .aura img + img { animation: aura-gira-r 30s linear infinite, aura-respira 5.5s ease-in-out infinite; }
 /* godblood: a heartbeat */
-.avatar-w--godblood .aura img { animation: aura-gira 40s linear infinite, aura-latido 1.6s ease-in-out infinite; }
-.avatar-w--godblood .aura img + img { animation: aura-gira-r 55s linear infinite, aura-latido 1.6s ease-in-out .12s infinite; }
 /* bone: ghostly flames flickering upward */
-.avatar-w--bone .aura img { animation: aura-llama 2.4s ease-in-out infinite; transform-origin: 50% 60%; }
-.avatar-w--bone .aura img + img { animation: aura-llama 1.7s ease-in-out .4s infinite; }
 /* abyssal: the void turns, deep and slow */
-.avatar-w--abyssal .aura img { animation: aura-gira 26s linear infinite, aura-respira 7s ease-in-out infinite; }
-.avatar-w--abyssal .aura img + img { animation: aura-gira-r 19s linear infinite, aura-vacio 5s ease-in-out infinite; }
 /* crown: a slow radiant halo, rays pulsing */
-.avatar-w--crown .aura img { animation: aura-gira 60s linear infinite, aura-rayos 3.6s ease-in-out infinite; }
-.avatar-w--crown .aura img + img { animation: aura-gira-r 45s linear infinite, aura-rayos 3.6s ease-in-out 1.8s infinite; }
 .avatar-w:not(.avatar--g):not(.avatar--xl) .aura img { animation: none !important; }
 @keyframes aura-gira { from { rotate: 0deg; } to { rotate: 360deg; } }
 @keyframes aura-gira-r { from { rotate: 0deg; } to { rotate: -360deg; } }
@@ -1537,3 +1521,49 @@ body[data-ruta="home"] .barra:not(.solida) .cuenta__entrar { box-shadow: 0 2px 1
 .ed-cats small { font-size: .7rem; letter-spacing: 0; text-transform: none; color: var(--text-3); }
 .ed-fuente { display: grid; gap: 12px; }
 .apertura::before { content: none; }
+/* ---------- auras v3: their own cosmetic, any aura with any frame ---------- */
+.avatar-w--nada { --fw: 104%; }
+/* painted auras, each animated its own way */
+.aura--forge img { animation: aura-gira 16s linear infinite, aura-chispa 1.3s steps(3) infinite; } .aura--forge img + img { animation: aura-gira-r 11s linear infinite, aura-chispa .9s steps(2) infinite; }
+.aura--smoke img { animation: aura-gira 38s linear infinite, aura-respira 6s ease-in-out infinite; } .aura--smoke img + img { animation: aura-gira-r 52s linear infinite, aura-respira 8s ease-in-out infinite reverse; }
+.aura--moonlight img { animation: aura-gira 9s linear infinite, aura-brillo 3s ease-in-out infinite; } .aura--moonlight img + img { animation: aura-gira 14s linear infinite reverse, aura-brillo 4s ease-in-out infinite; }
+.aura--endro img { animation: aura-gira 22s linear infinite, aura-respira 4.5s ease-in-out infinite; } .aura--endro img + img { animation: aura-gira-r 30s linear infinite, aura-respira 5.5s ease-in-out infinite; }
+.aura--godblood img { animation: aura-gira 40s linear infinite, aura-latido 1.6s ease-in-out infinite; } .aura--godblood img + img { animation: aura-gira-r 55s linear infinite, aura-latido 1.6s ease-in-out .12s infinite; }
+.aura--ghostfire img { animation: aura-llama 2.4s ease-in-out infinite; } .aura--ghostfire img + img { animation: aura-llama 1.7s ease-in-out .4s infinite; }
+.aura--void img { animation: aura-gira 26s linear infinite, aura-respira 7s ease-in-out infinite; } .aura--void img + img { animation: aura-gira-r 19s linear infinite, aura-vacio 5s ease-in-out infinite; }
+.aura--radiance img { animation: aura-gira 60s linear infinite, aura-rayos 3.6s ease-in-out infinite; } .aura--radiance img + img { animation: aura-gira-r 45s linear infinite, aura-rayos 3.6s ease-in-out 1.8s infinite; }
+/* simple auras: plain light, a few motes */
+.aura--css { -webkit-mask: none; mask: none; width: calc(var(--fw) * 1.22); height: calc(var(--fw) * 1.22); }
+.aura--css i { position: absolute; inset: 0; border-radius: 50%; }
+.aura--css i:nth-child(n+2) { display: none; }
+.aura--glow i { background: radial-gradient(closest-side, transparent 72%, rgba(255,246,228,.32) 82%, transparent 100%); animation: aura-respira 4s ease-in-out infinite; }
+.aura--halo i { inset: 4%; border: 1.5px solid rgba(230,226,216,.55); box-shadow: 0 0 10px rgba(230,226,216,.35), inset 0 0 8px rgba(230,226,216,.2); animation: aura-respira 5s ease-in-out infinite; }
+.aura--ember i { background: radial-gradient(closest-side, transparent 70%, rgba(240,120,50,.45) 82%, transparent 100%); animation: aura-chispa 1.1s steps(3) infinite, aura-respira 3s ease-in-out infinite; }
+.aura--frost i { background: radial-gradient(closest-side, transparent 72%, rgba(170,210,255,.42) 83%, transparent 100%); animation: aura-brillo 3s ease-in-out infinite; }
+.aura--mist i { background: conic-gradient(from 0deg, rgba(154,134,200,0), rgba(154,134,200,.5), rgba(154,134,200,0) 40%, rgba(154,134,200,.4) 70%, rgba(154,134,200,0)); -webkit-mask: radial-gradient(closest-side, transparent 70%, #000 80%, transparent 100%); mask: radial-gradient(closest-side, transparent 70%, #000 80%, transparent 100%); animation: aura-gira 9s linear infinite; }
+.aura--motes i:nth-child(n+2) { display: block; }
+.aura--motes i { background: radial-gradient(circle at 50% 4%, #fff3d6 0 2.2%, transparent 3.6%); animation: aura-gira 7s linear infinite; filter: drop-shadow(0 0 3px #e3c38e); }
+.aura--motes i:nth-child(2) { animation-duration: 11s; animation-direction: reverse; transform: rotate(120deg); opacity: .7; }
+.aura--motes i:nth-child(3) { animation-duration: 15s; transform: rotate(240deg); opacity: .5; }
+/* where auras show: big avatars and the top bar; lists and comments stay quiet */
+.avatar-w:not(.avatar--g):not(.avatar--xl) .aura { display: none; }
+.cuenta__yo .avatar-w .aura { display: block !important; }
+.cuenta__yo .avatar-w .aura img + img { display: none; }
+.cuenta__yo { overflow: visible; }
+@media (prefers-reduced-motion: reduce) { .aura i { animation: none !important; } }
+.look__grid--aura { grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); }
+.pieza--aura .pieza__arte, .pieza--frame .pieza__arte { aspect-ratio: 1; padding: 14px; overflow: visible; }
+.pieza--aura .avatar--xl, .pieza--aura .avatar-w { width: 104px; height: 104px; }
+.pieza { overflow: visible; isolation: isolate; }
+@media (max-width: 900px) { .look__grid--aura { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); } .pieza--aura .avatar--xl, .pieza--aura .avatar-w { width: 80px; height: 80px; } }
+/* the top bar: a bigger, livelier aura so it reads at 34px */
+.cuenta__yo .aura:not(.aura--css) { width: calc(var(--fw) * 1.75); height: calc(var(--fw) * 1.75); opacity: 1;
+  -webkit-mask: radial-gradient(closest-side, transparent 48%, #000 60%, #000 78%, transparent 100%); mask: radial-gradient(closest-side, transparent 48%, #000 60%, #000 78%, transparent 100%); }
+.cuenta__yo .aura--css { width: calc(var(--fw) * 1.5); height: calc(var(--fw) * 1.5); }
+.cuenta__yo .avatar-w:not(.avatar--g):not(.avatar--xl) .aura img:first-child { animation-play-state: running; }
+.cuenta__yo .aura--forge img:first-child { animation: aura-gira 16s linear infinite !important; } .cuenta__yo .aura--smoke img:first-child { animation: aura-gira 38s linear infinite !important; }
+.cuenta__yo .aura--moonlight img:first-child { animation: aura-gira 9s linear infinite !important; } .cuenta__yo .aura--endro img:first-child { animation: aura-gira 22s linear infinite !important; }
+.cuenta__yo .aura--godblood img:first-child { animation: aura-latido 1.6s ease-in-out infinite !important; } .cuenta__yo .aura--ghostfire img:first-child { animation: aura-llama 2.4s ease-in-out infinite !important; }
+.cuenta__yo .aura--void img:first-child { animation: aura-gira 26s linear infinite !important; } .cuenta__yo .aura--radiance img:first-child { animation: aura-gira 60s linear infinite, aura-rayos 3.6s ease-in-out infinite !important; }
+.cuenta__yo .avatar-w .aura:not(.aura--css) { width: calc(var(--fw) * 1.75) !important; height: calc(var(--fw) * 1.75) !important; opacity: 1 !important; }
+.cuenta__yo .avatar-w .aura--css { width: calc(var(--fw) * 1.5) !important; height: calc(var(--fw) * 1.5) !important; opacity: 1 !important; }
