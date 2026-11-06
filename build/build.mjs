@@ -66,7 +66,7 @@ const INFO = {
   "Fishing Game": [["Title", "Abaddon"], ["Genre", "Fishing, isolation"], ["Players", "Single-player, co-op, up to 24"], ["Platforms", "PC, Steam Deck"], ["You play", "A Rippleborn fisher on the Rig"]],
   "Shardwell Novel": [["Title", "Shardwell"], ["Protagonist", "Kalfu"], ["Written", "Chapters 1 and 2; Chapter 3 in draft"]],
 };
-const STATUS = { core: "Canon", canon: "Official", draft: "Draft", concept: "Concept", unfinished: "Unfinished", stub: "Unfinished", living: "Canon" };
+const STATUS = { core: "Canon", canon: "Official", draft: "Draft", proposed: "Proposed", concept: "Concept", unfinished: "Unfinished", stub: "Unfinished", living: "Canon" };
 
 // headings whose content is author/process notes, not world
 const DROP_SECTION = /^(questions this raises|.*for the author|writing consequences|content rules for this character|how to use this note|what this chapter means|notes? for the author|deliverable)/i;

@@ -54,6 +54,7 @@ main { min-height: 70vh; }
 .sello--canon, .sello--official { color: var(--text); }
 .sello--draft, .sello--unfinished { color: #c49a6c; }
 .sello--concept { color: var(--endro); border-style: dashed; }
+.sello--proposed { color: #8fb3c9; border-style: dashed; }
 .desescrito { color: var(--text-3); font-style: italic; background: linear-gradient(var(--text-3), var(--text-3)) 0 58% / 100% 1px no-repeat; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
 
 /* ---------- bar ---------- */
