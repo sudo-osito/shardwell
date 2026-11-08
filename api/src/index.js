@@ -191,6 +191,7 @@ async function hmacHex(secret, body) {
   return [...new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body)))].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 const parseJSON = (s, d) => { try { return JSON.parse(s || ""); } catch { return d; } };
+const deskGet = async (env) => ({ reviews: parseJSON(await env.LORE.get("desk-reviews"), {}), requests: parseJSON(await env.LORE.get("desk-requests"), []) });
 async function applySubscriptions(env, userId) {
   const subs = (await env.DB.prepare("SELECT * FROM subscriptions WHERE user = ?").bind(userId).all()).results;
   const live = subs.filter((s) => ["active", "on_trial", "past_due", "paused"].includes(s.status) || (s.status === "cancelled" && s.ends_at && Date.parse(s.ends_at) > now()));
@@ -291,6 +292,10 @@ export default {
           const recent = (await env.DB.prepare(`SELECT ${POST_COLS} FROM posts p JOIN users u ON u.id = p.user WHERE p.user = ? AND p.hidden = 0 ORDER BY p.created DESC LIMIT 20`).bind(u.id).all()).results.map((x) => postOut(x));
           return json(req, { user: { ...userPub(u), created: u.created }, stats: { reads: s.reads, posts: s.posts, comments: s.comments, likes: s.likes, tithesReceived: s.tithesReceived, tithesIn: s.tithesIn, readStreak: s.readStreak, writeStreak: s.writeStreak, badges: s.badges }, posts: recent });
         }
+        if (p[0] === "desk") { // the author's desk: reviews of the lore and requests to Claude (author only)
+          if (me?.role !== "admin") return bad(req, "Only the author.", 403);
+          return json(req, await deskGet(env));
+        }
         if (p[0] === "lore") {
           // the vault lore is the author's Codex: only the author reads it (the public Codex is the community wiki, /codex)
           if (me?.role !== "admin") return bad(req, "Only the author reads this.", 403);
@@ -383,6 +388,42 @@ export default {
       if (req.method !== "POST") return bad(req, "not found", 404);
       if (!cors(req)["access-control-allow-origin"] && !(env.ADMIN && req.headers.get("x-admin") === env.ADMIN)) return bad(req, "origin", 403);
       const b = await req.json().catch(() => ({}));
+
+      // the author's desk
+      if (p[0] === "desk") {
+        if (me?.role !== "admin") return bad(req, "Only the author.", 403);
+        const d = await deskGet(env), t = now(), by = b.by === "claude" ? "claude" : "author";
+        if (p[1] === "review") {
+          const id = clean(b.id, 80); if (!okId(id)) return bad(req, "Which page?");
+          const r = d.reviews[id] || { sections: {} };
+          if ("v" in b) r.v = ["approve", "change", "reject"].includes(b.v) ? b.v : "";
+          if ("note" in b) r.note = clean(b.note, 6000);
+          if (b.section && /^s-[a-z0-9-]{1,100}$/.test(b.section)) { const n = clean(b.sectionNote, 3000); if (n) r.sections[b.section] = { note: n, head: clean(b.head, 160) }; else delete r.sections[b.section]; }
+          if (by === "claude") { r.reply = clean(b.reply, 8000); r.state = ["applied", "answered"].includes(b.state) ? b.state : "answered"; r.rt = t; }
+          else { r.state = r.v || r.note || Object.keys(r.sections).length ? "open" : ""; r.t = t; }
+          d.reviews[id] = r;
+          await env.LORE.put("desk-reviews", JSON.stringify(d.reviews));
+          return json(req, { review: r });
+        }
+        if (p[1] === "request") {
+          const text = clean(b.text, 8000);
+          if (b.id) { // add to a thread, or change its state
+            const q = d.requests.find((x) => x.id === b.id); if (!q) return bad(req, "Not found", 404);
+            if (b.delete && by === "author") d.requests = d.requests.filter((x) => x !== q);
+            else {
+              if (text) q.msgs.push({ by, text, t });
+              q.state = ["open", "working", "answered", "closed"].includes(b.state) ? b.state : by === "claude" ? "answered" : text ? "open" : q.state;
+              q.t = t;
+            }
+          } else {
+            if (!text) return bad(req, "Write what you want.");
+            d.requests.unshift({ id: t.toString(36) + Math.random().toString(36).slice(2, 6), kind: clean(b.kind, 20) || "lore", ref: okId(b.ref) ? b.ref : "", msgs: [{ by: "author", text, t }], state: "open", created: t, t });
+          }
+          await env.LORE.put("desk-requests", JSON.stringify(d.requests.slice(0, 400)));
+          return json(req, { requests: d.requests });
+        }
+        return bad(req, "not found", 404);
+      }
 
       // accounts
       if (p[0] === "auth") {

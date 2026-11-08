@@ -200,7 +200,8 @@
     const letters = [...new Set(all.map((e) => e.title[0].toUpperCase()))];
     return `<header class="pagina">${crumbs(["Shardwell", "#/"], ["World"])}<h1 class="titulo titulo--xl">The world</h1>
       <p class="bajada">${PREMISE}</p></header>
-      <section class="bloque bloque--pegado">${categoryGrid()}</section>
+      <section class="bloque bloque--pegado"><a class="mesa-entrada" href="#/desk"><img src="img/ui/ic-ask.png" alt=""><span><b>The Desk</b><small>Ask Claude for anything, review the proposals, leave notes on any page.</small></span><i>Open</i></a></section>
+      <section class="bloque">${categoryGrid()}</section>
       <section class="bloque"><header class="cabeza"><p class="rotulo">Every article</p><h2 class="titulo">A to Z</h2></header>
         <div class="az">${letters.map((l) => `<div class="az__grupo"><span class="az__letra">${l}</span><ul>${all.filter((e) => e.title[0].toUpperCase() === l).map((e) => `<li><a href="#/e/${e.id}" data-link="${e.id}">${e.title}</a> <small>${cat(e.section).name}</small></li>`).join("")}</ul></div>`).join("")}</div>
       </section>`;
@@ -247,6 +248,7 @@
         ${toc ? `<div class="articulo__indice">${toc}</div>` : ""}
         <div class="articulo__cuerpo">
           ${infobox}
+          ${isAuthor() ? '<div data-mesa-pagina id="mesa"></div>' : ""}
           <div class="texto intro">${e.intro}</div>
           <div class="texto secciones">${e.html}</div>
           ${e.unknowns.length ? `<div class="texto"><section id="s-unwritten"><h2>Unwritten</h2><div class="sec__cuerpo"><p class="nota">Not decided yet. Some of it is open on purpose.</p><ul class="desescritos">${e.unknowns.map((u) => `<li>${unwritten(u)}</li>`).join("")}</ul></div></section></div>` : ""}
@@ -297,7 +299,7 @@
   }
 
   const LORE_ROUTES = ["world", "c", "s", "glossary", "unwritten", "unknowns", "art"];
-  const AUTHOR_ROUTES = ["unwritten", "unknowns"];
+  const AUTHOR_ROUTES = ["unwritten", "unknowns", "desk"];
   const isMember = () => (window.Cuenta?.rank(window.Cuenta?.user) || 0) >= 2;
 
   // ---------- account page ----------
@@ -450,12 +452,12 @@
     const [, a, b] = h.split("?")[0].split("/");
     // the vault lore is the author's Codex: only the author sees it. The public Codex is the readers' wiki (#/codex).
     const gated = LORE_ROUTES.includes(a) || (a === "e" && b && !BY.get(b)?.section?.startsWith("novel") && !isAuthor());
-    const isForum = a === "forum" || a === "u", isCodex = a === "codex", isDash = a === "admin", isMundo = ["season", "cards", "notes", "reset"].includes(a);
-    const html = AUTHOR_ROUTES.includes(a) && !isAuthor() ? notFound() : isForum ? '<div data-foro-raiz><p class="cargando cargando--pagina">Loading…</p></div>' : isMundo ? '<div data-mundo-raiz></div>' : isDash ? '<div data-panel-raiz><p class="cargando cargando--pagina">Loading…</p></div>' : isCodex ? '<div data-codex-raiz><p class="cargando cargando--pagina">Opening the Codex…</p></div>' : gated && !isAuthor() ? notFound() : !a ? home() : a === "account" ? account() : a === "look" ? look() : a === "e" ? article(b) : a === "c" || a === "s" ? category(b) : a === "world" ? world() : a === "novel" ? novel() : a === "glossary" ? glossary() : a === "unwritten" || a === "unknowns" ? unwrittenPage() : a === "art" ? art() : a === "membership" ? membership() : notFound();
+    const isForum = a === "forum" || a === "u", isCodex = a === "codex", isDash = a === "admin", isDesk = a === "desk", isMundo = ["season", "cards", "notes", "reset"].includes(a);
+    const html = AUTHOR_ROUTES.includes(a) && !isAuthor() ? notFound() : isForum ? '<div data-foro-raiz><p class="cargando cargando--pagina">Loading…</p></div>' : isMundo ? '<div data-mundo-raiz></div>' : isDash ? '<div data-panel-raiz><p class="cargando cargando--pagina">Loading…</p></div>' : isDesk ? '<div data-mesa-raiz><p class="cargando cargando--pagina">Opening the desk…</p></div>' : isCodex ? '<div data-codex-raiz><p class="cargando cargando--pagina">Opening the Codex…</p></div>' : gated && !isAuthor() ? notFound() : !a ? home() : a === "account" ? account() : a === "look" ? look() : a === "e" ? article(b) : a === "c" || a === "s" ? category(b) : a === "world" ? world() : a === "novel" ? novel() : a === "glossary" ? glossary() : a === "unwritten" || a === "unknowns" ? unwrittenPage() : a === "art" ? art() : a === "membership" ? membership() : notFound();
     window.Lector?.unmount();
     vista.innerHTML = html;
     const e = a === "e" && BY.get(b);
-    const names = { season: "The Season", cards: "Cards", notes: "Your Shardwell", reset: "Reset", admin: "Dashboard", codex: "The Codex", look: "Your look", forum: "Forum", u: "Profile", account: "Account", membership: "Membership", world: "World", novel: "The Novel", glossary: "Glossary", unwritten: "Unwritten", art: "Art" };
+    const names = { season: "The Season", cards: "Cards", notes: "Your Shardwell", reset: "Reset", admin: "Dashboard", desk: "The Desk", codex: "The Codex", look: "Your look", forum: "Forum", u: "Profile", account: "Account", membership: "Membership", world: "World", novel: "The Novel", glossary: "Glossary", unwritten: "Unwritten", art: "Art" };
     document.title = e ? `${e.title} · Shardwell` : a === "c" ? `${cat(b)?.name || "World"} · Shardwell` : a ? `${names[a] || "Shardwell"} · Shardwell` : "Shardwell";
     document.body.dataset.ruta = a || "home";
     const here = isDash ? "admin" : isCodex ? "codex" : isForum ? "forum" : e ? (e.section === "novel" ? "novel" : e.id === "fishing-game" ? "game" : e.section === "characters" ? "characters" : "world") : a === "c" ? (b === "characters" ? "characters" : "world") : a || "";
@@ -467,6 +469,8 @@
     if (a === "look") lookEvents();
     if (a === "membership") membershipEvents();
     if (isMundo) window.Mundo.mount($("[data-mundo-raiz]", vista), a, b, { crumbs, chapters: chapters().map((c) => ({ id: c.id, number: c.number, title: c.title })), after: () => after() });
+    if (isDesk) window.Mesa.mount($("[data-mesa-raiz]", vista), { crumbs, entries: D.entries, catName: (id) => cat(id)?.name || "", after: () => after() });
+    if (e && e.section !== "novel" && isAuthor()) window.Mesa?.article(vista, e, D.entries);
     if (isDash) window.Panel.mount($("[data-panel-raiz]", vista), { crumbs, chapters: chapters().map((c) => ({ id: c.id, number: c.number, title: c.title })), after: () => after() });
     if (isCodex) window.Codex.mount($("[data-codex-raiz]", vista), { crumbs, chapters: chapters().map((c) => ({ id: c.id, number: c.number, title: c.title })), after: () => after() });
     if (isForum) window.Foro.mount($("[data-foro-raiz]", vista), { crumbs, chapters: chapters().map((c) => ({ id: c.id, number: c.number, title: c.title })), boards: { announcements: "Announcements", chapters: "Chapters", theories: "Theories", art: "Fan Art", general: "General", ask: "Ask the Author", stories: "Side Stories" }, after: () => after() });
@@ -575,7 +579,8 @@
     D = d; BY = new Map(d.entries.map((e) => [e.id, e])); window.Lector?.setRelease(PUB.release);
     window.__chapterText = Object.fromEntries(d.entries.filter((e) => e.section === "novel" && (e.intro || e.html)).map((e) => [e.id, ((e.intro || "") + " " + (e.html || "")).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ")]));
     $("[data-nav]").innerHTML = [["novel", "#/novel", "Read"], ["forum", "#/forum", "Forum"], ["codex", "#/codex", "The Codex"]].map(([k, h, t]) => `<a href="${h}" data-k="${k}">${t}</a>`).join("")
-      + (isAuthor() ? `<a class="nav-ic" href="#/world" data-k="world" title="Author's Codex" aria-label="Author's Codex"><img src="img/ui/ic-authors.png" alt=""></a><a class="nav-ic" href="#/admin" data-k="admin" title="Dashboard" aria-label="Dashboard"><img src="img/ui/ic-dashboard.png" alt=""></a>` : "");
+      + (isAuthor() ? `<a class="nav-ic" href="#/world" data-k="world" title="Author's Codex" aria-label="Author's Codex"><img src="img/ui/ic-authors.png" alt=""></a><a class="nav-ic" href="#/desk" data-k="desk" title="The Desk: work with Claude" aria-label="The Desk"><img src="img/ui/ic-ask.png" alt=""><i class="nav-ic__punto" data-mesa-punto hidden></i></a><a class="nav-ic" href="#/admin" data-k="admin" title="Dashboard" aria-label="Dashboard"><img src="img/ui/ic-dashboard.png" alt=""></a>` : "");
+    if (isAuthor()) window.Mesa?.pending().then((n) => { const p = $("[data-mesa-punto]"); if (p) { p.hidden = !n; p.textContent = n || ""; } });
   }
   addEventListener("cuenta:cambio", async () => { await loadData(); const h = location.hash.split("/"); if (h[1] === "e" && BY.get(h[2])?.section === "novel") { window.Lector.refreshForms(); } else route(); });
   window.Cuenta?.on(() => {});

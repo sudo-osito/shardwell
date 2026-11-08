@@ -1,5 +1,5 @@
 // Shardwell offline support: the site shell is cached; pages and chapters you opened stay readable offline.
-const V = "sw-v2", SHELL = ["./", "index.html", "img/icon/favicon-32.png", "data/novel.json", "data/cosmetics.json", "img/ui/ic-chapters.png"];
+const V = "sw-v3", SHELL = ["./", "index.html", "img/icon/favicon-32.png", "data/novel.json", "data/cosmetics.json", "img/ui/ic-chapters.png"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(V).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== V).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener("fetch", (e) => {

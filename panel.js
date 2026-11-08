@@ -50,6 +50,7 @@
     return `<div class="dash-cols"><a class="dash-caja dash-link" href="#/codex/queue"><img src="img/ui/ic-codex.png" alt=""><b>Applications and suggested edits</b><span>Accept Scribes and apply readers' suggestions.</span></a>
       <a class="dash-caja dash-link" href="#/admin?tab=people"><img src="img/ui/ic-dashboard.png" alt=""><b>Ranks</b><span>Make someone a Scribe or an Archivist from People.</span></a>
       <a class="dash-caja dash-link" href="#/codex/recent"><img src="img/ui/ic-chapters.png" alt=""><b>Recent edits</b><span>Every change, with the option to restore.</span></a>
+      <a class="dash-caja dash-link" href="#/desk"><img src="img/ui/ic-ask.png" alt=""><b>The Desk</b><span>Work with Claude: requests, proposals to review, notes on any page.</span></a>
       <a class="dash-caja dash-link" href="#/world"><img src="img/ui/ic-authors.png" alt=""><b>Your Codex</b><span>The lore from your vault. Only you see it.</span></a></div>`;
   }
   // ---------- reading analytics: where readers stop, where they talk ----------
